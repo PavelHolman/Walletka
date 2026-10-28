@@ -1,0 +1,63 @@
+package cz.poqet.walletka.component.review
+
+import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
+import cz.poqet.walletka.domain.CardColor
+import cz.poqet.walletka.domain.CodeFormat
+import cz.poqet.walletka.domain.NormalizedRect
+import cz.poqet.walletka.domain.ScannedCode
+import cz.poqet.walletka.domain.StoredImage
+import cz.poqet.walletka.platform.WalletPlatform
+import kotlinx.serialization.Serializable
+
+/**
+ * [CardForm] snapshot for the StateKeeper. Kept separate (and internal) so the public models stay free of
+ * kotlinx.serialization, which Swift Export would otherwise have to bridge.
+ */
+@Serializable
+internal data class SavedCardForm(
+    val photo: String,
+    val name: String,
+    val nameSuggestions: List<String>,
+    val codes: List<Code>,
+    val selectedCodeIndex: Int,
+    val colors: List<Int>,
+    val selectedColorIndex: Int,
+    val banner: String?,
+    val isBannerEnabled: Boolean,
+    val walletPlatform: WalletPlatform,
+) {
+    @Serializable
+    data class Code(val format: CodeFormat, val value: String, val bounds: List<Float>?)
+
+    fun toForm() = CardForm(
+        photo = StoredImage(photo),
+        name = name,
+        nameSuggestions = nameSuggestions,
+        codes = codes.map { code ->
+            ScannedCode(code.format, code.value, code.bounds?.let { (l, t, r, b) -> NormalizedRect(l, t, r, b) })
+        },
+        selectedCodeIndex = selectedCodeIndex,
+        colors = colors.map(CardColor::fromArgb),
+        selectedColorIndex = selectedColorIndex,
+        banner = banner?.let(::StoredImage),
+        isBannerEnabled = isBannerEnabled,
+        walletPlatform = walletPlatform,
+    )
+
+    companion object {
+        fun of(form: CardForm) = SavedCardForm(
+            photo = form.photo.path,
+            name = form.name,
+            nameSuggestions = form.nameSuggestions,
+            codes = form.codes.map { code ->
+                Code(code.format, code.value, code.bounds?.run { listOf(left, top, right, bottom) })
+            },
+            selectedCodeIndex = form.selectedCodeIndex,
+            colors = form.colors.map { (it.red shl 16) or (it.green shl 8) or it.blue },
+            selectedColorIndex = form.selectedColorIndex,
+            banner = form.banner?.path,
+            isBannerEnabled = form.isBannerEnabled,
+            walletPlatform = form.walletPlatform,
+        )
+    }
+}

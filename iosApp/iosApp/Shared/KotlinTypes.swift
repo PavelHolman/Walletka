@@ -1,0 +1,19 @@
+import SharedLogic
+
+// Short names for the Swift Export of the shared module (nested Kotlin types are exported with mangled names).
+typealias RootComponent = ExportedKotlinPackages.cz.poqet.walletka.component.root.RootComponent
+typealias RootChild = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_root_RootComponent_Child
+
+typealias HomeComponent = ExportedKotlinPackages.cz.poqet.walletka.component.home.HomeComponent
+typealias HomeModel = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_home_HomeComponent_Model
+
+typealias CardReviewComponent = ExportedKotlinPackages.cz.poqet.walletka.component.review.CardReviewComponent
+typealias ReviewModel = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_review_CardReviewComponent_Model
+typealias CardForm = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_review_CardReviewComponent_CardForm
+typealias LoadingStage = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_review_CardReviewComponent_LoadingStage
+typealias Submission = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_review_CardReviewComponent_Submission
+
+typealias CardColor = ExportedKotlinPackages.cz.poqet.walletka.domain.CardColor
+typealias CodeFormat = ExportedKotlinPackages.cz.poqet.walletka.domain.CodeFormat
+typealias AnalysisFailure = ExportedKotlinPackages.cz.poqet.walletka.domain.AnalysisFailure
+typealias WalletFailure = ExportedKotlinPackages.cz.poqet.walletka.domain.WalletFailure

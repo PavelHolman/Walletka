@@ -1,0 +1,17 @@
+TEAM_ID=
+
+PRODUCT_NAME=Walletka
+APP_BUNDLE_IDENTIFIER=cz.poqet.walletka.Walletka$(TEAM_ID)
+PRODUCT_BUNDLE_IDENTIFIER=$(APP_BUNDLE_IDENTIFIER)
+// Shared container between the app and the share extension.
+APP_GROUP_IDENTIFIER=group.$(APP_BUNDLE_IDENTIFIER)
+
+CURRENT_PROJECT_VERSION=1
+MARKETING_VERSION=1.0
+
+// Apple Wallet issuer. Passes must be signed with the Pass Type ID certificate, which is done by a signing
+// service (see README): it receives the pass files and returns the signed .pkpass.
+WALLETKA_PASS_TYPE_ID=
+WALLETKA_TEAM_ID=$(TEAM_ID)
+// e.g. https:/$()/passes.example.com/sign  ("/$()/" keeps xcconfig from treating "//" as a comment)
+WALLETKA_SIGNING_URL=
