@@ -22,13 +22,12 @@ class PassJsonTest {
 
     @Test
     fun applePassUsesCode128ForEan() {
-        val config = WalletConfig(applePassTypeIdentifier = "pass.cz.poqet.walletka", appleTeamIdentifier = "TEAM")
+        val config = WalletConfig()
         val pass = Json.parseToJsonElement(PassJson.apple(card, config, serialNumber = "1")).jsonObject
         val barcode = pass["barcodes"]!!.jsonArray.first().jsonObject
         assertEquals("PKBarcodeFormatCode128", barcode["format"]!!.jsonPrimitive.content)
         assertEquals("8590000000001", barcode["message"]!!.jsonPrimitive.content)
         assertEquals("rgb(255, 255, 255)", pass["foregroundColor"]!!.jsonPrimitive.content)
-        assertEquals("pass.cz.poqet.walletka", pass["passTypeIdentifier"]!!.jsonPrimitive.content)
     }
 
     @Test

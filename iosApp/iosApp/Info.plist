@@ -8,12 +8,10 @@
 	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>WalletkaOrganizationName</key>
 	<string>Walletka</string>
-	<key>WalletkaPassTypeIdentifier</key>
-	<string>$(WALLETKA_PASS_TYPE_ID)</string>
-	<key>WalletkaTeamIdentifier</key>
-	<string>$(WALLETKA_TEAM_ID)</string>
-	<key>WalletkaPassSigningURL</key>
-	<string>$(WALLETKA_SIGNING_URL)</string>
+	<key>WalletkaServiceURL</key>
+	<string>$(WALLETKA_SERVICE_URL)</string>
+	<key>WalletkaServiceAPIKey</key>
+	<string>$(WALLETKA_SERVICE_API_KEY)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

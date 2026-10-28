@@ -44,6 +44,11 @@ kotlin {
             api(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.io.core)
+            implementation(project(":serviceApi"))
+            implementation(libs.ktor.client.core)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
@@ -52,10 +57,12 @@ kotlin {
             implementation(libs.mlkit.barcodeScanning)
             implementation(libs.mlkit.textRecognition)
             implementation(libs.playServices.pay)
+            implementation(libs.ktor.client.okhttp)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

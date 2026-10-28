@@ -30,6 +30,8 @@ class MainActivity : ComponentActivity() {
             config = WalletConfig(
                 googleIssuerId = BuildConfig.GOOGLE_ISSUER_ID,
                 googleIssuerEmail = BuildConfig.GOOGLE_ISSUER_EMAIL,
+                serviceUrl = BuildConfig.SERVICE_URL,
+                serviceApiKey = BuildConfig.SERVICE_API_KEY,
             ),
             activityBridge = activityBridge,
         )

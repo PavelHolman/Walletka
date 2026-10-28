@@ -17,14 +17,12 @@ internal object PassJson {
 
     /**
      * Apple Wallet `pass.json` for a store card. The caller bundles it with `icon.png` and `strip.png`
-     * and has it signed.
+     * and has it signed; the pass service stamps `passTypeIdentifier` and `teamIdentifier`.
      */
     fun apple(card: CardDraft, config: WalletConfig, serialNumber: String): String {
         val symbology = WalletSymbology.resolve(WalletPlatform.APPLE_WALLET, card.code.format, card.code.value)
         val pass = buildJsonObject {
             put("formatVersion", 1)
-            put("passTypeIdentifier", config.applePassTypeIdentifier)
-            put("teamIdentifier", config.appleTeamIdentifier)
             put("serialNumber", serialNumber)
             put("organizationName", config.organizationName)
             put("description", card.name)
@@ -60,7 +58,7 @@ internal object PassJson {
      * Google Wallet "save to wallet" payload with a generic pass class and object, accepted unsigned by the
      * Android `PayClient.savePasses` API for allow-listed apps.
      */
-    fun google(card: CardDraft, config: WalletConfig, objectId: String): String {
+    fun google(card: CardDraft, config: WalletConfig, objectId: String, heroImageUrl: String? = null): String {
         val issuerId = requireNotNull(config.googleIssuerId)
         val symbology = WalletSymbology.resolve(WalletPlatform.GOOGLE_WALLET, card.code.format, card.code.value)
         val classId = "$issuerId.walletka_generic"
@@ -82,6 +80,12 @@ internal object PassJson {
                         put("hexBackgroundColor", card.backgroundColor.hex)
                         putJsonObject("cardTitle") { localized(config.organizationName) }
                         putJsonObject("header") { localized(card.name) }
+                        if (heroImageUrl != null) {
+                            putJsonObject("heroImage") {
+                                putJsonObject("sourceUri") { put("uri", heroImageUrl) }
+                                putJsonObject("contentDescription") { localized(card.name) }
+                            }
+                        }
                         putJsonObject("barcode") {
                             put("type", symbology.id)
                             put("value", card.code.value)
@@ -100,5 +104,4 @@ internal object PassJson {
             put("value", value)
         }
     }
-
 }

@@ -1,0 +1,16 @@
+{
+  "name": "walletka-pass-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cd ../.. && ./gradlew :passService:assembleWorker",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "graphql": "17.0.2"
+  },
+  "devDependencies": {
+    "wrangler": "4.154.0"
+  }
+}

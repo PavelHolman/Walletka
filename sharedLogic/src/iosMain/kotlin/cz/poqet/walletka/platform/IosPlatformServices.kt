@@ -16,8 +16,7 @@ internal fun walletConfigFromInfoPlist(bundle: NSBundle = NSBundle.mainBundle): 
     fun value(key: String) = (bundle.objectForInfoDictionaryKey(key) as? String)?.takeIf { it.isNotBlank() }
     return WalletConfig(
         organizationName = value("WalletkaOrganizationName") ?: "Walletka",
-        applePassTypeIdentifier = value("WalletkaPassTypeIdentifier"),
-        appleTeamIdentifier = value("WalletkaTeamIdentifier"),
-        applePassSigningUrl = value("WalletkaPassSigningURL"),
+        serviceUrl = value("WalletkaServiceURL"),
+        serviceApiKey = value("WalletkaServiceAPIKey"),
     )
 }

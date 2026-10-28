@@ -209,7 +209,7 @@ private struct CardFormView: View {
     private static func message(_ failure: (WalletFailure, String?)) -> String {
         let text = switch failure.0 {
         case .UNAVAILABLE: "Apple Wallet isn't available on this device."
-        case .NOT_CONFIGURED: "Apple Wallet passes must be signed with a Pass Type ID certificate. Set WALLETKA_PASS_TYPE_ID, WALLETKA_TEAM_ID and WALLETKA_SIGNING_URL in Config.xcconfig."
+        case .NOT_CONFIGURED: "Apple Wallet passes are signed by the Walletka pass service. Set WALLETKA_SERVICE_URL (and WALLETKA_SERVICE_API_KEY) in Config.xcconfig."
         case .CANCELLED: "Cancelled."
         case .UNSUPPORTED_CODE: "This code type can't be stored in Apple Wallet."
         case .FAILED: "Apple Wallet rejected the card."

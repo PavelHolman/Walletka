@@ -22,7 +22,7 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
 
-/** Google Wallet issuer settings, from `local.properties` (not committed) or Gradle properties. */
+/** Google Wallet issuer and pass service settings, from `local.properties` (not committed) or Gradle properties. */
 val walletProperties = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
@@ -43,6 +43,8 @@ android {
 
         buildConfigField("String", "GOOGLE_ISSUER_ID", "\"${walletProperty("walletka.googleIssuerId")}\"")
         buildConfigField("String", "GOOGLE_ISSUER_EMAIL", "\"${walletProperty("walletka.googleIssuerEmail")}\"")
+        buildConfigField("String", "SERVICE_URL", "\"${walletProperty("walletka.serviceUrl")}\"")
+        buildConfigField("String", "SERVICE_API_KEY", "\"${walletProperty("walletka.serviceApiKey")}\"")
     }
     packaging {
         resources {

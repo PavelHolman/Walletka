@@ -1,12 +1,11 @@
 package cz.poqet.walletka.platform
 
 import arrow.core.Either
-import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
-import cz.poqet.walletka.data.ApplePassBundle
 import cz.poqet.walletka.data.PassJson
+import cz.poqet.walletka.data.PassServiceClient
 import cz.poqet.walletka.data.WalletConfig
 import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.CardDraft
@@ -19,22 +18,12 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
-import platform.Foundation.NSData
 import platform.Foundation.NSError
 import platform.Foundation.NSFileManager
-import platform.Foundation.NSHTTPURLResponse
-import platform.Foundation.NSMutableURLRequest
-import platform.Foundation.NSURL
-import platform.Foundation.NSURLSession
 import platform.Foundation.NSUUID
-import platform.Foundation.dataTaskWithRequest
-import platform.Foundation.setHTTPBody
-import platform.Foundation.setHTTPMethod
-import platform.Foundation.setValue
 import platform.PassKit.PKAddPassesViewController
 import platform.PassKit.PKAddPassesViewControllerDelegateProtocol
 import platform.PassKit.PKPass
@@ -49,31 +38,34 @@ import platform.UIKit.UISceneActivationStateForegroundActive
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindowScene
 import platform.darwin.NSObject
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
- * Issues Apple Wallet store cards: builds the pass files, has them signed by the configured signing service
- * (see [ApplePassBundle]) and presents the system "Add to Apple Wallet" sheet.
+ * Issues Apple Wallet store cards: builds the pass files, has them signed by the Walletka pass service and
+ * presents the system "Add to Apple Wallet" sheet.
  */
-internal class AppleWalletService(private val config: WalletConfig) : WalletService {
+internal class AppleWalletService(
+    private val config: WalletConfig,
+    private val passService: PassServiceClient = PassServiceClient(config),
+) : WalletService {
 
     override val platform = WalletPlatform.APPLE_WALLET
 
     override suspend fun isAvailable(): Boolean = PKPassLibrary.isPassLibraryAvailable() && PKAddPassesViewController.canAddPasses()
 
     override suspend fun addCard(card: CardDraft): Either<WalletError, Unit> = either {
-        ensure(config.isAppleConfigured) {
-            WalletError(WalletFailure.NOT_CONFIGURED, "Pass Type ID, Team ID or signing service URL missing")
-        }
+        ensure(config.isServiceConfigured) { WalletError(WalletFailure.NOT_CONFIGURED, "Pass service URL missing") }
         ensure(isAvailable()) { WalletError(WalletFailure.UNAVAILABLE) }
-        val files = passFiles(card)
-        val signed = sign(ApplePassBundle.signingRequest(files))
+        val signed = passService.signApplePass(passFiles(card)).bind().toNSData()
         val pass = memScoped {
             val error = alloc<ObjCObjectVar<NSError?>>()
-            PKPass(data = signed, error = error.ptr).takeIf { error.value == null }
+            // A pass PassKit rejects (e.g. not signed by an Apple-issued certificate) makes the initializer return nil,
+            // which Kotlin/Native reports as an exception.
+            val pass = runCatching { PKPass(data = signed, error = error.ptr) }.getOrNull()
+            ensure(pass != null && error.value == null) {
+                WalletError(WalletFailure.FAILED, error.value?.localizedDescription ?: "PassKit rejected the signed pass")
+            }
+            pass
         }
-        ensureNotNull(pass) { WalletError(WalletFailure.FAILED, "The signing service returned an invalid pass") }
         ensure(present(pass)) { WalletError(WalletFailure.CANCELLED) }
     }
 
@@ -87,35 +79,6 @@ internal class AppleWalletService(private val config: WalletConfig) : WalletServ
                 NSFileManager.defaultManager.contentsAtPath(banner.path)?.let { put("strip@3x.png", it.toByteArray()) }
             }
         }
-    }
-
-    private suspend fun Raise<WalletError>.sign(body: String): NSData {
-        val url = ensureNotNull(config.applePassSigningUrl?.let(NSURL::URLWithString)) {
-            WalletError(WalletFailure.NOT_CONFIGURED, "Invalid signing service URL")
-        }
-        val request = NSMutableURLRequest.requestWithURL(url).apply {
-            setHTTPMethod("POST")
-            setValue("application/json", forHTTPHeaderField = "Content-Type")
-            setValue("application/vnd.apple.pkpass", forHTTPHeaderField = "Accept")
-            setHTTPBody(body.encodeToByteArray().toNSData())
-        }
-        val (data, status) = Either.catch { post(request) }
-            .mapLeft { WalletError(WalletFailure.FAILED, it.message) }
-            .bind()
-        ensure(status in 200..299 && data != null) { WalletError(WalletFailure.FAILED, "Signing service responded $status") }
-        return data
-    }
-
-    private suspend fun post(request: NSMutableURLRequest): Pair<NSData?, Long> = suspendCancellableCoroutine { continuation ->
-        val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, response, error ->
-            if (error != null) {
-                continuation.resumeWithException(IllegalStateException(error.localizedDescription))
-            } else {
-                continuation.resume(data to ((response as? NSHTTPURLResponse)?.statusCode ?: 0L))
-            }
-        }
-        continuation.invokeOnCancellation { task.cancel() }
-        task.resume()
     }
 
     /** Presents the add-pass sheet and returns whether the pass ended up in the library. */

@@ -226,7 +226,7 @@ private fun Editing(form: CardForm, submission: Submission, component: CardRevie
                 Column(Modifier.weight(1f)) {
                     Text("Banner from photo", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Shown in the app; Google Wallet needs hosted images for banners.",
+                        "Shown as the card's hero image (needs the Walletka pass service).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

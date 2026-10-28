@@ -9,9 +9,8 @@ APP_GROUP_IDENTIFIER=group.$(APP_BUNDLE_IDENTIFIER)
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0
 
-// Apple Wallet issuer. Passes must be signed with the Pass Type ID certificate, which is done by a signing
-// service (see README): it receives the pass files and returns the signed .pkpass.
-WALLETKA_PASS_TYPE_ID=
-WALLETKA_TEAM_ID=$(TEAM_ID)
-// e.g. https:/$()/passes.example.com/sign  ("/$()/" keeps xcconfig from treating "//" as a comment)
-WALLETKA_SIGNING_URL=
+// Walletka pass service (passService/, a Cloudflare Worker) that signs Apple Wallet passes with the Pass Type ID
+// certificate. e.g. https:/$()/walletka-pass-service.<account>.workers.dev  ("/$()/" keeps "//" from being a comment)
+WALLETKA_SERVICE_URL=
+// Must match the Worker's API_KEY secret.
+WALLETKA_SERVICE_API_KEY=

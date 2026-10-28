@@ -1,0 +1,18 @@
+name = "walletka-pass-service"
+main = "src/index.mjs"
+compatibility_date = "2026-10-01"
+
+# Uploaded banners, publicly served by the Worker at /banners/<id>.png (R2 free tier: 10 GB, no egress fees).
+[[r2_buckets]]
+binding = "BANNERS"
+bucket_name = "walletka-banners"
+
+[vars]
+PASS_TYPE_IDENTIFIER = "pass.cz.poqet.walletka"
+TEAM_IDENTIFIER = ""
+
+# Secrets (wrangler secret put <NAME>):
+#   PASS_CERTIFICATE  PEM of the Pass Type ID certificate
+#   PASS_PRIVATE_KEY  PEM private key of that certificate (PKCS#8 or PKCS#1, unencrypted)
+#   WWDR_CERTIFICATE  PEM of Apple's WWDR intermediate (G4)
+#   API_KEY           shared key the app sends as "Authorization: Bearer <key>"
