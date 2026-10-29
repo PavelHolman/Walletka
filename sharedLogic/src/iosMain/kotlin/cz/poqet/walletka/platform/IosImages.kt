@@ -20,6 +20,9 @@ import kotlin.math.min
 /** Max resolution fed to Vision; plenty for codes, keeps memory bounded. */
 internal const val DETECTION_MAX_SIZE = 2048
 
+/** Max resolution a photo is decoded at for an upscaled crop in a scan retry. */
+internal const val SCAN_SOURCE_MAX_SIZE = 3072
+
 /**
  * Loads the image at [path] and redraws it upright (orientation applied) at scale 1, with the longer side at
  * most [maxSize] pixels, so `cgImage` pixel coordinates match what the user sees.

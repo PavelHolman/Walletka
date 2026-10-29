@@ -15,7 +15,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 internal data class SavedCardForm(
-    val photo: String,
+    /** `null` for a card entered by hand. */
+    val photo: String?,
     val name: String,
     val nameSuggestions: List<String>,
     val codes: List<Code>,
@@ -29,12 +30,13 @@ internal data class SavedCardForm(
     val photoAspectRatio: Float,
     val walletPlatform: WalletPlatform,
     val cardId: String? = null,
+    val isCodeTyped: Boolean = false,
 ) {
     @Serializable
     data class Code(val format: CodeFormat, val value: String, val bounds: List<Float>?)
 
     fun toForm() = CardForm(
-        photo = StoredImage(photo),
+        photo = photo?.let(::StoredImage),
         name = name,
         nameSuggestions = nameSuggestions,
         codes = codes.map { code ->
@@ -50,11 +52,12 @@ internal data class SavedCardForm(
         photoAspectRatio = photoAspectRatio,
         walletPlatform = walletPlatform,
         cardId = cardId,
+        isCodeTyped = isCodeTyped,
     )
 
     companion object {
         fun of(form: CardForm) = SavedCardForm(
-            photo = form.photo.path,
+            photo = form.photo?.path,
             name = form.name,
             nameSuggestions = form.nameSuggestions,
             codes = form.codes.map { code ->
@@ -70,6 +73,7 @@ internal data class SavedCardForm(
             photoAspectRatio = form.photoAspectRatio,
             walletPlatform = form.walletPlatform,
             cardId = form.cardId,
+            isCodeTyped = form.isCodeTyped,
         )
     }
 }

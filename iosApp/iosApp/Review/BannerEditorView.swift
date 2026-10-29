@@ -54,8 +54,9 @@ struct BannerEditorView: View {
                     }
                 }
             }
-            .task(id: form.photo.path) {
-                photo = await Task.detached { [path = form.photo.path] in
+            .task(id: form.photo?.path) {
+                guard let path = form.photo?.path else { return }
+                photo = await Task.detached { [path] in
                     UIImage(contentsOfFile: path)?.preparingThumbnail(of: CGSize(width: 2400, height: 2400))
                 }.value
             }

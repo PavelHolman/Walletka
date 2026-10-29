@@ -1,13 +1,9 @@
 package cz.poqet.walletka.data
 
 import arrow.core.Either
-import arrow.core.NonEmptyList
 import arrow.core.raise.either
-import arrow.core.raise.ensureNotNull
-import arrow.core.toNonEmptyListOrNull
 import arrow.fx.coroutines.parZip
 import cz.poqet.walletka.domain.AnalysisError
-import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
@@ -21,7 +17,8 @@ import kotlin.coroutines.EmptyCoroutineContext
 /** What the app proposes for a new card, before the user edits it. */
 internal data class CardSuggestion(
     val image: StoredImage,
-    val codes: NonEmptyList<ScannedCode>,
+    /** Empty when no code was found, so the user types it in. */
+    val codes: List<ScannedCode>,
     val names: List<String>,
     val colors: List<CardColor>,
     val photoAspectRatio: Float,
@@ -46,33 +43,36 @@ internal class BannerCropper(
     }
 }
 
-/** Runs code detection, OCR and colour extraction on a photo in parallel and merges the results. */
+/**
+ * Runs code detection, OCR and colour extraction on a photo in parallel and merges the results. When the plain
+ * detection finds no code, [ScanFallbacks] retries on processed copies of the photo.
+ */
 internal class ImageAnalyzer(
     private val barcodeDetector: BarcodeDetector,
     private val textRecognizer: TextRecognizer,
     private val imageProcessor: ImageProcessor,
     private val bannerCropper: BannerCropper,
+    private val scanFallbacks: ScanFallbacks,
 ) {
 
     suspend fun analyze(image: StoredImage): Either<AnalysisError, CardSuggestion> = either {
         // Platform detectors move to their own background dispatchers, so the fan-out stays on the caller's context.
         val (codes, lines, pixels) = parZip(
             EmptyCoroutineContext,
-            { barcodeDetector.detect(image).bind() },
+            // A detector failure is treated like a photo without a code: the user can still type it in.
+            { barcodeDetector.detect(image).getOrNull().orEmpty() },
             // OCR only improves the name suggestion, so its failure must not fail the analysis.
             { textRecognizer.recognize(image).getOrNull().orEmpty() },
             { imageProcessor.pixels(image, maxSize = 96).bind() },
         ) { codes, lines, pixels -> Triple(codes, lines, pixels) }
 
-        val nonEmptyCodes = ensureNotNull(codes.distinctBy { it.format to it.value }.toNonEmptyListOrNull()) {
-            AnalysisError(AnalysisFailure.NO_CODE_FOUND)
-        }
         val photoAspectRatio = pixels.width.toFloat() / pixels.height
-        val bannerRegion = BannerRegion.pick(photoAspectRatio, nonEmptyCodes, lines)
+        val foundCodes = codes.ifEmpty { scanFallbacks.scan(image, photoAspectRatio) }.distinctBy { it.format to it.value }
+        val bannerRegion = BannerRegion.pick(photoAspectRatio, foundCodes, lines)
         CardSuggestion(
             image = image,
-            codes = nonEmptyCodes,
-            names = CardNameSuggester.suggest(lines, nonEmptyCodes),
+            codes = foundCodes,
+            names = CardNameSuggester.suggest(lines, foundCodes),
             colors = ColorPalette.extract(pixels).ifEmpty { listOf(CardColor.Default) },
             photoAspectRatio = photoAspectRatio,
             bannerRegion = bannerRegion,

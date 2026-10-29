@@ -247,13 +247,15 @@ private fun Editing(
     var colorDialog by remember { mutableStateOf<ColorDialog?>(null) }
     var isNameFocused by remember { mutableStateOf(false) }
     when (colorDialog) {
-        ColorDialog.PHOTO -> PhotoColorPickerDialog(
-            photoPath = form.photo.path,
-            preview = colorPreview,
-            onPick = component::onColorPreviewRequested,
-            onConfirm = { component.onColorPreviewConfirmed(); colorDialog = null },
-            onDismiss = { component.onColorPreviewDismissed(); colorDialog = null },
-        )
+        ColorDialog.PHOTO -> form.photo?.let { photo ->
+            PhotoColorPickerDialog(
+                photoPath = photo.path,
+                preview = colorPreview,
+                onPick = component::onColorPreviewRequested,
+                onConfirm = { component.onColorPreviewConfirmed(); colorDialog = null },
+                onDismiss = { component.onColorPreviewDismissed(); colorDialog = null },
+            )
+        }
         ColorDialog.CUSTOM -> CustomColorDialog(
             initial = form.customColor ?: form.selectedColor,
             onPick = component::onCustomColorSelected,
@@ -329,6 +331,7 @@ private fun Editing(
                     }
                 }
             }
+            if (form.isCodeTyped) TypedCodeFormatPicker(form, enabled = !busy, onSelect = component::onCodeFormatSelected)
             OutlinedTextField(
                 value = form.selectedCode.value,
                 onValueChange = component::onCodeValueChanged,
@@ -375,7 +378,7 @@ private fun Editing(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { focusManager.clearFocus(); colorDialog = ColorDialog.PHOTO }, enabled = !busy) {
+                if (form.hasPhoto) OutlinedButton(onClick = { focusManager.clearFocus(); colorDialog = ColorDialog.PHOTO }, enabled = !busy) {
                     Icon(Icons.Outlined.Colorize, null, Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text("Pick from photo")

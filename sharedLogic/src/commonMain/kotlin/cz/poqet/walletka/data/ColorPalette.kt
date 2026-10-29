@@ -14,6 +14,18 @@ import kotlin.math.min
  */
 internal object ColorPalette {
 
+    /** Offered for cards without a photo to pick colours from. */
+    val Defaults: List<CardColor> = listOf(
+        CardColor.Default,
+        CardColor(198, 40, 40), // red
+        CardColor(239, 108, 0), // orange
+        CardColor(249, 168, 37), // amber
+        CardColor(46, 125, 50), // green
+        CardColor(0, 121, 107), // teal
+        CardColor(21, 101, 192), // blue
+        CardColor(81, 45, 168), // purple
+    )
+
     fun extract(pixels: ImagePixels, maxColors: Int = 5): List<CardColor> {
         val counts = HashMap<Int, Bucket>()
         for (argb in pixels.argb) {

@@ -18,6 +18,7 @@ import cz.poqet.walletka.data.CardLibrary
 import cz.poqet.walletka.component.review.ReviewDependencies
 import cz.poqet.walletka.component.review.ReviewSource
 import cz.poqet.walletka.data.ImageAnalyzer
+import cz.poqet.walletka.data.ScanFallbacks
 import cz.poqet.walletka.platform.PlatformServices
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
@@ -36,6 +37,7 @@ internal class DefaultRootComponent(
         textRecognizer = services.textRecognizer,
         imageProcessor = services.imageProcessor,
         bannerCropper = bannerCropper,
+        scanFallbacks = ScanFallbacks(services.barcodeDetector, services.imageProcessor, services.imageStore),
     )
     private val library = CardLibrary(services.dataDirectory, services.ioContext)
     private val reviewDependencies = ReviewDependencies(
@@ -67,12 +69,15 @@ internal class DefaultRootComponent(
                 imageStore = services.imageStore,
                 onImagePicked = ::onImageReceived,
                 onCardClicked = { cardId -> navigation.pushToFront(Config.Card(cardId)) },
+                onEnterManually = ::onEnterManually,
             ),
         )
 
         is Config.Review -> review(componentContext, ReviewSource.Photo(config.source))
 
         is Config.Card -> review(componentContext, ReviewSource.LibraryCard(config.cardId))
+
+        is Config.Manual -> review(componentContext, ReviewSource.Manual)
     }
 
     private fun review(componentContext: ComponentContext, source: ReviewSource) = Child.Review(
@@ -88,6 +93,11 @@ internal class DefaultRootComponent(
     override fun onImageReceived(source: String) {
         // A new image always replaces the card being reviewed.
         navigation.navigate { listOf(Config.Home, Config.Review(source, id = Uuid.random().toString())) }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    private fun onEnterManually() {
+        navigation.navigate { listOf(Config.Home, Config.Manual(id = Uuid.random().toString())) }
     }
 
     override fun onBackClicked() {
@@ -108,5 +118,9 @@ internal class DefaultRootComponent(
 
         @Serializable
         data class Card(val cardId: String) : Config
+
+        /** A new card typed in by hand; [id] keeps each one a fresh component. */
+        @Serializable
+        data class Manual(val id: String) : Config
     }
 }

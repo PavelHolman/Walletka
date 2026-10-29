@@ -8,6 +8,7 @@ import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.CardDraft
 import cz.poqet.walletka.domain.ImagePixels
 import cz.poqet.walletka.domain.NormalizedRect
+import cz.poqet.walletka.domain.ScanVariant
 import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.domain.TextLine
@@ -57,6 +58,8 @@ internal class FakeImageProcessor : ImageProcessor {
         ImagePixels(2, 2, IntArray(4) { 0xFF1A237E.toInt() }).right()
 
     override suspend fun cropToPng(image: StoredImage, region: NormalizedRect, targetWidth: Int) = ByteArray(1).right()
+
+    override suspend fun renderForScan(image: StoredImage, variant: ScanVariant) = ByteArray(1).right()
 }
 
 internal class FakeWalletService(var result: Either<WalletError, AddedCard> = AddedCard("wallet://card").right()) : WalletService {
