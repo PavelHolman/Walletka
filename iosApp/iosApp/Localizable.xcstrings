@@ -1659,6 +1659,16 @@
         }
       }
     },
+    "The file couldn't be opened." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soubor nejde otevřít."
+          }
+        }
+      }
+    },
     "The file couldn't be read. Make sure it's a Walletka backup made by this or an older version of the app." : {
       "localizations" : {
         "cs" : {

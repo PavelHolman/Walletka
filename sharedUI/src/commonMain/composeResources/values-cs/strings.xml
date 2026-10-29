@@ -170,4 +170,7 @@
     <string name="code_issue_characters_codabar">Codabar umí jen číslice a - $ : / . +.</string>
     <string name="code_issue_characters">%1$s neumí zapsat některé z těchto znaků. Zkuste raději QR kód.</string>
     <string name="home_search_empty">Žádná karta neodpovídá „%1$s“.</string>
+    <string name="backup_exported">Knihovna je vyexportovaná</string>
+    <string name="backup_export_write_failed">Zálohu se tam nepodařilo uložit. Zkuste jiné místo.</string>
+    <string name="backup_import_unreadable">Soubor nejde otevřít.</string>
 </resources>

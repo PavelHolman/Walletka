@@ -1,5 +1,9 @@
 package cz.poqet.walletka.ui.home
 
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -85,6 +89,14 @@ internal fun BackupEffects(backup: BackupState, files: BackupFileActions, snackb
                 currentOnDismiss()
             }
             BackupState.Idle, BackupState.InProgress -> Unit
+        }
+    }
+    // Exporting or importing a large library takes a moment; block the screen meanwhile, as iOS does.
+    if (backup is BackupState.InProgress) {
+        Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
+            Surface(shape = MaterialTheme.shapes.large, tonalElevation = 6.dp) {
+                CircularProgressIndicator(Modifier.padding(28.dp))
+            }
         }
     }
 }

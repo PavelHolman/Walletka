@@ -117,3 +117,6 @@ private fun codeBitmap(format: CodeFormat, value: String): android.graphics.Bitm
     }
     return android.graphics.Bitmap.createBitmap(pixels, matrix.width, matrix.height, android.graphics.Bitmap.Config.ARGB_8888)
 }
+
+actual fun formatLocalDate(epochDay: Long): String =
+    java.time.LocalDate.ofEpochDay(epochDay).format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM))

@@ -103,6 +103,8 @@ private struct LibraryBackupModifier: ViewModifier {
     let component: any HomeComponent
     let backup: any BackupState
     @Binding var isImporting: Bool
+    /// A failure of the system file dialogs themselves (writing the export, reading the picked file).
+    @State private var fileError: (title: String, text: String)?
 
     private var export: (document: BackupDocument, fileName: String)? {
         if case .exportReady(let ready) = backup.sealedType() {
@@ -156,11 +158,30 @@ private struct LibraryBackupModifier: ViewModifier {
                 document: export?.document,
                 contentType: .walletkaBackup,
                 defaultFilename: export?.fileName
-            ) { _ in }
-            .fileImporter(isPresented: $isImporting, allowedContentTypes: [.walletkaBackup, .zip]) { result in
-                if case .success(let url) = result, let path = BackupFiles.localCopy(of: url) {
-                    component.onImportFileSelected(path: path)
+            ) { result in
+                // Cancelling is not a failure; anything else would otherwise look like a saved backup.
+                if case .failure(let error) = result, (error as? CocoaError)?.code != .userCancelled {
+                    fileError = (String(localized: "Couldn't Export the Library"), error.localizedDescription)
                 }
+            }
+            .fileImporter(isPresented: $isImporting, allowedContentTypes: [.walletkaBackup, .zip]) { result in
+                switch result {
+                case .success(let url):
+                    if let path = BackupFiles.localCopy(of: url) {
+                        component.onImportFileSelected(path: path)
+                    } else {
+                        fileError = (String(localized: "Couldn't Import the Backup"), String(localized: "The file couldn't be opened."))
+                    }
+                case .failure(let error):
+                    if (error as? CocoaError)?.code != .userCancelled {
+                        fileError = (String(localized: "Couldn't Import the Backup"), error.localizedDescription)
+                    }
+                }
+            }
+            .alert(fileError?.title ?? "", isPresented: Binding(get: { fileError != nil }, set: { if !$0 { fileError = nil } })) {
+                Button("OK") {}
+            } message: {
+                Text(verbatim: fileError?.text ?? "")
             }
             .alert(
                 message?.title ?? "",

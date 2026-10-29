@@ -1,5 +1,10 @@
 package cz.poqet.walletka.ui.review
 
+import cz.poqet.walletka.ui.formatLocalDate
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
@@ -136,10 +141,21 @@ internal fun CardDetailsSection(form: CardForm, component: CardReviewComponent, 
                     enabled = enabled,
                     keyboardOptions = next.copy(capitalization = KeyboardCapitalization.Words),
                 )
+                // Tapping anywhere on the (read-only) field opens the date picker, not just its icon.
+                val expiryInteraction = remember { MutableInteractionSource() }
+                LaunchedEffect(expiryInteraction) {
+                    expiryInteraction.interactions.collect {
+                        if (it is PressInteraction.Release && enabled) {
+                            focusManager.clearFocus()
+                            isPickingExpiry = true
+                        }
+                    }
+                }
                 OutlinedTextField(
-                    value = details.expiryEpochDay?.let(CardDetails::formatDate).orEmpty(),
+                    value = details.expiryEpochDay?.let(::formatLocalDate).orEmpty(),
                     onValueChange = {},
                     readOnly = true,
+                    interactionSource = expiryInteraction,
                     label = { Text(stringResource(Res.string.details_expiry)) },
                     placeholder = { Text(stringResource(Res.string.details_expiry_none)) },
                     modifier = Modifier.fillMaxWidth(),

@@ -11,8 +11,12 @@ class BackupFileActions(
 )
 
 /**
- * [onExported] runs once the exported file is saved or the dialog cancelled; [onImportFile] gets a local copy of the
- * picked backup.
+ * [onExported] runs once the dialog is done: `true` when the file was saved, `false` when writing it failed, `null`
+ * when cancelled. [onImportFile] gets a local copy of the picked backup, [onImportFailed] runs when it can't be read.
  */
 @Composable
-expect fun rememberBackupFileActions(onExported: () -> Unit, onImportFile: (path: String) -> Unit): BackupFileActions
+expect fun rememberBackupFileActions(
+    onExported: (saved: Boolean?) -> Unit,
+    onImportFile: (path: String) -> Unit,
+    onImportFailed: () -> Unit,
+): BackupFileActions

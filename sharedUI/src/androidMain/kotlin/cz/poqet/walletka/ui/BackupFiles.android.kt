@@ -18,25 +18,32 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 @Composable
-actual fun rememberBackupFileActions(onExported: () -> Unit, onImportFile: (path: String) -> Unit): BackupFileActions {
+actual fun rememberBackupFileActions(
+    onExported: (saved: Boolean?) -> Unit,
+    onImportFile: (path: String) -> Unit,
+    onImportFailed: () -> Unit,
+): BackupFileActions {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val currentOnExported by rememberUpdatedState(onExported)
     val currentOnImportFile by rememberUpdatedState(onImportFile)
+    val currentOnImportFailed by rememberUpdatedState(onImportFailed)
     var pendingExport by rememberSaveable { mutableStateOf<String?>(null) }
 
     val create = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(MIME_TYPE)) { uri: Uri? ->
         val path = pendingExport
         pendingExport = null
         scope.launch {
-            if (uri != null && path != null) {
+            val saved = if (uri != null && path != null) {
                 withContext(Dispatchers.IO) {
                     runCatching {
                         context.contentResolver.openOutputStream(uri)?.use { output -> File(path).inputStream().use { it.copyTo(output) } }
-                    }
+                    }.getOrNull() != null
                 }
+            } else {
+                null
             }
-            currentOnExported()
+            currentOnExported(saved)
         }
     }
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -49,7 +56,7 @@ actual fun rememberBackupFileActions(onExported: () -> Unit, onImportFile: (path
                     file.path
                 }.getOrNull()
             }
-            copy?.let(currentOnImportFile)
+            if (copy != null) currentOnImportFile(copy) else currentOnImportFailed()
         }
     }
     return remember(create, open) {

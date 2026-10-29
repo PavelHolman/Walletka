@@ -21,3 +21,6 @@ expect fun rememberStoredImage(path: String?, maxSize: Int = 1600): ImageBitmap?
 /** The code drawn as the wallet will show it (black on white), or `null` when it can't be drawn. */
 @Composable
 expect fun rememberCodeImage(format: cz.poqet.walletka.domain.CodeFormat, value: String): ImageBitmap?
+
+/** A calendar day ([epochDay] since 1970-01-01) as the user's locale writes dates, e.g. "31. 5. 2027". */
+expect fun formatLocalDate(epochDay: Long): String

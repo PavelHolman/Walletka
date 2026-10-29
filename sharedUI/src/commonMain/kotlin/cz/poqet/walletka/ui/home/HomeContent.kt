@@ -96,7 +96,18 @@ fun HomeContent(component: HomeComponent) {
     val scope = rememberCoroutineScope()
 
     val paste = { if (!actions.pasteImage()) scope.launch { snackbar.showSnackbar(getString(Res.string.home_no_clipboard_image)) } }
-    val backupFiles = rememberBackupFileActions(onExported = component::onExportFinished, onImportFile = component::onImportFileSelected)
+    val backupFiles = rememberBackupFileActions(
+        onExported = { saved ->
+            component.onExportFinished()
+            when (saved) {
+                true -> scope.launch { snackbar.showSnackbar(getString(Res.string.backup_exported)) }
+                false -> scope.launch { snackbar.showSnackbar(getString(Res.string.backup_export_write_failed)) }
+                null -> Unit
+            }
+        },
+        onImportFile = component::onImportFileSelected,
+        onImportFailed = { scope.launch { snackbar.showSnackbar(getString(Res.string.backup_import_unreadable)) } },
+    )
     BackupEffects(model.backup, backupFiles, snackbar, onDismiss = component::onBackupMessageDismissed)
 
     if (model.cards.isNotEmpty()) {
