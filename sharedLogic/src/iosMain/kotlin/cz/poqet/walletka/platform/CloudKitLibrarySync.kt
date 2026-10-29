@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
+import platform.CloudKit.CKAccountChangedNotification
 import platform.CloudKit.CKAccountStatusAvailable
 import platform.CloudKit.CKAsset
 import platform.CloudKit.CKContainer
@@ -123,6 +124,10 @@ internal class CloudKitLibrarySync(
             `object` = null,
             queue = null,
         ) { _ -> syncNow() }
+        // Signing in to iCloud (or it coming back after being unavailable) starts syncing without a relaunch.
+        NSNotificationCenter.defaultCenter.addObserverForName(CKAccountChangedNotification, `object` = null, queue = null) { _ ->
+            if (isEnabled && engine == null) connect(uploadAll = true)
+        }
     }
 
     override fun syncNow() {
