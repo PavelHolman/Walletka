@@ -7,6 +7,8 @@ import cz.poqet.walletka.domain.BannerViewport
 import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.CardDetails
 import cz.poqet.walletka.domain.CodeFormat
+import cz.poqet.walletka.domain.CodeIssue
+import cz.poqet.walletka.domain.issueWith
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
@@ -185,7 +187,10 @@ interface CardReviewComponent {
         val walletCodeFormat: CodeFormat
             get() = WalletSymbology.resolve(walletPlatform, selectedCode.format, selectedCode.value).displayedAs
 
-        val isValid: Boolean get() = name.isNotBlank() && selectedCode.value.isNotBlank()
+        /** Why the typed code can't be encoded; codes found in the photo are taken as they are. */
+        val codeIssue: CodeIssue? get() = if (isCodeTyped) selectedCode.format.issueWith(selectedCode.value) else null
+
+        val isValid: Boolean get() = name.isNotBlank() && selectedCode.value.isNotBlank() && codeIssue == null
     }
 
     sealed interface Submission {

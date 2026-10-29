@@ -172,6 +172,7 @@ private struct CardAddedView: View {
     let onDone: () -> Void
 
     @Environment(\.openURL) private var openURL
+    @State private var hasAppeared = false
 
     var body: some View {
         ScrollView {
@@ -194,6 +195,9 @@ private struct CardAddedView: View {
             }
             .padding(24)
         }
+        .onAppear { hasAppeared = true }
+        // The pass made it into Wallet.
+        .sensoryFeedback(.success, trigger: hasAppeared)
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 10) {
                 if let url = walletUrl.flatMap(URL.init(string:)) {
@@ -364,18 +368,26 @@ private struct CardFormView: View {
                 TypedCodeFormatPicker(form: form) { component.onCodeFormatSelected(format: $0) }
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: form.selectedCode.format.localizedName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                // A typed code's type is in the picker right above.
+                if !form.isCodeTyped {
+                    Text(verbatim: form.selectedCode.format.localizedName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+                // Typed codes are short, and only a single-line field takes the number pad; found codes (often URLs)
+                // wrap.
                 TextField("Code content", text: Binding(
                     get: { form.selectedCode.value },
                     set: { component.onCodeValueChanged(value: $0) }
-                ), axis: .vertical)
+                ), axis: form.isCodeTyped ? .horizontal : .vertical)
                 .accessibilityLabel(Text("Code content, \(form.selectedCode.format.localizedName)"))
-                .font(.body.monospaced())
+                // Monospaced like the printed code, but not the placeholder.
+                .font(form.selectedCode.value.isEmpty ? .body : .body.monospaced())
                 .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
+                // The keyboard that fits what the symbology can hold (only while typing a code in).
+                .keyboardType(form.isCodeTyped && Self.isNumeric(form.selectedCode.format) ? .numberPad : .default)
+                .textInputAutocapitalization(form.isCodeTyped && Self.isUppercase(form.selectedCode.format) ? .characters : .never)
                 .lineLimit(1...4)
             }
             .padding(.vertical, 2)
@@ -386,7 +398,10 @@ private struct CardFormView: View {
                 Text("Code")
             }
         } footer: {
-            if form.walletCodeFormat != form.selectedCode.format {
+            if let issue = form.codeIssue {
+                Label(Self.describe(issue, format: form.selectedCode.format), systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            } else if form.walletCodeFormat != form.selectedCode.format {
                 Text("Apple Wallet doesn't support \(form.selectedCode.format.localizedName); it will be shown as \(form.walletCodeFormat.localizedName) with the same content.")
             }
         }
@@ -422,6 +437,7 @@ private struct CardFormView: View {
                 }
                 .padding(.vertical, 2)
             }
+            .sensoryFeedback(.selection, trigger: form.selectedColorIndex)
             ColorPicker("Custom Colour", selection: Binding(
                 get: { (form.customColor ?? form.selectedColor).swiftUIColor },
                 set: { component.onCustomColorSelected(color: CardColor(color: $0)) }
@@ -433,6 +449,38 @@ private struct CardFormView: View {
                     Label("Pick from Photo", systemImage: "eyedropper")
                 }
             }
+        }
+    }
+
+    private static func isNumeric(_ format: CodeFormat) -> Bool {
+        [.EAN_13, .EAN_8, .UPC_A, .UPC_E, .ITF].contains(format)
+    }
+
+    private static func isUppercase(_ format: CodeFormat) -> Bool {
+        [.CODE_39, .CODE_93].contains(format)
+    }
+
+    /// Why a typed code can't be used, in words.
+    private static func describe(_ issue: CodeIssue, format: CodeFormat) -> String {
+        let name = format.localizedName
+        switch issue {
+        case .DIGITS_ONLY: return String(localized: "\(name) codes contain digits only.")
+        case .LENGTH:
+            switch format {
+            case .EAN_13: return String(localized: "EAN-13 codes have 13 digits (12 without the check digit).")
+            case .EAN_8: return String(localized: "EAN-8 codes have 8 digits (7 without the check digit).")
+            case .UPC_A: return String(localized: "UPC-A codes have 12 digits (11 without the check digit).")
+            case .UPC_E: return String(localized: "UPC-E codes have 6 to 8 digits.")
+            default: return String(localized: "\(name) codes have an even number of digits.")
+            }
+        case .CHECK_DIGIT: return String(localized: "The last digit doesn't match the rest of the number. Check it for a typo.")
+        case .CHARACTERS:
+            switch format {
+            case .CODE_39, .CODE_93: return String(localized: "\(name) holds only capital letters, digits, spaces and - . $ / + %.")
+            case .CODABAR: return String(localized: "Codabar holds only digits and - $ : / . +.")
+            default: return String(localized: "\(name) can't hold some of these characters. Try QR code instead.")
+            }
+        @unknown default: return ""
         }
     }
 
@@ -629,6 +677,18 @@ private struct CardPreview: View {
                 .padding(10)
                 .background(.white, in: RoundedRectangle(cornerRadius: 8))
                 .padding(compact ? 14 : 20)
+            } else {
+                // No code typed yet: keep the card's shape and show where the code goes.
+                let isTwoDimensional = form.walletCodeFormat.isTwoDimensional
+                Image(systemName: isTwoDimensional ? "qrcode" : "barcode")
+                    .font(.system(size: isTwoDimensional ? 44 : 36, weight: .light))
+                    .foregroundStyle(content.opacity(0.5))
+                    .frame(width: isTwoDimensional ? 110 : 180, height: isTwoDimensional ? 110 : 64)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(content.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    )
+                    .padding(compact ? 14 : 20)
             }
         }
         .frame(maxWidth: .infinity)

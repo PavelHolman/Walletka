@@ -153,4 +153,14 @@
         <item quantity="one">%1$d already up to date</item>
         <item quantity="other">%1$d already up to date</item>
     </plurals>
+    <string name="code_issue_digits">%1$s codes contain digits only.</string>
+    <string name="code_issue_length_ean13">EAN-13 codes have 13 digits (12 without the check digit).</string>
+    <string name="code_issue_length_ean8">EAN-8 codes have 8 digits (7 without the check digit).</string>
+    <string name="code_issue_length_upca">UPC-A codes have 12 digits (11 without the check digit).</string>
+    <string name="code_issue_length_upce">UPC-E codes have 6 to 8 digits.</string>
+    <string name="code_issue_length_even">%1$s codes have an even number of digits.</string>
+    <string name="code_issue_check_digit">The last digit doesn’t match the rest of the number. Check it for a typo.</string>
+    <string name="code_issue_characters_39">%1$s holds only capital letters, digits, spaces and - . $ / + %.</string>
+    <string name="code_issue_characters_codabar">Codabar holds only digits and - $ : / . +.</string>
+    <string name="code_issue_characters">%1$s can’t hold some of these characters. Try QR code instead.</string>
 </resources>

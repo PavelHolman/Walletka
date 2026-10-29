@@ -144,11 +144,10 @@ struct HomeView: View {
                 LibraryMenu(component: component, cloudSync: model.value.cloudSync, cloudSyncError: model.value.cloudSyncError, isImporting: $isImportingBackup)
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            addMenu
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-        }
+        .addCardPlacement(
+            inBottomToolbar: presentation == .full,
+            withSearch: model.value.isSearchAvailable
+        ) { addMenu }
         // A centred alert: a swipe action has no stable button to anchor a dialog to.
         .alert(
             "Delete “\(cardPendingDeletion?.name ?? "")”?",
@@ -337,6 +336,9 @@ private struct CardTile: View {
             }
         }
         .contentShape(RoundedRectangle(cornerRadius: 16))
+        // Lifts under the pointer on iPad.
+        .contentShape(.hoverEffect, RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .hoverEffect(.lift)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: card.name))
         .accessibilityValue(Text(verbatim: accessibilityValue))
@@ -403,6 +405,26 @@ private extension View {
             searchable(text: text, prompt: Text(prompt))
         } else {
             self
+        }
+    }
+
+    /// The Add Card menu below the library. While the iPhone library shows a search field (iOS 26 puts it in the bottom
+    /// toolbar), the menu joins it there as in Notes or Mail; otherwise it floats above the list with its title.
+    @ViewBuilder
+    func addCardPlacement<Menu: View>(inBottomToolbar: Bool, withSearch: Bool, @ViewBuilder menu: () -> Menu) -> some View {
+        if #available(iOS 26.0, *), inBottomToolbar, withSearch {
+            let menu = menu()
+            toolbar {
+                DefaultToolbarItem(kind: .search, placement: .bottomBar)
+                ToolbarSpacer(.fixed, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) { menu }
+            }
+        } else {
+            safeAreaInset(edge: .bottom) {
+                menu()
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+            }
         }
     }
 

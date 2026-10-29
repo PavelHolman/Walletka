@@ -159,4 +159,14 @@
         <item quantity="many">%1$d již aktuální</item>
         <item quantity="other">%1$d již aktuálních</item>
     </plurals>
+    <string name="code_issue_digits">Kódy %1$s obsahují jen číslice.</string>
+    <string name="code_issue_length_ean13">Kódy EAN-13 mají 13 číslic (12 bez kontrolní číslice).</string>
+    <string name="code_issue_length_ean8">Kódy EAN-8 mají 8 číslic (7 bez kontrolní číslice).</string>
+    <string name="code_issue_length_upca">Kódy UPC-A mají 12 číslic (11 bez kontrolní číslice).</string>
+    <string name="code_issue_length_upce">Kódy UPC-E mají 6 až 8 číslic.</string>
+    <string name="code_issue_length_even">Kódy %1$s mají sudý počet číslic.</string>
+    <string name="code_issue_check_digit">Poslední číslice nesedí se zbytkem čísla. Zkontrolujte, jestli v něm není překlep.</string>
+    <string name="code_issue_characters_39">%1$s umí jen velká písmena, číslice, mezery a - . $ / + %.</string>
+    <string name="code_issue_characters_codabar">Codabar umí jen číslice a - $ : / . +.</string>
+    <string name="code_issue_characters">%1$s neumí zapsat některé z těchto znaků. Zkuste raději QR kód.</string>
 </resources>

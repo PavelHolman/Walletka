@@ -1,6 +1,46 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ can't hold some of these characters. Try QR code instead." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ neumí zapsat některé z těchto znaků. Zkuste raději QR kód."
+          }
+        }
+      }
+    },
+    "%@ codes contain digits only." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kódy %@ obsahují jen číslice."
+          }
+        }
+      }
+    },
+    "%@ codes have an even number of digits." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kódy %@ mají sudý počet číslic."
+          }
+        }
+      }
+    },
+    "%@ holds only capital letters, digits, spaces and - . $ / + %%." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ umí jen velká písmena, číslice, mezery a - . $ / + %%."
+          }
+        }
+      }
+    },
     "%@: %@" : {
       "localizations" : {
         "cs" : {
@@ -13,6 +53,36 @@
     },
     "%lld cards added" : {
       "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidány %lld karty"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidáno %lld karty"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidána %lld karta"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidáno %lld karet"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -30,41 +100,41 @@
               }
             }
           }
-        },
-        "cs" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Přidána %lld karta"
-                }
-              },
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Přidány %lld karty"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Přidáno %lld karty"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Přidáno %lld karet"
-                }
-              }
-            }
-          }
         }
       }
     },
     "%lld cards already up to date" : {
       "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karty už byly aktuální"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karty už bylo aktuálních"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karta už byla aktuální"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karet už bylo aktuálních"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -82,41 +152,41 @@
               }
             }
           }
-        },
-        "cs" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld karta už byla aktuální"
-                }
-              },
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld karty už byly aktuální"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld karty už bylo aktuálních"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld karet už bylo aktuálních"
-                }
-              }
-            }
-          }
         }
       }
     },
     "%lld cards updated" : {
       "localizations" : {
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizovány %lld karty"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizováno %lld karty"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizována %lld karta"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizováno %lld karet"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -130,36 +200,6 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld cards updated"
-                }
-              }
-            }
-          }
-        },
-        "cs" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Aktualizována %lld karta"
-                }
-              },
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Aktualizovány %lld karty"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Aktualizováno %lld karty"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Aktualizováno %lld karet"
                 }
               }
             }
@@ -183,6 +223,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Přidat kartu"
+          }
+        }
+      }
+    },
+    "Add Details" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidat podrobnosti"
           }
         }
       }
@@ -307,6 +357,16 @@
         }
       }
     },
+    "Banner" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banner"
+          }
+        }
+      }
+    },
     "Banner from Photo" : {
       "localizations" : {
         "cs" : {
@@ -323,28 +383,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Černá"
-          }
-        }
-      }
-    },
-    "blue" : {
-      "comment" : "Colour name, combined with Dark/Light",
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "modrá"
-          }
-        }
-      }
-    },
-    "brown" : {
-      "comment" : "Colour name, combined with Dark/Light",
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "hnědá"
           }
         }
       }
@@ -399,12 +437,42 @@
         }
       }
     },
+    "Card number, member name, expiry date and notes" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Číslo karty, jméno člena, platnost a poznámky"
+          }
+        }
+      }
+    },
+    "Card number, member name, expiry date and notes, shown on the pass." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Číslo karty, jméno člena, platnost a poznámky, zobrazené na kartě."
+          }
+        }
+      }
+    },
     "Card preview" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Náhled karty"
+          }
+        }
+      }
+    },
+    "Cards you add appear here." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karty, které přidáte, se zobrazí tady."
           }
         }
       }
@@ -439,6 +507,16 @@
         }
       }
     },
+    "Choose a card in the library to edit it, or add a new one." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyberte kartu v knihovně a upravte ji, nebo přidejte novou."
+          }
+        }
+      }
+    },
     "Choose the part of the photo shown as the banner" : {
       "localizations" : {
         "cs" : {
@@ -469,12 +547,32 @@
         }
       }
     },
+    "Codabar holds only digits and - $ : / . +." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codabar umí jen číslice a - $ : / . +."
+          }
+        }
+      }
+    },
     "Code" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kód"
+          }
+        }
+      }
+    },
+    "Code Type" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ kódu"
           }
         }
       }
@@ -495,16 +593,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Obsah kódu, %@"
-          }
-        }
-      }
-    },
-    "Code Type" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Typ kódu"
           }
         }
       }
@@ -559,22 +647,22 @@
         }
       }
     },
-    "Couldn't sync" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synchronizace se nezdařila"
-          }
-        }
-      }
-    },
     "Couldn't Update the Card" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kartu se nepodařilo aktualizovat"
+          }
+        }
+      }
+    },
+    "Couldn't sync" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace se nezdařila"
           }
         }
       }
@@ -650,6 +738,16 @@
         }
       }
     },
+    "Details" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podrobnosti"
+          }
+        }
+      }
+    },
     "Done" : {
       "localizations" : {
         "cs" : {
@@ -680,12 +778,22 @@
         }
       }
     },
-    "e.g. Coffee Club" : {
+    "EAN-13 codes have 13 digits (12 without the check digit)." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "např. Kavárna U Rohu"
+            "value" : "Kódy EAN-13 mají 13 číslic (12 bez kontrolní číslice)."
+          }
+        }
+      }
+    },
+    "EAN-8 codes have 8 digits (7 without the check digit)." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kódy EAN-8 mají 8 číslic (7 bez kontrolní číslice)."
           }
         }
       }
@@ -730,6 +838,16 @@
         }
       }
     },
+    "Expires On" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Platí do"
+          }
+        }
+      }
+    },
     "Expiry Date" : {
       "localizations" : {
         "cs" : {
@@ -770,44 +888,12 @@
         }
       }
     },
-    "green" : {
-      "comment" : "Colour name, combined with Dark/Light",
+    "From the Photo" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "zelená"
-          }
-        }
-      }
-    },
-    "grey" : {
-      "comment" : "Colour name, combined with Dark/Light",
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "šedá"
-          }
-        }
-      }
-    },
-    "iCloud Sync" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synchronizace přes iCloud"
-          }
-        }
-      }
-    },
-    "iCloud Sync: %@" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synchronizace přes iCloud: %@"
+            "value" : "Z fotky"
           }
         }
       }
@@ -1023,6 +1109,16 @@
         }
       }
     },
+    "No Cards Yet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zatím žádné karty"
+          }
+        }
+      }
+    },
     "No Code Found" : {
       "localizations" : {
         "cs" : {
@@ -1103,22 +1199,32 @@
         }
       }
     },
-    "Off: cards stay on this iPhone" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vypnuto: karty zůstanou v tomto iPhonu"
-          }
-        }
-      }
-    },
     "OK" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
+          }
+        }
+      }
+    },
+    "Off: cards stay on this iPad" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vypnuto: karty zůstanou v tomto iPadu"
+          }
+        }
+      }
+    },
+    "Off: cards stay on this iPhone" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vypnuto: karty zůstanou v tomto iPhonu"
           }
         }
       }
@@ -1143,6 +1249,16 @@
         }
       }
     },
+    "Opening Photo…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otevírám fotku…"
+          }
+        }
+      }
+    },
     "Opens the card editor" : {
       "localizations" : {
         "cs" : {
@@ -1159,17 +1275,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Otevře kartu „%@“ místo přidání této"
-          }
-        }
-      }
-    },
-    "orange" : {
-      "comment" : "Colour name, combined with Dark/Light",
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "oranžová"
           }
         }
       }
@@ -1204,6 +1309,16 @@
         }
       }
     },
+    "Pick a Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyberte kartu"
+          }
+        }
+      }
+    },
     "Pick from Photo" : {
       "localizations" : {
         "cs" : {
@@ -1234,28 +1349,6 @@
         }
       }
     },
-    "pink" : {
-      "comment" : "Colour name, combined with Dark/Light",
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "růžová"
-          }
-        }
-      }
-    },
-    "purple" : {
-      "comment" : "Colour name, combined with Dark/Light",
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "fialová"
-          }
-        }
-      }
-    },
     "QR code" : {
       "localizations" : {
         "cs" : {
@@ -1272,17 +1365,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Načítání obrázku…"
-          }
-        }
-      }
-    },
-    "red" : {
-      "comment" : "Colour name, combined with Dark/Light",
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "červená"
           }
         }
       }
@@ -1407,12 +1489,32 @@
         }
       }
     },
+    "Sync Now" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizovat"
+          }
+        }
+      }
+    },
     "Sync failed, retrying later" : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Synchronizace selhala, zkusí se znovu později"
+          }
+        }
+      }
+    },
+    "Sync failed: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace selhala: %@"
           }
         }
       }
@@ -1457,13 +1559,12 @@
         }
       }
     },
-    "teal" : {
-      "comment" : "Colour name, combined with Dark/Light",
+    "The banner is a strip shown across the card; the logo replaces the name at the top." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "tyrkysová"
+            "value" : "Banner je pruh přes celou kartu, logo nahradí název nahoře."
           }
         }
       }
@@ -1508,6 +1609,16 @@
         }
       }
     },
+    "The last digit doesn't match the rest of the number. Check it for a typo." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poslední číslice nesedí se zbytkem čísla. Zkontrolujte, jestli v něm není překlep."
+          }
+        }
+      }
+    },
     "The library couldn't be saved to a backup file." : {
       "localizations" : {
         "cs" : {
@@ -1548,16 +1659,6 @@
         }
       }
     },
-    "Try a sharper photo with the whole QR code or barcode in view." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zkuste ostřejší fotku, na které je celý QR kód nebo čárový kód."
-          }
-        }
-      }
-    },
     "Try Again" : {
       "localizations" : {
         "cs" : {
@@ -1568,12 +1669,42 @@
         }
       }
     },
+    "Try a sharper photo with the whole QR code or barcode in view." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkuste ostřejší fotku, na které je celý QR kód nebo čárový kód."
+          }
+        }
+      }
+    },
     "Type the number printed on the card and pick the code type." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Opište číslo vytištěné na kartě a vyberte typ kódu."
+          }
+        }
+      }
+    },
+    "UPC-A codes have 12 digits (11 without the check digit)." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kódy UPC-A mají 12 číslic (11 bez kontrolní číslice)."
+          }
+        }
+      }
+    },
+    "UPC-E codes have 6 to 8 digits." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kódy UPC-E mají 6 až 8 číslic."
           }
         }
       }
@@ -1641,6 +1772,155 @@
         }
       }
     },
+    "You already have “%@” with this code." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu „%@“ s tímto kódem už máte."
+          }
+        }
+      }
+    },
+    "Zoom: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přiblížení: %@"
+          }
+        }
+      }
+    },
+    "blue" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "modrá"
+          }
+        }
+      }
+    },
+    "brown" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hnědá"
+          }
+        }
+      }
+    },
+    "e.g. Coffee Club" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "např. Kavárna U Rohu"
+          }
+        }
+      }
+    },
+    "green" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zelená"
+          }
+        }
+      }
+    },
+    "grey" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "šedá"
+          }
+        }
+      }
+    },
+    "iCloud Sync" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace přes iCloud"
+          }
+        }
+      }
+    },
+    "iCloud Sync: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace přes iCloud: %@"
+          }
+        }
+      }
+    },
+    "orange" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "oranžová"
+          }
+        }
+      }
+    },
+    "pink" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "růžová"
+          }
+        }
+      }
+    },
+    "purple" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fialová"
+          }
+        }
+      }
+    },
+    "red" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "červená"
+          }
+        }
+      }
+    },
+    "teal" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tyrkysová"
+          }
+        }
+      }
+    },
     "with banner" : {
       "localizations" : {
         "cs" : {
@@ -1668,26 +1948,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "žlutá"
-          }
-        }
-      }
-    },
-    "You already have “%@” with this code." : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kartu „%@“ s tímto kódem už máte."
-          }
-        }
-      }
-    },
-    "Zoom: %@" : {
-      "localizations" : {
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přiblížení: %@"
           }
         }
       }

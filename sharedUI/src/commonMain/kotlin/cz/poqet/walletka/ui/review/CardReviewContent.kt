@@ -87,6 +87,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,6 +100,8 @@ import cz.poqet.walletka.component.review.CardReviewComponent.Submission
 import cz.poqet.walletka.component.review.CardReviewComponent.SyncStatus
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.CardColor
+import cz.poqet.walletka.domain.CodeFormat
+import cz.poqet.walletka.domain.CodeIssue
 import cz.poqet.walletka.domain.WalletFailure
 import cz.poqet.walletka.ui.rememberStoredImage
 import cz.poqet.walletka.ui.toColor
@@ -327,7 +330,6 @@ private fun Editing(
                         IconButton(onClick = { component.onNameChanged("") }) { Icon(Icons.Outlined.Cancel, contentDescription = stringResource(Res.string.name_clear)) }
                     }
                 },
-                isError = !form.isValid,
             )
         }
 
@@ -364,9 +366,17 @@ private fun Editing(
                 enabled = !busy,
                 maxLines = 3,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Done),
+                // The keyboard that fits what a typed code's symbology can hold.
+                keyboardOptions = KeyboardOptions(
+                    autoCorrectEnabled = false,
+                    keyboardType = if (form.isCodeTyped && form.selectedCode.format.isNumeric) KeyboardType.Number else KeyboardType.Text,
+                    capitalization = if (form.isCodeTyped && form.selectedCode.format.isUppercase) KeyboardCapitalization.Characters else KeyboardCapitalization.None,
+                    imeAction = ImeAction.Done,
+                ),
                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                isError = form.selectedCode.value.isBlank(),
+                // Empty fields aren't errors (the add button waits for them); a code that can't be encoded is.
+                isError = form.codeIssue != null,
+                supportingText = form.codeIssue?.let { issue -> { Text(codeIssueText(issue, form.selectedCode.format)) } },
             )
             if (form.walletCodeFormat != form.selectedCode.format) {
                 Text(
@@ -642,3 +652,31 @@ private fun WalletFailure.message(): String = stringResource(
         WalletFailure.NOT_IN_WALLET -> Res.string.wallet_failure_not_in_wallet
     },
 )
+
+/** Why a typed code can't be used, in words. */
+@Composable
+private fun codeIssueText(issue: CodeIssue, format: CodeFormat): String {
+    val name = format.localizedName()
+    return when (issue) {
+        CodeIssue.DIGITS_ONLY -> stringResource(Res.string.code_issue_digits, name)
+        CodeIssue.LENGTH -> when (format) {
+            CodeFormat.EAN_13 -> stringResource(Res.string.code_issue_length_ean13)
+            CodeFormat.EAN_8 -> stringResource(Res.string.code_issue_length_ean8)
+            CodeFormat.UPC_A -> stringResource(Res.string.code_issue_length_upca)
+            CodeFormat.UPC_E -> stringResource(Res.string.code_issue_length_upce)
+            else -> stringResource(Res.string.code_issue_length_even, name)
+        }
+        CodeIssue.CHECK_DIGIT -> stringResource(Res.string.code_issue_check_digit)
+        CodeIssue.CHARACTERS -> when (format) {
+            CodeFormat.CODE_39, CodeFormat.CODE_93 -> stringResource(Res.string.code_issue_characters_39, name)
+            CodeFormat.CODABAR -> stringResource(Res.string.code_issue_characters_codabar)
+            else -> stringResource(Res.string.code_issue_characters, name)
+        }
+    }
+}
+
+private val CodeFormat.isNumeric: Boolean
+    get() = this in setOf(CodeFormat.EAN_13, CodeFormat.EAN_8, CodeFormat.UPC_A, CodeFormat.UPC_E, CodeFormat.ITF)
+
+private val CodeFormat.isUppercase: Boolean
+    get() = this == CodeFormat.CODE_39 || this == CodeFormat.CODE_93

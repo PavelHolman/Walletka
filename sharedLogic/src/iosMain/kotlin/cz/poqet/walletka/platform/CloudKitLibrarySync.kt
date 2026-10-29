@@ -96,6 +96,9 @@ internal class CloudKitLibrarySync(
     private var library: CardLibrary? = null
     private var engine: CKSyncEngine? = null
 
+    /** The account check before the engine starts is under way; a second engine must not be created meanwhile. */
+    private var isConnecting = false
+
     /** CKSyncEngine holds its delegate weakly. */
     private val delegate = Delegate()
 
@@ -146,11 +149,14 @@ internal class CloudKitLibrarySync(
 
     /** Starts the engine once iCloud is available; [uploadAll] queues every card (first start, re-enabled). */
     private fun connect(uploadAll: Boolean = false) {
+        if (isConnecting) return
+        isConnecting = true
         _status.value = CloudSyncStatus.SYNCING
         val container = CKContainer.containerWithIdentifier(containerIdentifier)
         container.accountStatusWithCompletionHandler { accountStatus, error ->
             log("account status $accountStatus ${error?.localizedDescription.orEmpty()}")
-            if (!isEnabled) return@accountStatusWithCompletionHandler
+            isConnecting = false
+            if (!isEnabled || engine != null) return@accountStatusWithCompletionHandler
             if (accountStatus != CKAccountStatusAvailable) {
                 _lastError.value = error?.localizedDescription
                 _status.value = CloudSyncStatus.UNAVAILABLE
@@ -451,7 +457,8 @@ internal class CloudKitLibrarySync(
         ): CKSyncEngineRecordZoneChangeBatch? = nextBatch(syncEngine, nextRecordZoneChangeBatchForContext)
     }
 
-    private fun log(message: String) = NSLog("[CloudSync] %@", message)
+    // Kotlin strings can't be NSLog's variadic arguments, so the message is the (escaped) format itself.
+    private fun log(message: String) = NSLog("[CloudSync] " + message.replace("%", "%%"))
 
     private companion object {
         const val ZONE = "Library"
