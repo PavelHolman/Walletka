@@ -14,7 +14,8 @@ struct TypedCodeFormatPicker: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             Picker("Code Type", selection: Binding(get: { form.selectedCode.format }, set: onSelect)) {
-                ForEach(form.typedCodeFormats, id: \.self) { format in
+                ForEach(0..<Int(form.typedCodeFormatCount), id: \.self) { index in
+                    let format = form.typedCodeFormat(index: Int32(index))
                     Text(verbatim: format.localizedName).tag(format)
                 }
             }

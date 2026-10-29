@@ -160,6 +160,14 @@ interface CardReviewComponent {
         /** Formats offered for a typed code, the most common first. */
         val typedCodeFormats: List<CodeFormat> get() = TypedCodeFormats
 
+        /**
+         * [typedCodeFormats] by index, for Swift: a `List` of a Kotlin enum crosses Swift Export type-erased and can't
+         * be cast back, while a single enum value can.
+         */
+        val typedCodeFormatCount: Int get() = TypedCodeFormats.size
+
+        fun typedCodeFormat(index: Int): CodeFormat = TypedCodeFormats[index]
+
         val bannerViewport: BannerViewport get() = BannerViewport(photoAspectRatio)
 
         /** Editor geometry of [logo]; its shape depends on how the wallet shows logos. */
