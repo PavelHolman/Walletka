@@ -122,7 +122,10 @@ internal class IosCardDetector(private val imageStore: ImageStore) : CardDetecto
         /** The straightened card keeps enough resolution for a sharp @3x banner (1125 px wide). */
         const val CARD_MAX_SIZE = 3072
 
-        /** Smaller cut-outs are too blurry to be worth it. */
-        const val MIN_CARD_SIZE = 400
+        /**
+         * Smaller cut-outs are too blurry to be worth it. Kept low: a small image (a screenshot of a card) is no sharper
+         * uncut, it just keeps the background in its banner.
+         */
+        const val MIN_CARD_SIZE = 240
     }
 }
