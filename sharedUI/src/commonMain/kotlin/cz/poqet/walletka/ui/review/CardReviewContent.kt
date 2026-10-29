@@ -80,6 +80,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
@@ -328,6 +330,9 @@ private fun Editing(
     ) {
         CardPreview(form, compact = true)
 
+        // Typing a card in: the keyboard's action key moves on from the name to the missing code.
+        val needsTypedCode = form.isCodeTyped && form.selectedCode.value.isEmpty()
+        val codeFocus = remember { FocusRequester() }
         Section(stringResource(Res.string.section_name)) {
             OutlinedTextField(
                 value = form.name,
@@ -335,8 +340,11 @@ private fun Editing(
                 modifier = Modifier.fillMaxWidth().onFocusChanged { isNameFocused = it.isFocused },
                 singleLine = true,
                 enabled = !busy,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = if (needsTypedCode) ImeAction.Next else ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }, onNext = { codeFocus.requestFocus() }),
                 placeholder = { Text(stringResource(Res.string.name_placeholder)) },
                 trailingIcon = {
                     if (isNameFocused && form.name.isNotEmpty()) {
@@ -375,7 +383,7 @@ private fun Editing(
                 value = form.selectedCode.value,
                 onValueChange = component::onCodeValueChanged,
                 label = { Text(form.selectedCode.format.localizedName()) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(codeFocus),
                 enabled = !busy,
                 maxLines = 3,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
@@ -653,6 +661,7 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 val code = rememberCodeImage(form.walletCodeFormat, form.selectedCode.value)
                 val twoDimensional = form.walletCodeFormat.isTwoDimensional
+                val codeHeight = if (twoDimensional) (if (compact) 96.dp else 140.dp) else (if (compact) 52.dp else 70.dp)
                 if (code != null) {
                     Image(
                         code,
@@ -660,13 +669,19 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
                         filterQuality = FilterQuality.None,
                         // A linear code is one module row: stretch it to the bars' height.
                         contentScale = if (twoDimensional) ContentScale.Fit else ContentScale.FillBounds,
-                        modifier = Modifier.height(if (twoDimensional) (if (compact) 96.dp else 140.dp) else (if (compact) 52.dp else 70.dp))
+                        modifier = Modifier.height(codeHeight)
                             .then(if (twoDimensional) Modifier.aspectRatio(code.width.toFloat() / code.height) else Modifier.fillMaxWidth()),
                     )
                 } else {
-                    Text(form.walletCodeFormat.localizedName(), color = Color.Black, style = MaterialTheme.typography.labelMedium)
+                    // Where the code goes, as big as the code will be, so the card doesn't grow while it's typed in.
+                    Box(
+                        Modifier.height(codeHeight).then(if (twoDimensional) Modifier.aspectRatio(1f) else Modifier.fillMaxWidth()),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(form.walletCodeFormat.localizedName(), color = Color.Gray, style = MaterialTheme.typography.labelMedium)
+                    }
                 }
-                if (!twoDimensional || code == null) {
+                if (!twoDimensional) {
                     Text(
                         form.selectedCode.value,
                         color = Color.Black,
