@@ -115,6 +115,14 @@ struct HomeView: View {
 
     // MARK: - Library
 
+    /// Keeps the pull-down spinner up while iCloud syncs (briefly at least, up to ten seconds).
+    private func waitForSync() async {
+        try? await Task.sleep(for: .milliseconds(600))
+        for _ in 0..<40 where model.value.cloudSync == .SYNCING {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+    }
+
     private var library: some View {
         List {
             ForEach(Array(model.value.visibleCards.enumerated()), id: \.element.id) { index, card in
@@ -161,6 +169,11 @@ struct HomeView: View {
             }
         }
         .navigationTitle("Walletka")
+        // Pull down to sync with iCloud now, while syncing is on.
+        .refreshable(if: model.value.cloudSync.map { $0 != .OFF && $0 != .UNAVAILABLE } ?? false) {
+            component.onSyncNowClicked()
+            await waitForSync()
+        }
         .searchable(if: model.value.isSearchAvailable, text: Binding(
             get: { model.value.searchQuery },
             set: { component.onSearchQueryChanged(query: $0) }
@@ -496,6 +509,16 @@ private struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
 }
 
 private extension View {
+    /// `.refreshable` only when [condition] holds, so there's no pull-down spinner that does nothing.
+    @ViewBuilder
+    func refreshable(if condition: Bool, action: @escaping @Sendable () async -> Void) -> some View {
+        if condition {
+            refreshable(action: action)
+        } else {
+            self
+        }
+    }
+
     /// `.searchable` only when [condition] holds, so short libraries keep a plain title bar.
     @ViewBuilder
     func searchable(if condition: Bool, text: Binding<String>, prompt: LocalizedStringKey) -> some View {
