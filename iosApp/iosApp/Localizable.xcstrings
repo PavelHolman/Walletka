@@ -768,6 +768,26 @@
         }
       }
     },
+    "Discard" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zahodit"
+          }
+        }
+      }
+    },
+    "Discard the New Card?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zahodit novou kartu?"
+          }
+        }
+      }
+    },
     "Done" : {
       "localizations" : {
         "cs" : {
@@ -964,6 +984,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "V Peněžence"
+          }
+        }
+      }
+    },
+    "Keep Editing" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokračovat v úpravách"
           }
         }
       }
@@ -1655,6 +1685,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Karta bude odstraněna z Walletky i z Peněženky Apple."
+          }
+        }
+      }
+    },
+    "The card you're adding isn't in Wallet yet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta, kterou přidáváte, ještě není v Peněžence."
           }
         }
       }

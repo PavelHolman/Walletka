@@ -52,7 +52,7 @@ struct RootView: View {
     private var splitView: some View {
         NavigationSplitView {
             if case .home(let home) = children.value.first?.sealedType() {
-                HomeView(component: home.value.component, presentation: .sidebar(selectedCardId: openCardId))
+                SplitSidebar(home: home.value.component, open: openReview)
             }
         } detail: {
             NavigationStack {
@@ -67,11 +67,10 @@ struct RootView: View {
         .navigationSplitViewStyle(.balanced)
     }
 
-    /// The library card open in the detail column, highlighted in the sidebar.
-    private var openCardId: String? {
-        guard case .review(let review) = children.value.dropFirst().last?.sealedType(),
-              case .editing(let editing) = review.value.component.model.value.sealedType() else { return nil }
-        return editing.value.form.cardId
+    /// The card open in the detail column, if any.
+    private var openReview: (any CardReviewComponent)? {
+        if case .review(let review) = children.value.dropFirst().last?.sealedType() { return review.value.component }
+        return nil
     }
 
     /// Kotlin objects are bridged as cached `NSObject` wrappers, so object identity is stable.
@@ -81,6 +80,41 @@ struct RootView: View {
         static func == (lhs: Route, rhs: Route) -> Bool { lhs.child === rhs.child }
 
         func hash(into hasher: inout Hasher) { hasher.combine(ObjectIdentifier(child)) }
+    }
+}
+
+/// The iPad sidebar: the library, highlighting the card open next to it and protecting a new card that isn't saved
+/// yet from being replaced by tapping another one. One `HomeView` throughout, so scrolling and search survive.
+private struct SplitSidebar: View {
+    let home: any HomeComponent
+    let open: (any CardReviewComponent)?
+
+    /// The open card's model, which changes after the child stack does (loading, saving).
+    @State private var model: ObservedFlow<any ReviewModel>?
+
+    var body: some View {
+        HomeView(component: home, presentation: .sidebar(selectedCardId: selectedCardId, hasUnsavedNewCard: hasUnsavedNewCard))
+            .onChange(of: open.map { ObjectIdentifier($0) }, initial: true) {
+                model = open.map { ObservedFlow($0.model) }
+            }
+    }
+
+    private var selectedCardId: String? {
+        if case .editing(let editing) = model?.value.sealedType() { return editing.value.form.cardId }
+        return nil
+    }
+
+    /// A scanned or typed-in card still being edited (not added yet).
+    private var hasUnsavedNewCard: Bool {
+        switch model?.value.sealedType() {
+        case .editing(let editing):
+            if case .added = editing.value.submission.sealedType() { return false }
+            return !editing.value.form.isLibraryCard
+        case .loading(let loading):
+            return !loading.value.isLibraryCard
+        default:
+            return false
+        }
     }
 }
 

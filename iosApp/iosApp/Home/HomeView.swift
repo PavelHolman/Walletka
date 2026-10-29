@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 /// the detail column while no card is open.
 enum HomePresentation: Equatable {
     case full
-    case sidebar(selectedCardId: String?)
+    case sidebar(selectedCardId: String?, hasUnsavedNewCard: Bool)
     case welcome
 }
 
@@ -21,6 +21,7 @@ struct HomeView: View {
     @State private var isCameraPresented = false
     @State private var isPhotoPickerPresented = false
     @State private var cardPendingDeletion: CardSummary?
+    @State private var cardPendingOpen: CardSummary?
     @State private var isImportingBackup = false
     /// A picked photo is being read from the library; that can take a moment for large or iCloud photos.
     @State private var isLoadingPhoto = false
@@ -118,14 +119,14 @@ struct HomeView: View {
         List {
             ForEach(Array(model.value.visibleCards.enumerated()), id: \.element.id) { index, card in
                 Button {
-                    component.onCardClicked(cardId: card.id)
+                    open(card)
                 } label: {
                     CardTile(card: card, isSelected: selectedCardId == card.id)
                 }
                 .buttonStyle(.plain)
                 // VoiceOver: the tile reads as one element; Edit and reordering are its actions (the swipe action
                 // already offers Delete).
-                .accessibilityAction(named: Text("Edit")) { component.onCardClicked(cardId: card.id) }
+                .accessibilityAction(named: Text("Edit")) { open(card) }
                 .accessibilityActions {
                     if model.value.canReorder && index > 0 {
                         Button("Move Up") { component.onCardMoved(fromIndex: Int32(index), toIndex: Int32(index - 1)) }
@@ -140,7 +141,7 @@ struct HomeView: View {
                     Button("Delete", systemImage: "trash", role: .destructive) { cardPendingDeletion = card }
                 }
                 .contextMenu {
-                    Button("Edit", systemImage: "pencil") { component.onCardClicked(cardId: card.id) }
+                    Button("Edit", systemImage: "pencil") { open(card) }
                     Button("Delete", systemImage: "trash", role: .destructive) { cardPendingDeletion = card }
                 } preview: {
                     // The pass with its code, ready to be scanned.
@@ -173,6 +174,17 @@ struct HomeView: View {
             inBottomToolbar: presentation == .full,
             withSearch: model.value.isSearchAvailable
         ) { addMenu }
+        .alert(
+            "Discard the New Card?",
+            isPresented: Binding(get: { cardPendingOpen != nil }, set: { if !$0 { cardPendingOpen = nil } })
+        ) {
+            Button("Discard", role: .destructive) {
+                if let card = cardPendingOpen { component.onCardClicked(cardId: card.id) }
+            }
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("The card you're adding isn't in Wallet yet.")
+        }
         // A centred alert: a swipe action has no stable button to anchor a dialog to.
         .alert(
             "Delete “\(cardPendingDeletion?.name ?? "")”?",
@@ -209,8 +221,17 @@ struct HomeView: View {
     }
 
     private var selectedCardId: String? {
-        if case .sidebar(let id) = presentation { return id }
+        if case .sidebar(let id, _) = presentation { return id }
         return nil
+    }
+
+    /// Opens [card]; on iPad first asks before a new card being edited next to the library is thrown away.
+    private func open(_ card: CardSummary) {
+        if case .sidebar(_, true) = presentation {
+            cardPendingOpen = card
+        } else {
+            component.onCardClicked(cardId: card.id)
+        }
     }
 
     /// SwiftUI reports the destination before the source is removed; the shared code wants the final index.
