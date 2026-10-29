@@ -131,6 +131,9 @@ struct HomeView: View {
                 .contextMenu {
                     Button("Edit", systemImage: "pencil") { component.onCardClicked(cardId: card.id) }
                     Button("Delete", systemImage: "trash", role: .destructive) { cardPendingDeletion = card }
+                } preview: {
+                    // The pass with its code, ready to be scanned.
+                    CardPassPreview(card: card)
                 }
             }
             .onMove(perform: model.value.canReorder ? moveCards : nil)
@@ -392,6 +395,47 @@ private struct CardTile: View {
         case nil: break
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// A library card as a pass with its code, shown when the card is touched and held.
+private struct CardPassPreview: View {
+    let card: CardSummary
+
+    var body: some View {
+        let content = card.color.contentColor.swiftUIColor
+        VStack(spacing: 0) {
+            Text(verbatim: card.name)
+                .font(.headline)
+                .foregroundStyle(content)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+            if let path = card.banner?.path, let banner = UIImage(contentsOfFile: path) {
+                Color.clear
+                    .aspectRatio(375.0 / 123.0, contentMode: .fit)
+                    .overlay { Image(uiImage: banner).resizable().scaledToFill() }
+                    .clipped()
+            }
+            if let code = CodeImage.make(format: card.codeFormat, value: card.codeValue) {
+                VStack(spacing: 4) {
+                    Image(uiImage: code)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: card.codeFormat.isTwoDimensional ? 160 : 80)
+                    if !card.codeFormat.isTwoDimensional {
+                        Text(verbatim: card.codeValue).font(.caption.monospaced()).foregroundStyle(.black)
+                    }
+                }
+                .padding(12)
+                .background(.white, in: RoundedRectangle(cornerRadius: 10))
+                .padding(20)
+            }
+        }
+        .frame(width: 340)
+        .fixedSize(horizontal: false, vertical: true)
+        // The preview platter may be taller than the content; fill it with the card's colour.
+        .background(card.color.swiftUIColor.ignoresSafeArea())
     }
 }
 

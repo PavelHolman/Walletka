@@ -693,6 +693,8 @@ private struct CardPreview: View {
         }
         .frame(maxWidth: .infinity)
         .background(background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        // It pictures the pass, whose text Wallet doesn't scale; VoiceOver reads it as a whole anyway.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
         .padding(.vertical, 8)
         .animation(.default, value: form.selectedColor.hex)
