@@ -235,6 +235,7 @@ private struct CardFormView: View {
     let component: any CardReviewComponent
 
     @State private var isEditingBanner = false
+    @State private var isEditingLogo = false
     @ScaledMetric private var swatchSize: CGFloat = 38
     @State private var isPickingColorFromPhoto = false
     @State private var isConfirmingDelete = false
@@ -331,6 +332,20 @@ private struct CardFormView: View {
                     onConfirm: component.onColorPreviewConfirmed,
                     onCancel: component.onColorPreviewDismissed
                 )
+            }
+        }
+        .sheet(isPresented: $isEditingLogo) {
+            if let photo = form.photo {
+                CropEditorView(
+                    title: "Adjust Logo",
+                    hint: "Drag and pinch the photo. The bright box becomes the logo.",
+                    photoPath: photo.path,
+                    viewport: form.logoViewport,
+                    region: form.logo.region
+                ) { region in
+                    component.onLogoRegionChanged(region: region)
+                    if !form.logo.isEnabled { component.onLogoToggled(enabled: true) }
+                }
             }
         }
         .sheet(isPresented: $isEditingBanner) {
@@ -517,7 +532,7 @@ private struct CardFormView: View {
                         .accessibilityHint(Text("Choose the part of the photo shown as the banner"))
                     }
                 }
-                CardLogoRows(form: form, component: component)
+                CardLogoRows(form: form, component: component) { isEditingLogo = true }
             } header: {
                 Text("From the Photo")
             } footer: {
@@ -618,8 +633,9 @@ private struct BannerThumbnail: View {
                 Color.secondary.opacity(0.15)
             }
         }
-        .frame(width: 84, height: 28)
-        .clipShape(RoundedRectangle(cornerRadius: 5))
+        // As wide as the logo's thumbnail (CardLogoRows), so both rows' titles line up.
+        .frame(width: 92, height: 30)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 
