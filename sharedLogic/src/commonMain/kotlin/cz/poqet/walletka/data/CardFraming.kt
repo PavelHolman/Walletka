@@ -46,6 +46,20 @@ internal object CardFraming {
         }
     }
 
+    /**
+     * [quad] pulled in by [fraction] of its size towards its centre: cards have rounded corners, so the outline's
+     * corners show a bit of the background, which would end up in the banner and logo.
+     */
+    fun inset(quad: NormalizedQuad, fraction: Float = CORNER_INSET): NormalizedQuad {
+        val cx = quad.corners.map { it.x }.average().toFloat()
+        val cy = quad.corners.map { it.y }.average().toFloat()
+        fun NormalizedPoint.pulled() = NormalizedPoint(x + (cx - x) * fraction * 2, y + (cy - y) * fraction * 2)
+        return NormalizedQuad(quad.topLeft.pulled(), quad.topRight.pulled(), quad.bottomRight.pulled(), quad.bottomLeft.pulled())
+    }
+
+    /** Share of the card's size cut from each side by [inset]; about the radius of a card's corners. */
+    private const val CORNER_INSET = 0.025f
+
     /** Pixel size of the straightened card for a photo of [width] × [height] pixels. */
     fun straightenedSize(quad: NormalizedQuad, width: Int, height: Int): Pair<Int, Int> {
         val sides = sides(quad, width.toFloat() / height)

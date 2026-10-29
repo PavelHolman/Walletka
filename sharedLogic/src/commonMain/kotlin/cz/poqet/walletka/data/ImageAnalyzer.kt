@@ -107,7 +107,7 @@ internal class ImageAnalyzer(
     private suspend fun straightenedCard(photo: StoredImage, original: Detection): Pair<StoredImage, Detection>? {
         val aspectRatio = original.pixels.width.toFloat() / original.pixels.height
         val quad = cardDetector.outlines(photo).firstOrNull { CardFraming.isCard(it, aspectRatio, original.codes) } ?: return null
-        val card = cardDetector.straighten(photo, quad) ?: return null
+        val card = cardDetector.straighten(photo, CardFraming.inset(quad)) ?: return null
         val detection = detect(card).getOrNull()
         // Straightening must not cost the code (or the image): then the whole photo is better.
         if (detection == null || detection.codes.size < original.codes.size) {
