@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: the card library (cards.json, sync.json, images) goes into the Google backup and device transfers. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="library/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="library/" />
+    </device-transfer>
+</data-extraction-rules>

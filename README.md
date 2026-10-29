@@ -67,6 +67,25 @@ The platform interfaces are `internal`: each platform has a composition root
   saved state uses an internal `SavedCardForm` snapshot instead.
 - Images cross the boundary as file paths, not `ByteArray`s.
 
+### Card library: backups and sync
+
+The library (`data/CardLibrary.kt`) keeps cards in the user's manual order (new cards on top) and remembers deletions
+(tombstones) and when the order last changed, so other copies of it can be merged by one set of rules
+(`data/LibraryMerge.kt`): the newer version of a card wins over an older version or deletion, and the newer order wins.
+Cards that arrive from elsewhere are marked as not in this device's wallet until they are added from the editor.
+
+- **Backup (both platforms):** Home → "…" → *Export Library* writes `Walletka-backup-YYYY-MM-DD.walletka`, a ZIP with
+  `cards.json` and the images; *Import Library* merges one back. On iOS opening a `.walletka` file with the app imports it.
+- **iOS: iCloud sync.** `CloudKitLibrarySync` (iosMain) syncs through the private CloudKit database with
+  `CKSyncEngine`: one `Card` record per card (JSON + photo/banner assets, or a tombstone), one `Order` record. It needs
+  the iCloud (CloudKit) capability with the container `iCloud.<bundle id>` (`ICLOUD_CONTAINER_IDENTIFIER` in
+  `Config.xcconfig`) and Push Notifications / remote-notification background mode, which automatic signing sets up
+  (`-allowProvisioningUpdates`). Without an iCloud account, or in unsigned Simulator builds, the library stays local;
+  sync can be turned off in the "…" menu.
+- **Android: Auto Backup.** There's no free live sync without Google sign-in, so the library directory is included in
+  Android's backup (`res/xml/backup_rules.xml`, `data_extraction_rules.xml`): a new phone or a reinstall restores it,
+  but edits don't flow between two phones in use. Use export/import for that.
+
 ## Pass service
 
 `passService` is a Cloudflare Worker written in Kotlin (compiled to JS). It exposes one GraphQL endpoint

@@ -68,6 +68,11 @@ internal class FakeWalletService(var result: Either<WalletError, AddedCard> = Ad
     override var canUpdateInPlace = false
     var inWallet = true
 
+    /** Wallet ids of the passes in the wallet; `null` when the wallet can't tell (as Google Wallet). */
+    var passesInWallet: Set<String>? = null
+
+    override suspend fun isInWallet(walletId: String): Boolean? = passesInWallet?.let { walletId in it }
+
     override suspend fun updateCard(card: CardDraft): Either<WalletError, AddedCard> {
         if (!inWallet) return WalletError(cz.poqet.walletka.domain.WalletFailure.NOT_IN_WALLET).left()
         updated += card

@@ -8,6 +8,7 @@ import com.arkivanov.decompose.router.stack.navigate
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.pushToFront
 import com.arkivanov.decompose.router.stack.popTo
+import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.arkivanov.decompose.value.Value
 import cz.poqet.walletka.component.home.DefaultHomeComponent
 import cz.poqet.walletka.component.review.DefaultCardReviewComponent
@@ -18,6 +19,7 @@ import cz.poqet.walletka.data.CardLibrary
 import cz.poqet.walletka.component.review.ReviewDependencies
 import cz.poqet.walletka.component.review.ReviewSource
 import cz.poqet.walletka.data.ImageAnalyzer
+import cz.poqet.walletka.data.LibraryBackup
 import cz.poqet.walletka.platform.PlatformServices
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
@@ -38,6 +40,8 @@ internal class DefaultRootComponent(
         bannerCropper = bannerCropper,
     )
     private val library = CardLibrary(services.dataDirectory, services.ioContext)
+        .also { library -> services.librarySync?.start(library) }
+    private val backup = LibraryBackup(library, services.walletService.platform, services.ioContext)
     private val reviewDependencies = ReviewDependencies(
         imageStore = services.imageStore,
         imageProcessor = services.imageProcessor,
@@ -67,6 +71,10 @@ internal class DefaultRootComponent(
                 imageStore = services.imageStore,
                 onImagePicked = ::onImageReceived,
                 onCardClicked = { cardId -> navigation.pushToFront(Config.Card(cardId)) },
+                backup = backup,
+                exportDirectory = "${services.dataDirectory}/exports",
+                librarySync = services.librarySync,
+                ioContext = services.ioContext,
             ),
         )
 
@@ -81,6 +89,7 @@ internal class DefaultRootComponent(
             source = source,
             dependencies = reviewDependencies,
             onFinished = { navigation.popTo(index = 0) },
+            onOpenCard = { cardId -> navigation.replaceCurrent(Config.Card(cardId)) },
         ),
     )
 

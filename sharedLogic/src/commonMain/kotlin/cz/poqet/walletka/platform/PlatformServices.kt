@@ -63,6 +63,9 @@ internal interface WalletService {
 
     /** Removes the pass from the wallet; `false` when the platform does not let apps do that. */
     suspend fun removeCard(walletId: String): Boolean
+
+    /** Whether the pass with [walletId] is in the wallet; `null` where apps can't tell (Google Wallet). */
+    suspend fun isInWallet(walletId: String): Boolean? = null
 }
 
 /** A card that is now in the wallet. */
@@ -84,4 +87,6 @@ internal class PlatformServices(
     val dataDirectory: String,
     /** Where blocking file I/O runs. */
     val ioContext: CoroutineContext = Dispatchers.Default,
+    /** Syncs the card library across devices, where the platform offers it (iCloud). */
+    val librarySync: LibrarySync? = null,
 )

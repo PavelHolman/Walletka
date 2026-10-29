@@ -40,6 +40,11 @@ struct CardReviewView: View {
                         colorPreview: editing.value.colorPreview,
                         component: component
                     )
+                    .safeAreaInset(edge: .top) {
+                        if let duplicate = editing.value.duplicateOf {
+                            DuplicateCardBanner(duplicate: duplicate, onOpen: component.onOpenDuplicateClicked)
+                        }
+                    }
                 }
             }
         }
