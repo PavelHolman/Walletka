@@ -273,13 +273,15 @@ private struct CardFormView: View {
             }
         }
         .sheet(isPresented: $isPickingColorFromPhoto) {
-            PhotoColorPickerView(
-                photoPath: form.photo.path,
-                preview: colorPreview,
-                onPick: { x, y in component.onColorPreviewRequested(x: x, y: y) },
-                onConfirm: component.onColorPreviewConfirmed,
-                onCancel: component.onColorPreviewDismissed
-            )
+            if let photo = form.photo {
+                PhotoColorPickerView(
+                    photoPath: photo.path,
+                    preview: colorPreview,
+                    onPick: { x, y in component.onColorPreviewRequested(x: x, y: y) },
+                    onConfirm: component.onColorPreviewConfirmed,
+                    onCancel: component.onColorPreviewDismissed
+                )
+            }
         }
         .sheet(isPresented: $isEditingBanner) {
             BannerEditorView(form: form) { region in
@@ -309,6 +311,9 @@ private struct CardFormView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+            if form.isCodeTyped {
+                TypedCodeFormatPicker(form: form) { component.onCodeFormatSelected(format: $0) }
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(form.selectedCode.format.displayName)
@@ -363,10 +368,12 @@ private struct CardFormView: View {
                 get: { (form.customColor ?? form.selectedColor).swiftUIColor },
                 set: { component.onCustomColorSelected(color: CardColor(color: $0)) }
             ), supportsOpacity: false)
-            Button {
-                isPickingColorFromPhoto = true
-            } label: {
-                Label("Pick from Photo", systemImage: "eyedropper")
+            if form.hasPhoto {
+                Button {
+                    isPickingColorFromPhoto = true
+                } label: {
+                    Label("Pick from Photo", systemImage: "eyedropper")
+                }
             }
         }
     }

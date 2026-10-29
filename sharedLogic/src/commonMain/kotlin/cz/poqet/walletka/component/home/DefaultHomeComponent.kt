@@ -24,6 +24,7 @@ internal class DefaultHomeComponent(
     private val imageStore: ImageStore,
     private val onImagePicked: (source: String) -> Unit,
     private val onCardClicked: (cardId: String) -> Unit,
+    private val onEnterManually: () -> Unit,
 ) : HomeComponent, ComponentContext by componentContext {
 
     private val scope = coroutineScope(Dispatchers.Main.immediate)
@@ -45,6 +46,10 @@ internal class DefaultHomeComponent(
 
     override fun onImagePicked(source: String) {
         onImagePicked.invoke(source)
+    }
+
+    override fun onEnterManuallyClicked() {
+        onEnterManually.invoke()
     }
 
     override fun onCardClicked(cardId: String) {

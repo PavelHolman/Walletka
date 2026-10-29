@@ -31,3 +31,6 @@ internal fun android.graphics.Rect.normalizedIn(width: Int, height: Int) = Norma
 
 /** Max resolution fed to the ML Kit detectors; plenty for codes, keeps memory bounded. */
 internal const val DETECTION_MAX_SIZE = 2048
+
+/** Max resolution a photo is decoded at for an upscaled crop in a scan retry. */
+internal const val SCAN_SOURCE_MAX_SIZE = 3072

@@ -33,7 +33,7 @@ internal data class StoredCard(
 
 /**
  * The cards created in Walletka, persisted as JSON in the app's data directory. Their photos and banners are copied
- * next to it ([keepImage]) so they outlive the cache the review flow works in.
+ * next to it ([keepImage]; cards entered by hand have neither) so they outlive the cache the review flow works in.
  */
 internal class CardLibrary(
     directory: String,
@@ -90,7 +90,7 @@ internal class CardLibrary(
     ): StoredCard? {
         val card = delete(id) ?: return null
         removePass(card.walletId)
-        deleteImage(StoredImage(card.form.photo))
+        card.form.photo?.let { deleteImage(StoredImage(it)) }
         card.form.banner?.let { deleteImage(StoredImage(it)) }
         return card
     }
@@ -126,7 +126,7 @@ internal class CardLibrary(
     }
 
     private fun StoredCard.withImagePaths(transform: (String) -> String) = copy(
-        form = form.copy(photo = transform(form.photo), banner = form.banner?.let(transform)),
+        form = form.copy(photo = form.photo?.let(transform), banner = form.banner?.let(transform)),
     )
 
     private suspend fun write(cards: List<StoredCard>) {

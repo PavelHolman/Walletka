@@ -53,7 +53,7 @@ import kotlin.math.roundToInt
 internal fun BannerEditorDialog(form: CardForm, onDone: (NormalizedRect) -> Unit, onDismiss: () -> Unit) {
     val viewport = remember(form.photoAspectRatio) { form.bannerViewport }
     var region by remember(form.photo) { mutableStateOf(form.bannerRegion) }
-    val photo = rememberStoredImage(form.photo.path, maxSize = 2400)
+    val photo = rememberStoredImage(form.photo?.path, maxSize = 2400)
 
     AlertDialog(
         onDismissRequest = onDismiss,

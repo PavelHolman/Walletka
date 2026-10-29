@@ -14,6 +14,9 @@ interface HomeComponent {
     /** The user picked or pasted an image. See [cz.poqet.walletka.platform.ImageStore.import] for [source]. */
     fun onImagePicked(source: String)
 
+    /** Starts a card without a photo: name, code and colour are typed in / picked by hand. */
+    fun onEnterManuallyClicked()
+
     /** Opens a library card for editing. */
     fun onCardClicked(cardId: String)
 

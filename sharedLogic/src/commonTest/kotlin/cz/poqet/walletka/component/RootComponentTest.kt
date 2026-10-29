@@ -65,10 +65,80 @@ class RootComponentTest {
     }
 
     @Test
-    fun noCodeFails() {
-        val root = root(fakeServices(emptyList()))
+    fun photoWithoutCodeIsEditedWithACodeToTypeIn() {
+        val wallet = FakeWalletService()
+        val store = FakeImageStore()
+        val root = root(fakeServices(emptyList(), imageStore = store, walletService = wallet))
         root.onImageReceived("photo.jpg")
-        assertEquals(Model.Failed(AnalysisFailure.NO_CODE_FOUND), root.review().model.value)
+        val review = root.review()
+
+        val form = assertIs<Model.Editing>(review.model.value).form
+        assertTrue(form.isCodeTyped)
+        assertEquals("", form.selectedCode.value)
+        assertEquals(store.path("photo.jpg"), form.photo?.path) // kept for the banner and colours
+        assertTrue(form.banner != null)
+        assertEquals(false, form.isValid)
+
+        review.onNameChanged("Gym")
+        review.onCodeValueChanged("4006381333931")
+        review.onCodeFormatSelected(CodeFormat.EAN_13)
+        review.onAddToWalletClicked()
+
+        assertEquals(ScannedCode(CodeFormat.EAN_13, "4006381333931"), wallet.added.single().code)
+    }
+
+    @Test
+    fun detectedCodesKeepTheirFormat() {
+        val root = root(fakeServices(listOf(code)))
+        root.onImageReceived("photo.jpg")
+        root.review().onCodeFormatSelected(CodeFormat.EAN_13)
+        assertEquals(CodeFormat.QR, assertIs<Model.Editing>(root.review().model.value).form.selectedCode.format)
+    }
+
+    @Test
+    fun manualCardIsAddedToTheLibraryWithoutAPhoto() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val dataDirectory = tempDirectory("data")
+        val root = root(fakeServices(listOf(code), walletService = wallet, dataDirectory = dataDirectory))
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+
+        home.onEnterManuallyClicked()
+        val review = root.review()
+        val form = assertIs<Model.Editing>(review.model.value).form
+        assertEquals(null, form.photo)
+        assertEquals(null, form.banner)
+        assertTrue(form.isCodeTyped)
+        assertEquals(cz.poqet.walletka.data.ColorPalette.Defaults, form.colors)
+
+        review.onNameChanged("Library card")
+        review.onCodeValueChanged("LIB-77")
+        review.onCodeFormatSelected(CodeFormat.QR)
+        review.onColorSelected(2)
+        review.onColorPreviewRequested(0.5f, 0.5f) // no photo to pick from
+        review.onBannerRegionChanged(NormalizedRect(0f, 0f, 0.5f, 0.2f))
+        assertEquals(null, assertIs<Model.Editing>(review.model.value).colorPreview)
+        review.onAddToWalletClicked()
+
+        val card = wallet.added.single()
+        assertEquals(ScannedCode(CodeFormat.QR, "LIB-77"), card.code)
+        assertEquals(cz.poqet.walletka.data.ColorPalette.Defaults[2], card.backgroundColor)
+        assertEquals(null, card.banner)
+        review.onCloseClicked()
+
+        val summary = home.model.value.cards.single()
+        assertEquals("Library card", summary.name)
+        val reopened = cz.poqet.walletka.data.CardLibrary(dataDirectory.toString(), kotlin.coroutines.EmptyCoroutineContext)
+        reopened.load()
+        assertEquals(null, reopened.cards.value.single().form.photo)
+
+        // Edited again later from the library, and deleted.
+        home.onCardClicked(summary.id)
+        val edit = assertIs<Model.Editing>(root.review().model.value)
+        assertEquals(null, edit.form.photo)
+        assertTrue(edit.form.isCodeTyped)
+        assertEquals(false, edit.hasChanges)
+        root.review().onDeleteClicked()
+        assertEquals(emptyList(), home.model.value.cards)
     }
 
     @Test
@@ -111,7 +181,7 @@ class RootComponentTest {
         root.onImageReceived("first.jpg")
         root.onImageReceived("second.jpg")
         assertEquals(2, root.children.value.size)
-        assertEquals(store.path("second.jpg"), assertIs<Model.Editing>(root.review().model.value).form.photo.path)
+        assertEquals(store.path("second.jpg"), assertIs<Model.Editing>(root.review().model.value).form.photo?.path)
     }
 
     @Test
@@ -208,7 +278,7 @@ class RootComponentTest {
         val reopened = cz.poqet.walletka.data.CardLibrary(dataDirectory.toString(), kotlin.coroutines.EmptyCoroutineContext)
         reopened.load()
         assertEquals(1, reopened.cards.value.size)
-        assertTrue(reopened.isLibraryImage(cz.poqet.walletka.domain.StoredImage(reopened.cards.value.single().form.photo)))
+        assertTrue(reopened.isLibraryImage(cz.poqet.walletka.domain.StoredImage(reopened.cards.value.single().form.photo!!)))
     }
 
     @Test
@@ -239,7 +309,7 @@ class RootComponentTest {
         // Moving the whole data directory (as a container change would) keeps the images reachable.
         val reopened = cz.poqet.walletka.data.CardLibrary(dataDirectory.toString(), kotlin.coroutines.EmptyCoroutineContext)
         reopened.load()
-        val photo = reopened.cards.value.single().form.photo
+        val photo = reopened.cards.value.single().form.photo!!
         assertTrue(SystemFileSystem.exists(Path(photo)), photo)
     }
 

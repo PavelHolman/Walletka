@@ -18,6 +18,7 @@ import cz.poqet.walletka.data.StoredCard
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.CardDraft
+import cz.poqet.walletka.domain.CodeFormat
 import cz.poqet.walletka.domain.ImagePixels
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.StoredImage
@@ -48,6 +49,9 @@ internal sealed interface ReviewSource {
     data class Photo(val source: String) : ReviewSource
 
     data class LibraryCard(val cardId: String) : ReviewSource
+
+    /** A new card typed in by hand, without a photo. */
+    data object Manual : ReviewSource
 }
 
 /** Collaborators of [DefaultCardReviewComponent], shared by all instances. */
@@ -92,6 +96,8 @@ internal class DefaultCardReviewComponent(
     override fun onCodeValueChanged(value: String) = store.updateForm {
         copy(codes = codes.mapIndexed { index, code -> if (index == selectedCodeIndex) code.copy(value = value) else code })
     }
+
+    override fun onCodeFormatSelected(format: CodeFormat) = store.updateForm { withTypedCodeFormat(format) }
 
     override fun onColorSelected(index: Int) = store.updateForm { copy(selectedColorIndex = index.coerceIn(colors.indices)) }
 
@@ -184,6 +190,9 @@ private class ReviewStore(
                     }
                         ?: Model.Failed(AnalysisFailure.IMAGE_UNREADABLE)
                 }
+
+                ReviewSource.Manual ->
+                    _model.value = Model.Editing(manualCardForm(dependencies.walletService.platform), Submission.Idle, hasChanges = true)
             }
         }
     }
@@ -262,7 +271,7 @@ private class ReviewStore(
                     sync()
                     // The working copies were moved into the library by the sync, or are no longer needed.
                     val form = (_model.value as? Model.Editing)?.form ?: editing.form
-                    deleteUnlessInLibrary(form.photo)
+                    form.photo?.let { deleteUnlessInLibrary(it) }
                     form.banner?.let { deleteUnlessInLibrary(it) }
                 }
                 scope.cancel()
@@ -277,7 +286,7 @@ private class ReviewStore(
 
     fun previewPhotoColor(x: Float, y: Float) {
         val editing = _model.value as? Model.Editing ?: return
-        val photo = editing.form.photo
+        val photo = editing.form.photo ?: return
         samplePixels?.takeIf { it.first == photo }?.let { (_, pixels) ->
             setColorPreview(ColorPalette.sample(pixels, x, y))
             return
@@ -304,13 +313,14 @@ private class ReviewStore(
     /** Moves the crop immediately and re-cuts the banner in the background, keeping only the latest result. */
     fun updateBannerRegion(region: NormalizedRect) {
         val editing = _model.value as? Model.Editing ?: return
+        val photo = editing.form.photo ?: return
         val clamped = editing.form.bannerViewport.clamp(region)
         if (clamped == editing.form.bannerRegion) return
         updateForm { copy(bannerRegion = clamped) }
         bannerJob?.cancel()
         bannerJob = scope.launch {
             delay(BANNER_RECROP_DEBOUNCE)
-            val banner = dependencies.bannerCropper.crop(editing.form.photo, clamped).getOrNull() ?: return@launch
+            val banner = dependencies.bannerCropper.crop(photo, clamped).getOrNull() ?: return@launch
             val current = _model.value as? Model.Editing
             if (current == null || current.form.bannerRegion != clamped) {
                 imageStore.delete(banner) // superseded by a newer crop
@@ -356,7 +366,7 @@ private class ReviewStore(
 
     /** Persists the card with its images copied into the library; returns the form pointing at those copies. */
     private suspend fun saveToLibrary(form: CardForm, existing: StoredCard?, walletId: String): CardForm {
-        val photo = library.keepImage(form.photo)
+        val photo = form.photo?.let { library.keepImage(it) }
         val banner = form.banner?.let { library.keepImage(it) }
         val now = Clock.System.now().toEpochMilliseconds()
         val saved = form.copy(photo = photo, banner = banner, cardId = form.cardId ?: newId())
@@ -370,7 +380,7 @@ private class ReviewStore(
             ),
         )
         // The cache working copies are no longer needed, nor is a library banner replaced by a new crop.
-        if (photo != form.photo) imageStore.delete(form.photo)
+        if (photo != form.photo) form.photo?.let { imageStore.delete(it) }
         if (banner != form.banner) form.banner?.let { imageStore.delete(it) }
         existing?.form?.banner?.takeIf { it != banner?.path }?.let { imageStore.delete(StoredImage(it)) }
         return saved
@@ -397,7 +407,8 @@ private class ReviewStore(
         photo = image,
         name = names.firstOrNull().orEmpty(),
         nameSuggestions = names,
-        codes = codes,
+        // No code found: the user types it in, keeping the photo for the banner and colours.
+        codes = codes.ifEmpty { listOf(EmptyTypedCode) },
         selectedCodeIndex = 0,
         colors = colors,
         selectedColorIndex = 0,
@@ -408,6 +419,7 @@ private class ReviewStore(
         photoAspectRatio = photoAspectRatio,
         walletPlatform = dependencies.walletService.platform,
         cardId = null,
+        isCodeTyped = codes.isEmpty(),
     )
 
     private fun CardForm.toDraft(walletId: String) = CardDraft(
@@ -453,7 +465,7 @@ private class ReviewStore(
         (_model.value as? Model.Editing)?.form?.let { form ->
             CoroutineScope(Dispatchers.Main).launch {
                 withContext(NonCancellable) {
-                    deleteUnlessInLibrary(form.photo)
+                    form.photo?.let { deleteUnlessInLibrary(it) }
                     form.banner?.let { deleteUnlessInLibrary(it) }
                 }
             }

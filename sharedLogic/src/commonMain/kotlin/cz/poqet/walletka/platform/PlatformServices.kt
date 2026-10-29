@@ -5,6 +5,7 @@ import cz.poqet.walletka.domain.AnalysisError
 import cz.poqet.walletka.domain.CardDraft
 import cz.poqet.walletka.domain.ImagePixels
 import cz.poqet.walletka.domain.NormalizedRect
+import cz.poqet.walletka.domain.ScanVariant
 import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.domain.TextLine
@@ -42,6 +43,9 @@ internal interface ImageProcessor {
 
     /** Crops [region] out of the image, scales it to [targetWidth] and encodes it as PNG. */
     suspend fun cropToPng(image: StoredImage, region: NormalizedRect, targetWidth: Int): Either<AnalysisError, ByteArray>
+
+    /** Renders [variant] of the image for another detection attempt, encoded as JPEG. */
+    suspend fun renderForScan(image: StoredImage, variant: ScanVariant): Either<AnalysisError, ByteArray>
 }
 
 enum class WalletPlatform { APPLE_WALLET, GOOGLE_WALLET }

@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
@@ -88,6 +89,7 @@ fun HomeContent(component: HomeComponent) {
             onCardClick = component::onCardClicked,
             onCardDelete = component::onCardDeleteClicked,
             snackbar = snackbar,
+            onEnterManually = component::onEnterManuallyClicked,
         )
         return
     }
@@ -139,7 +141,13 @@ fun HomeContent(component: HomeComponent) {
                 Spacer(Modifier.size(8.dp))
                 Text("Paste image")
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(4.dp))
+            TextButton(onClick = component::onEnterManuallyClicked, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Outlined.Keyboard, null)
+                Spacer(Modifier.size(8.dp))
+                Text("Enter manually")
+            }
+            Spacer(Modifier.height(20.dp))
             Hint(Icons.Outlined.Share, "Tip: use Share → Add to Walletka from Photos or any app")
             if (model.isWalletAvailable == false) {
                 Spacer(Modifier.height(8.dp))
@@ -171,6 +179,7 @@ private fun CardLibrary(
     onCardClick: (String) -> Unit,
     onCardDelete: (String) -> Unit,
     snackbar: SnackbarHostState,
+    onEnterManually: () -> Unit,
 ) {
     var isAddMenuOpen by remember { mutableStateOf(false) }
     var pendingDeletion by remember { mutableStateOf<HomeComponent.CardSummary?>(null) }
@@ -200,6 +209,11 @@ private fun CardLibrary(
                         text = { Text("Paste image") },
                         leadingIcon = { Icon(Icons.Outlined.ContentPaste, null) },
                         onClick = { isAddMenuOpen = false; onPaste() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Enter manually") },
+                        leadingIcon = { Icon(Icons.Outlined.Keyboard, null) },
+                        onClick = { isAddMenuOpen = false; onEnterManually() },
                     )
                 }
             }

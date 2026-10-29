@@ -108,6 +108,7 @@ struct HomeView: View {
             Button("Choose Photo", systemImage: "photo.on.rectangle") { isPhotoPickerPresented = true }
             Button("Paste Image", systemImage: "doc.on.clipboard") { pasteImage() }
                 .disabled(!UIPasteboard.general.hasImages)
+            Button("Enter Manually", systemImage: "keyboard") { component.onEnterManuallyClicked() }
         } label: {
             Label("Add Card", systemImage: "plus")
                 .font(.headline)
@@ -167,6 +168,13 @@ struct HomeView: View {
                 pasteButton
                     .buttonBorderShape(.capsule)
                     .controlSize(.large)
+
+                Button {
+                    component.onEnterManuallyClicked()
+                } label: {
+                    Label("Enter Manually", systemImage: "keyboard")
+                }
+                .controlSize(.large)
             }
             Label("Tip: in Photos, tap Share → Add to Walletka", systemImage: "square.and.arrow.up")
                 .font(.footnote)

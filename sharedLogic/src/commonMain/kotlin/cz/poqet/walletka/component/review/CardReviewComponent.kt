@@ -27,6 +27,9 @@ interface CardReviewComponent {
     /** Edits the content of the selected code. */
     fun onCodeValueChanged(value: String)
 
+    /** Changes the symbology of a typed code ([CardForm.isCodeTyped]); ignored for detected codes. */
+    fun onCodeFormatSelected(format: CodeFormat)
+
     fun onColorSelected(index: Int)
 
     /** A colour from a colour picker; it becomes the palette's custom colour and is selected. */
@@ -106,7 +109,8 @@ interface CardReviewComponent {
     }
 
     data class CardForm(
-        val photo: StoredImage,
+        /** `null` for a card entered by hand: no banner and no photo colours then. */
+        val photo: StoredImage?,
         val name: String,
         val nameSuggestions: List<String>,
         val codes: List<ScannedCode>,
@@ -118,15 +122,25 @@ interface CardReviewComponent {
         val suggestedColorCount: Int,
         val banner: StoredImage?,
         val isBannerEnabled: Boolean,
-        /** Part of [photo] the banner is cut from. */
+        /** Part of [photo] the banner is cut from; [NormalizedRect.Full] without a photo. */
         val bannerRegion: NormalizedRect,
         /** Width / height of [photo], for laying out the banner editor. */
         val photoAspectRatio: Float,
         val walletPlatform: WalletPlatform,
         /** Set once the card is in the library, i.e. it has been added to the wallet. */
         val cardId: String?,
+        /**
+         * The code was typed in rather than detected (no photo, or none found in it): [codes] holds that one code
+         * and its format can be changed.
+         */
+        val isCodeTyped: Boolean = false,
     ) {
         val isLibraryCard: Boolean get() = cardId != null
+
+        val hasPhoto: Boolean get() = photo != null
+
+        /** Formats offered for a typed code, the most common first. */
+        val typedCodeFormats: List<CodeFormat> get() = TypedCodeFormats
 
         val bannerViewport: BannerViewport get() = BannerViewport(photoAspectRatio)
 
@@ -159,3 +173,7 @@ interface CardReviewComponent {
         data class Failed(val failure: WalletFailure, val detail: String?) : Submission
     }
 }
+
+private val CommonCodeFormats = listOf(CodeFormat.QR, CodeFormat.CODE_128, CodeFormat.EAN_13, CodeFormat.PDF417, CodeFormat.AZTEC)
+
+private val TypedCodeFormats: List<CodeFormat> = CommonCodeFormats + (CodeFormat.entries - CommonCodeFormats.toSet())
