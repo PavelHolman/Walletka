@@ -311,7 +311,9 @@ struct HomeView: View {
                     Button {
                         component.onEnterManuallyClicked()
                     } label: {
+                        // The rest of the row, so the buttons line up with the ones above (Paste can't stretch).
                         Label("Enter Manually", systemImage: "keyboard")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
                 }
