@@ -256,6 +256,8 @@ private struct CardFormView: View {
     @ScaledMetric private var swatchSize: CGFloat = 38
     @State private var isPickingColorFromPhoto = false
     @State private var isConfirmingDelete = false
+    /// More swatches are scrolled off the trailing edge.
+    @State private var hasMoreSwatches = false
     @FocusState private var isNameFocused: Bool
 
     private var isBusy: Bool {
@@ -477,6 +479,19 @@ private struct CardFormView: View {
                     }
                 }
                 .padding(.vertical, 2)
+            }
+            .onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.x + geometry.containerSize.width < geometry.contentSize.width - 1
+            } action: { _, hasMore in
+                withAnimation(.easeOut(duration: 0.2)) { hasMoreSwatches = hasMore }
+            }
+            // Fades the cut-off swatch, so the row reads as scrollable rather than clipped.
+            .mask {
+                HStack(spacing: 0) {
+                    Color.black
+                    LinearGradient(colors: [.black, .black.opacity(hasMoreSwatches ? 0 : 1)], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 32)
+                }
             }
             .sensoryFeedback(.selection, trigger: form.selectedColorIndex)
             ColorPicker("Custom Colour", selection: Binding(
