@@ -20,6 +20,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -584,11 +585,12 @@ private fun Editing(
 
 /** Shown once Google Wallet reports the pass as saved. */
 @Composable
-private fun CardAdded(form: CardForm, replacedExisting: Boolean, onDone: () -> Unit) {
+private fun CardAdded(form: CardForm, replacedExisting: Boolean, onDone: () -> Unit) = BoxWithConstraints(Modifier.fillMaxSize()) {
+    // Centred on the screen; scrolls only when large text makes it taller than that.
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        Modifier.verticalScroll(rememberScrollState()).fillMaxWidth().heightIn(min = maxHeight).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
     ) {
         Icon(Icons.Outlined.CheckCircle, null, Modifier.size(64.dp), tint = Color(0xFF2E7D32))
         Text(
