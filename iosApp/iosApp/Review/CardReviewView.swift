@@ -259,6 +259,10 @@ private struct CardFormView: View {
     /// More swatches are scrolled off the trailing edge.
     @State private var hasMoreSwatches = false
     @FocusState private var isNameFocused: Bool
+    @FocusState private var isCodeFocused: Bool
+
+    /// The card is typed in and its code is still missing.
+    private var needsTypedCode: Bool { form.isCodeTyped && form.selectedCode.value.isEmpty }
 
     private var isBusy: Bool {
         if case .inProgress = submission.sealedType() { return true }
@@ -293,7 +297,9 @@ private struct CardFormView: View {
                 HStack {
                     TextField("e.g. Coffee Club", text: Binding(get: { form.name }, set: { component.onNameChanged(name: $0) }))
                         .textInputAutocapitalization(.words)
-                        .submitLabel(.done)
+                        // Typing a card in: Return moves on to its code.
+                        .submitLabel(needsTypedCode ? .next : .done)
+                        .onSubmit { if needsTypedCode { isCodeFocused = true } }
                         .focused($isNameFocused)
                     if isNameFocused && !form.name.isEmpty {
                         Button {
@@ -431,6 +437,7 @@ private struct CardFormView: View {
                 .keyboardType(form.isCodeTyped && Self.isNumeric(form.selectedCode.format) ? .numberPad : .default)
                 .textInputAutocapitalization(form.isCodeTyped && Self.isUppercase(form.selectedCode.format) ? .characters : .never)
                 .lineLimit(1...4)
+                .focused($isCodeFocused)
             }
             .padding(.vertical, 2)
         } header: {
@@ -733,15 +740,16 @@ private struct CardPreview: View {
                     .clipped()
             }
 
+            let isTwoDimensional = form.walletCodeFormat.isTwoDimensional
+            let height: CGFloat = isTwoDimensional ? (compact ? 96 : 140) : (compact ? 52 : 70)
             if let code = CodeImage.make(format: form.walletCodeFormat, value: form.selectedCode.value) {
-                let height: CGFloat = form.walletCodeFormat.isTwoDimensional ? (compact ? 96 : 140) : (compact ? 52 : 70)
                 VStack(spacing: 4) {
                     Image(uiImage: code)
                         .interpolation(.none)
                         .resizable()
                         .scaledToFit()
                         .frame(maxHeight: height)
-                    if !form.walletCodeFormat.isTwoDimensional {
+                    if !isTwoDimensional {
                         Text(form.selectedCode.value).font(.caption2.monospaced()).foregroundStyle(.black)
                     }
                 }
@@ -749,17 +757,26 @@ private struct CardPreview: View {
                 .background(.white, in: RoundedRectangle(cornerRadius: 8))
                 .padding(compact ? 14 : 20)
             } else {
-                // No code typed yet: keep the card's shape and show where the code goes.
-                let isTwoDimensional = form.walletCodeFormat.isTwoDimensional
-                Image(systemName: isTwoDimensional ? "qrcode" : "barcode")
-                    .font(.system(size: isTwoDimensional ? 44 : 36, weight: .light))
-                    .foregroundStyle(content.opacity(0.5))
-                    .frame(width: isTwoDimensional ? 110 : 180, height: isTwoDimensional ? 110 : 64)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(content.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                    )
-                    .padding(compact ? 14 : 20)
+                // No code typed yet: show where the code goes, laid out like the code itself, so the card doesn't
+                // grow (and push the field being typed in under the keyboard) once there is one.
+                VStack(spacing: 4) {
+                    Color.clear.frame(width: isTwoDimensional ? height : 160, height: height)
+                    if !isTwoDimensional {
+                        Text(verbatim: " ").font(.caption2.monospaced())
+                    }
+                }
+                .padding(10)
+                .overlay {
+                    Image(systemName: isTwoDimensional ? "qrcode" : "barcode")
+                        .font(.system(size: isTwoDimensional ? 44 : 36, weight: .light))
+                        .foregroundStyle(content.opacity(0.5))
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(content.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                )
+                .accessibilityHidden(true)
+                .padding(compact ? 14 : 20)
             }
         }
         .frame(maxWidth: .infinity)
