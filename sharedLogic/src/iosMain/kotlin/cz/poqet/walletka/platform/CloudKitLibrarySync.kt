@@ -189,12 +189,27 @@ internal class CloudKitLibrarySync(
             val engine = CKSyncEngine(configuration)
             this.engine = engine
             if (state == null || uploadAll) queueEverything(engine)
+            if (queuedBeforeConnect.isNotEmpty() || orderQueuedBeforeConnect) {
+                queue(queuedBeforeConnect.toSet(), orderQueuedBeforeConnect)
+                queuedBeforeConnect.clear()
+                orderQueuedBeforeConnect = false
+            }
             engine.fetchChangesWithCompletionHandler { fetchError -> fetchError?.let { fail("fetch", it) } }
         }
     }
 
+    /** Local changes made before the engine was ready (the account check is asynchronous); sent once it is. */
+    private val queuedBeforeConnect = mutableSetOf<String>()
+    private var orderQueuedBeforeConnect = false
+
     private fun queue(ids: Set<String>, orderChanged: Boolean) {
-        val engine = engine ?: return
+        val engine = engine ?: run {
+            if (isEnabled) {
+                queuedBeforeConnect += ids
+                orderQueuedBeforeConnect = orderQueuedBeforeConnect || orderChanged
+            }
+            return
+        }
         val changes = ids.map { save(recordID(it)) } + listOfNotNull(save(recordID(ORDER_RECORD)).takeIf { orderChanged })
         if (changes.isNotEmpty()) engine.state.addPendingRecordZoneChanges(changes)
     }
