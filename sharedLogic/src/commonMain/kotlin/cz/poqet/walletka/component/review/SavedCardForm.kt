@@ -22,11 +22,13 @@ internal data class SavedCardForm(
     val selectedCodeIndex: Int,
     val colors: List<Int>,
     val selectedColorIndex: Int,
+    val suggestedColorCount: Int,
     val banner: String?,
     val isBannerEnabled: Boolean,
     val bannerRegion: List<Float>,
     val photoAspectRatio: Float,
     val walletPlatform: WalletPlatform,
+    val cardId: String? = null,
 ) {
     @Serializable
     data class Code(val format: CodeFormat, val value: String, val bounds: List<Float>?)
@@ -41,11 +43,13 @@ internal data class SavedCardForm(
         selectedCodeIndex = selectedCodeIndex,
         colors = colors.map(CardColor::fromArgb),
         selectedColorIndex = selectedColorIndex,
+        suggestedColorCount = suggestedColorCount,
         banner = banner?.let(::StoredImage),
         isBannerEnabled = isBannerEnabled,
         bannerRegion = bannerRegion.let { (l, t, r, b) -> NormalizedRect(l, t, r, b) },
         photoAspectRatio = photoAspectRatio,
         walletPlatform = walletPlatform,
+        cardId = cardId,
     )
 
     companion object {
@@ -59,11 +63,13 @@ internal data class SavedCardForm(
             selectedCodeIndex = form.selectedCodeIndex,
             colors = form.colors.map { (it.red shl 16) or (it.green shl 8) or it.blue },
             selectedColorIndex = form.selectedColorIndex,
+            suggestedColorCount = form.suggestedColorCount,
             banner = form.banner?.path,
             isBannerEnabled = form.isBannerEnabled,
             bannerRegion = form.bannerRegion.run { listOf(left, top, right, bottom) },
             photoAspectRatio = form.photoAspectRatio,
             walletPlatform = form.walletPlatform,
+            cardId = form.cardId,
         )
     }
 }

@@ -18,6 +18,8 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
@@ -50,11 +52,50 @@ internal class AppleWalletService(
 
     override val platform = WalletPlatform.APPLE_WALLET
 
+    /** Strong reference to the delegate of the add-pass sheet currently shown (see [present]). */
+    private var activeDelegate: AddPassDelegate? = null
+
+    override val canUpdateInPlace = true
+
+    override suspend fun updateCard(card: CardDraft): Either<WalletError, AddedCard> = either {
+        ensure(config.isServiceConfigured) { WalletError(WalletFailure.NOT_CONFIGURED, "Pass service URL missing") }
+        val pass = signedPass(card).bind()
+        val library = PKPassLibrary()
+        ensure(library.containsPass(pass)) { WalletError(WalletFailure.NOT_IN_WALLET) }
+        ensure(withContext(Dispatchers.Main) { library.replacePassWithPass(pass) }) {
+            WalletError(WalletFailure.FAILED, "Apple Wallet did not accept the updated pass")
+        }
+        AddedCard(walletUrl = pass.passURL?.absoluteString, replacedExisting = true)
+    }
+
     override suspend fun isAvailable(): Boolean = PKPassLibrary.isPassLibraryAvailable() && PKAddPassesViewController.canAddPasses()
 
-    override suspend fun addCard(card: CardDraft): Either<WalletError, Unit> = either {
+    override suspend fun addCard(card: CardDraft): Either<WalletError, AddedCard> = either {
         ensure(config.isServiceConfigured) { WalletError(WalletFailure.NOT_CONFIGURED, "Pass service URL missing") }
         ensure(isAvailable()) { WalletError(WalletFailure.UNAVAILABLE) }
+        val pass = signedPass(card).bind()
+        // A library card edited later keeps its serial number, so its pass can be replaced without any UI.
+        val library = PKPassLibrary()
+        if (library.containsPass(pass)) {
+            ensure(withContext(Dispatchers.Main) { library.replacePassWithPass(pass) }) {
+                WalletError(WalletFailure.FAILED, "Apple Wallet did not accept the updated pass")
+            }
+            return@either AddedCard(walletUrl = pass.passURL?.absoluteString, replacedExisting = true)
+        }
+        ensure(present(pass)) { WalletError(WalletFailure.CANCELLED) }
+        AddedCard(walletUrl = pass.passURL?.absoluteString)
+    }
+
+    override suspend fun removeCard(walletId: String): Boolean = withContext(Dispatchers.Main) {
+        val library = PKPassLibrary()
+        val pass = library.passes().filterIsInstance<PKPass>().firstOrNull { it.serialNumber == walletId }
+            ?: return@withContext false
+        library.removePass(pass)
+        true
+    }
+
+    /** Signs the pass through the pass service and parses it with PassKit. */
+    private suspend fun signedPass(card: CardDraft): Either<WalletError, PKPass> = either {
         val signed = passService.signApplePass(passFiles(card)).bind().toNSData()
         val pass = memScoped {
             val error = alloc<ObjCObjectVar<NSError?>>()
@@ -66,12 +107,12 @@ internal class AppleWalletService(
             }
             pass
         }
-        ensure(present(pass)) { WalletError(WalletFailure.CANCELLED) }
+        pass
     }
 
     private suspend fun passFiles(card: CardDraft): Map<String, ByteArray> = withContext(Dispatchers.Default) {
         buildMap {
-            put("pass.json", PassJson.apple(card, config, serialNumber = NSUUID().UUIDString).encodeToByteArray())
+            put("pass.json", PassJson.apple(card, config, serialNumber = card.walletId).encodeToByteArray())
             put("icon.png", solidPng(card.backgroundColor, size = 29.0, scale = 1.0))
             put("icon@2x.png", solidPng(card.backgroundColor, size = 29.0, scale = 2.0))
             put("icon@3x.png", solidPng(card.backgroundColor, size = 29.0, scale = 3.0))
@@ -86,10 +127,24 @@ internal class AppleWalletService(
         val controller = PKAddPassesViewController(pass = pass)
         val presenter = topViewController() ?: return@withContext false
         val finished = CompletableDeferred<Unit>()
+        // PassKit holds its delegate weakly; keep it reachable until the sheet is gone, or Kotlin/Native's GC may
+        // collect it while we wait and the sheet's outcome is never reported.
         val delegate = AddPassDelegate { finished.complete(Unit) }
+        activeDelegate = delegate
         controller.delegate = delegate
         presenter.presentViewController(controller, animated = true, completion = null)
-        finished.await()
+        // Safety net: if the sheet disappears without a delegate callback, don't wait forever.
+        val watchdog = launch {
+            delay(1_000)
+            while (controller.presentingViewController != null || controller.isBeingPresented()) delay(300)
+            finished.complete(Unit)
+        }
+        try {
+            finished.await()
+        } finally {
+            watchdog.cancel()
+            activeDelegate = null
+        }
         PKPassLibrary().containsPass(pass)
     }
 
@@ -113,7 +168,10 @@ internal class AppleWalletService(
 
     private class AddPassDelegate(private val onFinish: () -> Unit) : NSObject(), PKAddPassesViewControllerDelegateProtocol {
         override fun addPassesViewControllerDidFinish(controller: PKAddPassesViewController) {
-            controller.dismissViewControllerAnimated(true) { onFinish() }
+            // Report right away: the outcome is known now, and waiting for the dismissal animation's completion is
+            // not reliable when PassKit dismisses the sheet itself.
+            onFinish()
+            if (controller.presentingViewController != null) controller.dismissViewControllerAnimated(true, completion = null)
         }
     }
 }

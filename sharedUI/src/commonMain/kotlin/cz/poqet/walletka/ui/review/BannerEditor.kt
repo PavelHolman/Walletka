@@ -1,8 +1,12 @@
 package cz.poqet.walletka.ui.review
 
 import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +33,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -58,7 +61,7 @@ internal fun BannerEditorDialog(form: CardForm, onDone: (NormalizedRect) -> Unit
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    "Drag and pinch the photo to choose what the banner shows.",
+                    "Drag and pinch the photo. The bright strip becomes the banner.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -81,6 +84,9 @@ internal fun BannerEditorDialog(form: CardForm, onDone: (NormalizedRect) -> Unit
     )
 }
 
+/** Height of the editing area relative to the strip-shaped window; the extra space shows the photo around it. */
+private const val CONTEXT_FACTOR = 2.2f
+
 @Composable
 private fun BannerWindow(
     viewport: BannerViewport,
@@ -92,18 +98,18 @@ private fun BannerWindow(
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
-            .aspectRatio(BannerViewport.ASPECT_RATIO)
-            .clipToBounds()
-            .background(Color.Black)
-            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp)),
+            .aspectRatio(BannerViewport.ASPECT_RATIO / CONTEXT_FACTOR)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.Black),
     ) {
         val windowPx = constraints.maxWidth.toFloat()
+        val windowHeightPx = windowPx / BannerViewport.ASPECT_RATIO
+        val windowTopPx = (constraints.maxHeight - windowHeightPx) / 2
         val transform = viewport.transformFor(region)
         val density = LocalDensity.current
         Box(
             Modifier
-                .fillMaxWidth()
-                .aspectRatio(BannerViewport.ASPECT_RATIO)
+                .matchParentSize()
                 .pointerInput(viewport, windowPx) {
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         onRegionChange(
@@ -111,7 +117,7 @@ private fun BannerWindow(
                                 currentRegion,
                                 scaleBy = zoom,
                                 anchorX = centroid.x / windowPx,
-                                anchorY = centroid.y / windowPx,
+                                anchorY = (centroid.y - windowTopPx) / windowPx,
                                 panX = pan.x / windowPx,
                                 panY = pan.y / windowPx,
                             ),
@@ -122,17 +128,23 @@ private fun BannerWindow(
             with(density) {
                 Box(
                     Modifier
-                        .offset { IntOffset((transform.offsetX * windowPx).roundToInt(), (transform.offsetY * windowPx).roundToInt()) }
+                        .offset {
+                            IntOffset(
+                                (transform.offsetX * windowPx).roundToInt(),
+                                (windowTopPx + transform.offsetY * windowPx).roundToInt(),
+                            )
+                        }
                         .wrapContentSize(Alignment.TopStart, unbounded = true)
                         .requiredSize((transform.width * windowPx).toDp(), (transform.height * windowPx).toDp()),
                 ) { photo() }
+                // Dim the photo outside the window and outline the window.
+                Canvas(Modifier.matchParentSize()) {
+                    val dim = Color.Black.copy(alpha = 0.6f)
+                    drawRect(dim, size = Size(size.width, windowTopPx))
+                    drawRect(dim, topLeft = Offset(0f, windowTopPx + windowHeightPx), size = Size(size.width, size.height - windowTopPx - windowHeightPx))
+                    drawRect(Color.White, topLeft = Offset(0f, windowTopPx), size = Size(size.width, windowHeightPx), style = Stroke(2.dp.toPx()))
+                }
             }
         }
     }
-}
-
-/** Small "Adjust" affordance next to the banner switch. */
-@Composable
-internal fun AdjustBannerButton(enabled: Boolean, onClick: () -> Unit) {
-    TextButton(onClick = onClick, enabled = enabled, modifier = Modifier.padding(end = 4.dp)) { Text("Adjust") }
 }

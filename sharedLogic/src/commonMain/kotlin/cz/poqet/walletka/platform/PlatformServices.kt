@@ -9,6 +9,8 @@ import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.domain.TextLine
 import cz.poqet.walletka.domain.WalletError
+import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Copies images coming from outside the app (share sheet, clipboard, photo picker) into app storage.
@@ -50,8 +52,26 @@ internal interface WalletService {
 
     suspend fun isAvailable(): Boolean
 
-    suspend fun addCard(card: CardDraft): Either<WalletError, Unit>
+    /** Adds the card, or replaces the pass with the same [CardDraft.walletId] where the wallet allows it. */
+    suspend fun addCard(card: CardDraft): Either<WalletError, AddedCard>
+
+    /** Whether [updateCard] can replace a pass without any UI (Apple Wallet yes, the on-device Google API no). */
+    val canUpdateInPlace: Boolean
+
+    /** Silently replaces the pass with the same [CardDraft.walletId]; fails with `NOT_IN_WALLET` if it's gone. */
+    suspend fun updateCard(card: CardDraft): Either<WalletError, AddedCard>
+
+    /** Removes the pass from the wallet; `false` when the platform does not let apps do that. */
+    suspend fun removeCard(walletId: String): Boolean
 }
+
+/** A card that is now in the wallet. */
+internal data class AddedCard(
+    /** Opens the card in the wallet app, when the platform offers such a link. */
+    val walletUrl: String? = null,
+    /** An existing pass was updated in place rather than a new one added. */
+    val replacedExisting: Boolean = false,
+)
 
 /** The platform specific implementations the shared logic depends on. */
 internal class PlatformServices(
@@ -60,4 +80,8 @@ internal class PlatformServices(
     val textRecognizer: TextRecognizer,
     val imageProcessor: ImageProcessor,
     val walletService: WalletService,
+    /** App-private directory for persistent data (the card library). */
+    val dataDirectory: String,
+    /** Where blocking file I/O runs. */
+    val ioContext: CoroutineContext = Dispatchers.Default,
 )

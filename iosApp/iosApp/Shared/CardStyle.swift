@@ -6,6 +6,14 @@ extension CardColor {
     var swiftUIColor: Color {
         Color(red: Double(red) / 255, green: Double(green) / 255, blue: Double(blue) / 255)
     }
+
+    /// The sRGB channels of a SwiftUI colour (e.g. from `ColorPicker`).
+    convenience init(color: Color) {
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        UIColor(color).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        func channel(_ value: CGFloat) -> Int32 { Int32((min(max(value, 0), 1) * 255).rounded()) }
+        self.init(red: channel(red), green: channel(green), blue: channel(blue))
+    }
 }
 
 /// Renders a code the way the wallet will show it (Core Image supports exactly Apple Wallet's symbologies).

@@ -17,3 +17,5 @@ typealias CardColor = ExportedKotlinPackages.cz.poqet.walletka.domain.CardColor
 typealias CodeFormat = ExportedKotlinPackages.cz.poqet.walletka.domain.CodeFormat
 typealias AnalysisFailure = ExportedKotlinPackages.cz.poqet.walletka.domain.AnalysisFailure
 typealias WalletFailure = ExportedKotlinPackages.cz.poqet.walletka.domain.WalletFailure
+typealias CardSummary = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_home_HomeComponent_CardSummary
+typealias SyncStatus = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_review_CardReviewComponent_SyncStatus

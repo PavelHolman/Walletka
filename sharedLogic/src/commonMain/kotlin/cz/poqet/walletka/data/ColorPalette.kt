@@ -34,6 +34,19 @@ internal object ColorPalette {
         return result
     }
 
+    /** Average colour of the pixels within [radius] of the normalized point ([x], [y]). */
+    fun sample(pixels: ImagePixels, x: Float, y: Float, radius: Int = 2): CardColor {
+        val cx = (x.coerceIn(0f, 1f) * (pixels.width - 1)).toInt()
+        val cy = (y.coerceIn(0f, 1f) * (pixels.height - 1)).toInt()
+        val bucket = Bucket()
+        for (py in (cy - radius)..(cy + radius)) {
+            for (px in (cx - radius)..(cx + radius)) {
+                if (px in 0 until pixels.width && py in 0 until pixels.height) bucket.add(pixels.argb[py * pixels.width + px])
+            }
+        }
+        return bucket.average()
+    }
+
     internal fun saturation(c: CardColor): Double {
         val hi = max(c.red, max(c.green, c.blue))
         val lo = min(c.red, min(c.green, c.blue))

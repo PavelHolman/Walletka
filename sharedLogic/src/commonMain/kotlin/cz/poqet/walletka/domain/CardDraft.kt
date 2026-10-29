@@ -3,6 +3,8 @@ package cz.poqet.walletka.domain
 
 /** Everything needed to issue a wallet pass. */
 internal data class CardDraft(
+    /** Stable pass identity (Apple serial number), so re-issuing the card replaces the previous pass. */
+    val walletId: String,
     val name: String,
     val code: ScannedCode,
     val backgroundColor: CardColor,

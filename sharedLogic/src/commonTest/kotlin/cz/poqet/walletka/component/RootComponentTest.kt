@@ -3,6 +3,7 @@ package cz.poqet.walletka.component
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.resume
+import cz.poqet.walletka.component.review.CardReviewComponent
 import cz.poqet.walletka.component.review.CardReviewComponent.Model
 import cz.poqet.walletka.component.review.CardReviewComponent.Submission
 import cz.poqet.walletka.component.root.DefaultRootComponent
@@ -17,11 +18,16 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RootComponentTest {
@@ -55,7 +61,7 @@ class RootComponentTest {
         assertEquals("Coffee Club", editing.form.name)
         assertEquals(listOf("Coffee Club", "Coffee"), editing.form.nameSuggestions)
         assertEquals(code, editing.form.selectedCode)
-        assertEquals("/stored/banner.png", editing.form.banner?.path)
+        assertTrue(editing.form.banner!!.path.endsWith("banner0.png"))
     }
 
     @Test
@@ -84,23 +90,28 @@ class RootComponentTest {
         review.onBannerToggled(false)
         review.onAddToWalletClicked()
 
-        assertEquals(Submission.Added, assertIs<Model.Editing>(review.model.value).submission)
+        assertEquals(Submission.Added("wallet://card", replacedExisting = false), assertIs<Model.Editing>(review.model.value).submission)
         val card = wallet.added.single()
         assertEquals("My Coffee", card.name)
         assertEquals(null, card.banner)
 
         review.onCloseClicked()
         assertIs<RootComponent.Child.Home>(root.children.value.single())
-        assertEquals(listOf("/stored/photo.jpg", "/stored/banner.png"), store.deleted.map { it.path })
+        // The card is in the library now: its images were moved there, the cache copies dropped.
+        assertEquals(listOf(store.path("photo.jpg"), store.path("banner0.png")), store.deleted.map { it.path })
+        val summary = assertIs<RootComponent.Child.Home>(root.children.value.single()).component.model.value.cards.single()
+        assertEquals("My Coffee", summary.name)
+        assertEquals(null, summary.banner)
     }
 
     @Test
     fun newShareReplacesCurrentReview() {
-        val root = root(fakeServices(listOf(code)))
+        val store = FakeImageStore()
+        val root = root(fakeServices(listOf(code), imageStore = store))
         root.onImageReceived("first.jpg")
         root.onImageReceived("second.jpg")
         assertEquals(2, root.children.value.size)
-        assertEquals("/stored/second.jpg", assertIs<Model.Editing>(root.review().model.value).form.photo.path)
+        assertEquals(store.path("second.jpg"), assertIs<Model.Editing>(root.review().model.value).form.photo.path)
     }
 
     @Test
@@ -121,5 +132,171 @@ class RootComponentTest {
         val recropped = assertIs<Model.Editing>(review.model.value).form
         assertEquals(listOf(before.banner!!.path), store.deleted.map { it.path })
         assertEquals(moved.bannerRegion, recropped.bannerRegion)
+    }
+
+    @Test
+    fun cancellingTheWalletSheetReturnsToTheForm() {
+        val wallet = FakeWalletService(result = arrow.core.Either.Left(cz.poqet.walletka.domain.WalletError(cz.poqet.walletka.domain.WalletFailure.CANCELLED)))
+        val root = root(fakeServices(listOf(code), walletService = wallet))
+        root.onImageReceived("photo.jpg")
+        root.review().onAddToWalletClicked()
+        assertEquals(Submission.Idle, assertIs<Model.Editing>(root.review().model.value).submission)
+    }
+
+    @Test
+    fun customAndPhotoColoursReplaceTheCustomSlot() {
+        val root = root(fakeServices(listOf(code)))
+        root.onImageReceived("photo.jpg")
+        val review = root.review()
+        val suggested = assertIs<Model.Editing>(review.model.value).form.colors
+
+        review.onCustomColorSelected(cz.poqet.walletka.domain.CardColor(10, 20, 30))
+        review.onColorPreviewRequested(0.5f, 0.5f)
+        // Previewing doesn't touch the card…
+        assertEquals(cz.poqet.walletka.domain.CardColor(10, 20, 30), assertIs<Model.Editing>(review.model.value).form.selectedColor)
+        assertEquals(cz.poqet.walletka.domain.CardColor(26, 35, 126), assertIs<Model.Editing>(review.model.value).colorPreview)
+        // …confirming does.
+        review.onColorPreviewConfirmed()
+        assertEquals(null, assertIs<Model.Editing>(review.model.value).colorPreview)
+
+        val form = assertIs<Model.Editing>(review.model.value).form
+        assertEquals(suggested + cz.poqet.walletka.domain.CardColor(26, 35, 126), form.colors) // FakeImageProcessor's pixels
+        assertEquals(form.suggestedColorCount, form.selectedColorIndex)
+        assertTrue(form.isCustomColorSelected)
+    }
+
+    @Test
+    fun libraryCardIsEditedAndReissuedWithTheSameSerial() {
+        val wallet = FakeWalletService()
+        val dataDirectory = tempDirectory("data")
+        val root = root(fakeServices(listOf(code), walletService = wallet, dataDirectory = dataDirectory))
+        root.onImageReceived("photo.jpg")
+        root.review().onAddToWalletClicked()
+        root.review().onCloseClicked()
+
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        home.onCardClicked(home.model.value.cards.single().id)
+        val edit = root.review()
+        val form = assertIs<Model.Editing>(edit.model.value).form
+        assertTrue(form.isLibraryCard)
+
+        assertEquals(false, assertIs<Model.Editing>(edit.model.value).hasChanges)
+        edit.onNameChanged("Renamed")
+        edit.onCodeValueChanged("NEW-123")
+        assertEquals(true, assertIs<Model.Editing>(edit.model.value).hasChanges)
+        edit.onAddToWalletClicked()
+
+        val (first, second) = wallet.added
+        assertEquals(first.walletId, second.walletId)
+        assertEquals("NEW-123", second.code.value)
+        assertEquals("Renamed", home.model.value.cards.single().name)
+        assertEquals(false, assertIs<Model.Editing>(edit.model.value).hasChanges)
+
+        edit.onDeleteClicked()
+        assertEquals(listOf(first.walletId), wallet.removed)
+        assertEquals(emptyList(), home.model.value.cards)
+        assertIs<RootComponent.Child.Home>(root.children.value.single())
+    }
+
+    @Test
+    fun libraryPersistsAcrossLaunches() = kotlinx.coroutines.test.runTest {
+        val dataDirectory = tempDirectory("data")
+        val root = root(fakeServices(listOf(code), dataDirectory = dataDirectory))
+        root.onImageReceived("photo.jpg")
+        root.review().onAddToWalletClicked()
+
+        val reopened = cz.poqet.walletka.data.CardLibrary(dataDirectory.toString(), kotlin.coroutines.EmptyCoroutineContext)
+        reopened.load()
+        assertEquals(1, reopened.cards.value.size)
+        assertTrue(reopened.isLibraryImage(cz.poqet.walletka.domain.StoredImage(reopened.cards.value.single().form.photo)))
+    }
+
+    @Test
+    fun cardsCanBeDeletedFromTheLibraryList() {
+        val wallet = FakeWalletService()
+        val root = root(fakeServices(listOf(code), walletService = wallet))
+        root.onImageReceived("photo.jpg")
+        root.review().onAddToWalletClicked()
+        root.review().onCloseClicked()
+
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        home.onCardDeleteClicked(home.model.value.cards.single().id)
+
+        assertEquals(emptyList(), home.model.value.cards)
+        assertEquals(wallet.added.map { it.walletId }, wallet.removed)
+    }
+
+    @Test
+    fun libraryStoresImagePathsRelativeToItsFolder() = kotlinx.coroutines.test.runTest {
+        val dataDirectory = tempDirectory("data")
+        val root = root(fakeServices(listOf(code), dataDirectory = dataDirectory))
+        root.onImageReceived("photo.jpg")
+        root.review().onAddToWalletClicked()
+
+        val json = SystemFileSystem.source(Path(dataDirectory, "library", "cards.json")).buffered().use { it.readString() }
+        assertTrue("\"photo\":\"photo.jpg\"" in json, json)
+
+        // Moving the whole data directory (as a container change would) keeps the images reachable.
+        val reopened = cz.poqet.walletka.data.CardLibrary(dataDirectory.toString(), kotlin.coroutines.EmptyCoroutineContext)
+        reopened.load()
+        val photo = reopened.cards.value.single().form.photo
+        assertTrue(SystemFileSystem.exists(Path(photo)), photo)
+    }
+
+    private fun kotlinx.coroutines.test.TestScope.libraryCardWithAutoSync(wallet: FakeWalletService): Pair<RootComponent, cz.poqet.walletka.component.home.HomeComponent> {
+        Dispatchers.setMain(kotlinx.coroutines.test.StandardTestDispatcher(testScheduler))
+        wallet.canUpdateInPlace = true
+        val root = root(fakeServices(listOf(code), walletService = wallet))
+        root.onImageReceived("photo.jpg")
+        testScheduler.advanceUntilIdle()
+        root.review().onAddToWalletClicked()
+        testScheduler.advanceUntilIdle()
+        root.review().onCloseClicked()
+        testScheduler.advanceUntilIdle()
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        home.onCardClicked(home.model.value.cards.single().id)
+        testScheduler.advanceUntilIdle()
+        return root to home
+    }
+
+    @Test
+    fun libraryCardEditsSyncAutomatically() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val (root, home) = libraryCardWithAutoSync(wallet)
+        val edit = root.review()
+        assertEquals(CardReviewComponent.SyncStatus.SYNCED, assertIs<Model.Editing>(edit.model.value).sync)
+
+        edit.onNameChanged("Renamed")
+        assertEquals(CardReviewComponent.SyncStatus.PENDING, assertIs<Model.Editing>(edit.model.value).sync)
+        testScheduler.advanceUntilIdle()
+
+        val synced = assertIs<Model.Editing>(edit.model.value)
+        assertEquals(CardReviewComponent.SyncStatus.SYNCED, synced.sync)
+        assertEquals(false, synced.hasChanges)
+        assertEquals("Renamed", wallet.updated.single().name)
+        assertEquals(wallet.added.single().walletId, wallet.updated.single().walletId)
+        assertEquals("Renamed", home.model.value.cards.single().name)
+    }
+
+    @Test
+    fun closingWithPendingEditsStillSyncs() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val (root, home) = libraryCardWithAutoSync(wallet)
+        root.review().onNameChanged("Quick edit")
+        root.review().onCloseClicked()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("Quick edit", wallet.updated.single().name)
+        assertEquals("Quick edit", home.model.value.cards.single().name)
+    }
+
+    @Test
+    fun removedPassIsReportedAsNotInWallet() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val (root, _) = libraryCardWithAutoSync(wallet)
+        wallet.inWallet = false
+        root.review().onNameChanged("Renamed")
+        testScheduler.advanceUntilIdle()
+        assertEquals(CardReviewComponent.SyncStatus.NOT_IN_WALLET, assertIs<Model.Editing>(root.review().model.value).sync)
     }
 }

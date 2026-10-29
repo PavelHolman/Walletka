@@ -14,6 +14,7 @@ import kotlin.test.assertEquals
 class PassJsonTest {
 
     private val card = CardDraft(
+        walletId = "serial-1",
         name = "Coffee Club",
         code = ScannedCode(CodeFormat.EAN_13, "8590000000001"),
         backgroundColor = CardColor(26, 35, 126),

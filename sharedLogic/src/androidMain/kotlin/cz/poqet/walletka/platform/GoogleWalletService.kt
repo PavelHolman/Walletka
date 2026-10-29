@@ -77,18 +77,27 @@ internal class GoogleWalletService(
         client.getPayApiAvailabilityStatus(PayClient.RequestType.SAVE_PASSES).await() == PayApiAvailabilityStatus.AVAILABLE
     }.getOrDefault(false)
 
-    override suspend fun addCard(card: CardDraft): Either<WalletError, Unit> = either {
+    override suspend fun addCard(card: CardDraft): Either<WalletError, AddedCard> = either {
         ensure(config.isGoogleConfigured) { WalletError(WalletFailure.NOT_CONFIGURED, "Google Wallet issuer ID/e-mail missing") }
         ensure(isAvailable()) { WalletError(WalletFailure.UNAVAILABLE) }
         val json = PassJson.google(card, config, objectId = UUID.randomUUID().toString(), heroImageUrl = heroImageUrl(card))
         val (resultCode, data) = activityBridge.launch { activity, requestCode -> client.savePasses(json, activity, requestCode) }
             ?: raise(WalletError(WalletFailure.FAILED, "No activity attached"))
         when (resultCode) {
-            Activity.RESULT_OK -> Unit
+            Activity.RESULT_OK -> AddedCard()
             Activity.RESULT_CANCELED -> raise(WalletError(WalletFailure.CANCELLED))
             else -> raise(WalletError(WalletFailure.FAILED, data?.getStringExtra(PayClient.EXTRA_API_ERROR_MESSAGE)))
         }
     }
+
+    /** The on-device Google Wallet API can only add passes; updating them needs the REST API. */
+    override val canUpdateInPlace = false
+
+    override suspend fun updateCard(card: CardDraft): Either<WalletError, AddedCard> =
+        Either.Left(WalletError(WalletFailure.UNAVAILABLE, "Google Wallet passes can't be updated from the device"))
+
+    /** The Android Google Wallet API cannot remove (or update) saved passes; that needs the REST API. */
+    override suspend fun removeCard(walletId: String): Boolean = false
 
     /**
      * Google Wallet only takes images by public URL, so the banner is uploaded to the pass service first. The banner

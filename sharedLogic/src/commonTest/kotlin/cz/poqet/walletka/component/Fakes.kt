@@ -12,23 +12,45 @@ import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.domain.TextLine
 import cz.poqet.walletka.domain.WalletError
+import cz.poqet.walletka.platform.AddedCard
 import cz.poqet.walletka.platform.ImageProcessor
 import cz.poqet.walletka.platform.ImageStore
 import cz.poqet.walletka.platform.PlatformServices
 import cz.poqet.walletka.platform.WalletPlatform
 import cz.poqet.walletka.platform.WalletService
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.files.SystemTemporaryDirectory
+import kotlinx.io.writeString
+import kotlin.random.Random
 
-internal class FakeImageStore : ImageStore {
+/** Writes real files (the card library copies them) into a fresh temporary directory. */
+internal class FakeImageStore(val directory: Path = tempDirectory("images")) : ImageStore {
     val deleted = mutableListOf<StoredImage>()
-    override suspend fun import(source: String): Either<AnalysisError, StoredImage> =
-        if (source == "broken") AnalysisError(AnalysisFailure.IMAGE_UNREADABLE).left() else StoredImage("/stored/$source").right()
+    private var banners = 0
 
-    override suspend fun save(png: ByteArray) = StoredImage("/stored/banner.png").right()
+    override suspend fun import(source: String): Either<AnalysisError, StoredImage> =
+        if (source == "broken") AnalysisError(AnalysisFailure.IMAGE_UNREADABLE).left() else write(source).right()
+
+    override suspend fun save(png: ByteArray) = write("banner${banners++}.png").right()
 
     override suspend fun delete(image: StoredImage) {
         deleted += image
+        SystemFileSystem.delete(Path(image.path), mustExist = false)
+    }
+
+    fun path(name: String) = Path(directory, name).toString()
+
+    private fun write(name: String): StoredImage {
+        val path = Path(directory, name)
+        SystemFileSystem.sink(path).buffered().use { it.writeString(name) }
+        return StoredImage(path.toString())
     }
 }
+
+internal fun tempDirectory(name: String): Path =
+    Path(SystemTemporaryDirectory, "walletka-test-$name-${Random.nextLong().toULong()}").also { SystemFileSystem.createDirectories(it) }
 
 internal class FakeImageProcessor : ImageProcessor {
     override suspend fun pixels(image: StoredImage, maxSize: Int) =
@@ -37,11 +59,27 @@ internal class FakeImageProcessor : ImageProcessor {
     override suspend fun cropToPng(image: StoredImage, region: NormalizedRect, targetWidth: Int) = ByteArray(1).right()
 }
 
-internal class FakeWalletService(var result: Either<WalletError, Unit> = Unit.right()) : WalletService {
+internal class FakeWalletService(var result: Either<WalletError, AddedCard> = AddedCard("wallet://card").right()) : WalletService {
     val added = mutableListOf<CardDraft>()
     override val platform = WalletPlatform.GOOGLE_WALLET
     override suspend fun isAvailable() = true
-    override suspend fun addCard(card: CardDraft): Either<WalletError, Unit> {
+    val removed = mutableListOf<String>()
+    val updated = mutableListOf<CardDraft>()
+    override var canUpdateInPlace = false
+    var inWallet = true
+
+    override suspend fun updateCard(card: CardDraft): Either<WalletError, AddedCard> {
+        if (!inWallet) return WalletError(cz.poqet.walletka.domain.WalletFailure.NOT_IN_WALLET).left()
+        updated += card
+        return AddedCard(replacedExisting = true).right()
+    }
+
+    override suspend fun removeCard(walletId: String): Boolean {
+        removed += walletId
+        return true
+    }
+
+    override suspend fun addCard(card: CardDraft): Either<WalletError, AddedCard> {
         added += card
         return result
     }
@@ -52,10 +90,13 @@ internal fun fakeServices(
     lines: List<TextLine> = emptyList(),
     imageStore: FakeImageStore = FakeImageStore(),
     walletService: FakeWalletService = FakeWalletService(),
+    dataDirectory: Path = tempDirectory("data"),
 ) = PlatformServices(
     imageStore = imageStore,
     barcodeDetector = { codes.right() },
     textRecognizer = { lines.right() },
     imageProcessor = FakeImageProcessor(),
     walletService = walletService,
+    dataDirectory = dataDirectory.toString(),
+    ioContext = kotlin.coroutines.EmptyCoroutineContext,
 )

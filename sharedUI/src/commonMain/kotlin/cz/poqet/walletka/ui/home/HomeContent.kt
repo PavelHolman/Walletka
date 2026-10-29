@@ -40,6 +40,34 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cz.poqet.walletka.component.home.HomeComponent
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
+import cz.poqet.walletka.ui.ImageSourceActions
+import cz.poqet.walletka.ui.rememberStoredImage
+import cz.poqet.walletka.ui.toColor
 import cz.poqet.walletka.ui.rememberImageSourceActions
 import kotlinx.coroutines.launch
 
@@ -49,6 +77,20 @@ fun HomeContent(component: HomeComponent) {
     val actions = rememberImageSourceActions(onImage = component::onImagePicked)
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    val paste = { if (!actions.pasteImage()) scope.launch { snackbar.showSnackbar("There's no image in the clipboard") } }
+
+    if (model.cards.isNotEmpty()) {
+        CardLibrary(
+            model.cards,
+            actions,
+            onPaste = { paste() },
+            onCardClick = component::onCardClicked,
+            onCardDelete = component::onCardDeleteClicked,
+            snackbar = snackbar,
+        )
+        return
+    }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(
@@ -71,8 +113,7 @@ fun HomeContent(component: HomeComponent) {
             Text("Walletka", style = MaterialTheme.typography.headlineLarge)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Turn a photo of any loyalty card, ticket or pass into a Google Wallet card. " +
-                    "Share a photo to Walletka, paste one, or pick it from your gallery.",
+                "Snap or share a photo of any loyalty card, ticket or membership, and Walletka turns it into a Google Wallet card.",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -91,9 +132,7 @@ fun HomeContent(component: HomeComponent) {
             }
             Spacer(Modifier.height(12.dp))
             OutlinedButton(
-                onClick = {
-                    if (!actions.pasteImage()) scope.launch { snackbar.showSnackbar("There's no image in the clipboard") }
-                },
+                onClick = { paste() },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Outlined.ContentPaste, null)
@@ -120,5 +159,129 @@ private fun Hint(icon: ImageVector, text: String) {
         Icon(icon, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.size(6.dp))
         Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CardLibrary(
+    cards: List<HomeComponent.CardSummary>,
+    actions: ImageSourceActions,
+    onPaste: () -> Unit,
+    onCardClick: (String) -> Unit,
+    onCardDelete: (String) -> Unit,
+    snackbar: SnackbarHostState,
+) {
+    var isAddMenuOpen by remember { mutableStateOf(false) }
+    var pendingDeletion by remember { mutableStateOf<HomeComponent.CardSummary?>(null) }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Walletka") }) },
+        snackbarHost = { SnackbarHost(snackbar) },
+        floatingActionButton = {
+            Box {
+                ExtendedFloatingActionButton(
+                    onClick = { isAddMenuOpen = true },
+                    icon = { Icon(Icons.Outlined.Add, null) },
+                    text = { Text("Add card") },
+                )
+                DropdownMenu(expanded = isAddMenuOpen, onDismissRequest = { isAddMenuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Take photo") },
+                        leadingIcon = { Icon(Icons.Outlined.PhotoCamera, null) },
+                        onClick = { isAddMenuOpen = false; actions.takePhoto() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Choose photo") },
+                        leadingIcon = { Icon(Icons.Outlined.PhotoLibrary, null) },
+                        onClick = { isAddMenuOpen = false; actions.pickPhoto() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Paste image") },
+                        leadingIcon = { Icon(Icons.Outlined.ContentPaste, null) },
+                        onClick = { isAddMenuOpen = false; onPaste() },
+                    )
+                }
+            }
+        },
+    ) { padding ->
+        LazyColumn(
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = padding.calculateTopPadding() + 8.dp,
+                // Room for the floating button.
+                bottom = padding.calculateBottomPadding() + 96.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(cards, key = { it.id }) { card ->
+                CardTile(card, onClick = { onCardClick(card.id) }, onDelete = { pendingDeletion = card })
+            }
+        }
+    }
+
+    pendingDeletion?.let { card ->
+        AlertDialog(
+            onDismissRequest = { pendingDeletion = null },
+            title = { Text("Delete “${card.name}”?") },
+            text = { Text("The card is removed from Walletka. Remove it in Google Wallet too if you no longer need it.") },
+            confirmButton = {
+                TextButton(
+                    onClick = { pendingDeletion = null; onCardDelete(card.id) },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { pendingDeletion = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+/** A library card drawn like a small wallet pass. */
+@Composable
+private fun CardTile(card: HomeComponent.CardSummary, onClick: () -> Unit, onDelete: () -> Unit) {
+    val content = card.color.contentColor.toColor()
+    val banner = rememberStoredImage(card.banner?.path, maxSize = 600)
+    var isMenuOpen by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(card.color.toColor())
+                .combinedClickable(onClick = onClick, onLongClick = { isMenuOpen = true }, onLongClickLabel = "More actions")
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(card.name, style = MaterialTheme.typography.titleMedium, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "${card.codeFormat.displayName} · ${card.codeValue}",
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    color = content.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (banner != null) {
+                Image(
+                    banner,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(width = 96.dp, height = 32.dp).clip(RoundedCornerShape(6.dp)),
+                )
+            }
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = content.copy(alpha = 0.7f))
+        }
+        // Long-press for more actions, as elsewhere on Android.
+        DropdownMenu(expanded = isMenuOpen, onDismissRequest = { isMenuOpen = false }) {
+            DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Outlined.Edit, null) }, onClick = { isMenuOpen = false; onClick() })
+            DropdownMenuItem(
+                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                onClick = { isMenuOpen = false; onDelete() },
+            )
+        }
     }
 }

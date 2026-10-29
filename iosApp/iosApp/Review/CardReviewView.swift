@@ -15,7 +15,7 @@ struct CardReviewView: View {
         Group {
             switch model.value.sealedType() {
             case .loading(let loading):
-                LoadingView(stage: loading.value.stage)
+                LoadingView(stage: loading.value.stage, photoPath: loading.value.photo?.path)
             case .failed(let failed):
                 FailedView(
                     failure: failed.value.failure,
@@ -23,24 +23,85 @@ struct CardReviewView: View {
                     onClose: component.onCloseClicked
                 )
             case .editing(let editing):
-                CardFormView(form: editing.value.form, submission: editing.value.submission, component: component)
+                if case .added(let added) = editing.value.submission.sealedType() {
+                    CardAddedView(
+                        form: editing.value.form,
+                        walletUrl: added.value.walletUrl,
+                        wasUpdate: added.value.replacedExisting,
+                        onDone: component.onCloseClicked
+                    )
+                } else {
+                    CardFormView(
+                        form: editing.value.form,
+                        submission: editing.value.submission,
+                        hasChanges: editing.value.hasChanges,
+                        sync: editing.value.sync,
+                        syncError: editing.value.syncError,
+                        colorPreview: editing.value.colorPreview,
+                        component: component
+                    )
+                }
             }
         }
-        .navigationTitle("New Card")
+        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var title: String {
+        if case .editing(let editing) = model.value.sealedType(), editing.value.form.isLibraryCard { return "Edit Card" }
+        return "New Card"
     }
 }
 
+// MARK: - Loading / failure / success
+
 private struct LoadingView: View {
     let stage: LoadingStage
+    let photoPath: String?
+
+    @State private var photo: UIImage?
+    @State private var scanOffset: CGFloat = -1
 
     var body: some View {
-        VStack(spacing: 16) {
-            ProgressView().controlSize(.large)
-            Text(stage == .IMPORTING ? "Reading the image…" : "Looking for codes…")
-                .foregroundStyle(.secondary)
+        VStack(spacing: 24) {
+            if let photo {
+                // The photo being scanned, with a sweeping scan line.
+                Image(uiImage: photo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 360)
+                    .overlay {
+                        GeometryReader { geometry in
+                            LinearGradient(
+                                colors: [.clear, Color.accentColor.opacity(0.55), .clear],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                            .frame(height: 64)
+                            .offset(y: (scanOffset + 1) / 2 * (geometry.size.height - 64))
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { scanOffset = 1 }
+                    }
+                    .transition(.opacity)
+            }
+            HStack(spacing: 10) {
+                ProgressView()
+                Text(stage == .IMPORTING ? "Reading the image…" : "Looking for codes…")
+                    .foregroundStyle(.secondary)
+            }
         }
+        .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.default, value: photo != nil)
+        .task(id: photoPath) {
+            guard let photoPath else { return }
+            photo = await Task.detached {
+                UIImage(contentsOfFile: photoPath)?.preparingThumbnail(of: CGSize(width: 1200, height: 1200))
+            }.value
+        }
     }
 }
 
@@ -51,7 +112,7 @@ private struct FailedView: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label(title, systemImage: failure == .NO_CODE_FOUND ? "qrcode" : "exclamationmark.triangle")
+            Label(title, systemImage: failure == .NO_CODE_FOUND ? "qrcode.viewfinder" : "exclamationmark.triangle")
         } description: {
             Text(message)
         } actions: {
@@ -73,18 +134,77 @@ private struct FailedView: View {
     private var message: String {
         switch failure {
         case .IMAGE_UNREADABLE: "This doesn't look like an image Walletka can read."
-        case .NO_CODE_FOUND: "Try a sharper photo with the whole QR code or barcode visible."
+        case .NO_CODE_FOUND: "Try a sharper photo with the whole QR code or barcode in view."
         case .DETECTION_FAILED: "Something went wrong while scanning the photo."
         }
     }
 }
 
+/// Shown once PassKit confirms the pass is in the library.
+private struct CardAddedView: View {
+    let form: CardForm
+    let walletUrl: String?
+    let wasUpdate: Bool
+    let onDone: () -> Void
+
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.green)
+                    .symbolEffect(.bounce, value: true)
+                VStack(spacing: 6) {
+                    Text(wasUpdate ? "Updated in Apple Wallet" : "Added to Apple Wallet").font(.title2.bold())
+                    Text("“\(form.name)” is ready to scan from Wallet.")
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                CardPreview(form: form)
+            }
+            .padding(24)
+        }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 10) {
+                if let url = walletUrl.flatMap(URL.init(string:)) {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Label("Open in Wallet", systemImage: "wallet.pass").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                Button(action: onDone) {
+                    Text("Done").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            .controlSize(.large)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(.bar)
+        }
+        .navigationBarBackButtonHidden()
+    }
+}
+
+// MARK: - Form
+
 private struct CardFormView: View {
     let form: CardForm
     let submission: any Submission
+    let hasChanges: Bool
+    let sync: SyncStatus?
+    let syncError: String?
+    let colorPreview: CardColor?
     let component: any CardReviewComponent
 
     @State private var isEditingBanner = false
+    @State private var isPickingColorFromPhoto = false
+    @State private var isConfirmingDelete = false
+    @FocusState private var isNameFocused: Bool
 
     private var isBusy: Bool {
         if case .inProgress = submission.sealedType() { return true }
@@ -94,54 +214,128 @@ private struct CardFormView: View {
     var body: some View {
         Form {
             Section {
-                CardPreview(form: form)
+                CardPreview(form: form, compact: true)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
+            } footer: {
+                if let sync {
+                    SyncStatusView(status: sync, error: syncError, onRetry: component.onRetrySyncClicked)
+                        .frame(maxWidth: .infinity)
+                }
             }
 
             Section("Name") {
-                TextField("e.g. Coffee Club", text: Binding(get: { form.name }, set: { component.onNameChanged(name: $0) }))
-                    .textInputAutocapitalization(.words)
-                if form.nameSuggestions.count > 1 || form.nameSuggestions.first.map({ $0 != form.name }) == true {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            ForEach(form.nameSuggestions, id: \.self) { name in
-                                Button(name) { component.onNameChanged(name: name) }
-                                    .buttonStyle(.bordered)
-                                    .buttonBorderShape(.capsule)
-                                    .controlSize(.small)
-                            }
+                HStack {
+                    TextField("e.g. Coffee Club", text: Binding(get: { form.name }, set: { component.onNameChanged(name: $0) }))
+                        .textInputAutocapitalization(.words)
+                        .submitLabel(.done)
+                        .focused($isNameFocused)
+                    if isNameFocused && !form.name.isEmpty {
+                        Button {
+                            component.onNameChanged(name: "")
+                        } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Clear name")
                     }
                 }
             }
 
-            Section {
-                if form.codes.count > 1 {
-                    Picker("Code", selection: Binding(
-                        get: { Int(form.selectedCodeIndex) },
-                        set: { component.onCodeSelected(index: Int32($0)) }
-                    )) {
-                        ForEach(Array(form.codes.enumerated()), id: \.offset) { index, code in
-                            Text("\(code.format.displayName) · \(code.value)").lineLimit(1).tag(index)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                    .labelsHidden()
-                } else {
-                    LabeledContent(form.selectedCode.format.displayName) {
-                        Text(form.selectedCode.value).font(.body.monospaced()).lineLimit(2)
-                    }
-                }
-            } header: {
-                Text(form.codes.count > 1 ? "Codes Found (\(form.codes.count))" : "Code")
-            } footer: {
-                if form.walletCodeFormat != form.selectedCode.format {
-                    Text("Apple Wallet doesn't support \(form.selectedCode.format.displayName); it will be shown as \(form.walletCodeFormat.displayName) with the same content.")
+            codeSection
+            colourSection
+            bannerSection
+
+            if showsWalletButton {
+                Section {
+                    walletButton
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                 }
             }
+        }
+        // While the pass is being issued, block input without greying the form out.
+        .allowsHitTesting(!isBusy)
+        .scrollDismissesKeyboard(.immediately)
+        .dismissesKeyboardOnTapOutside()
+        .toolbar {
+            if form.isLibraryCard {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Delete Card", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
+                        .tint(.red)
+                        // Attached to the button so the dialog points at it.
+                        .confirmationDialog("Delete “\(form.name)”?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+                            Button("Delete from Walletka and Wallet", role: .destructive, action: component.onDeleteClicked)
+                        } message: {
+                            Text("The card is removed from Walletka and from Apple Wallet.")
+                        }
+                }
+            }
+        }
+        .sheet(isPresented: $isPickingColorFromPhoto) {
+            PhotoColorPickerView(
+                photoPath: form.photo.path,
+                preview: colorPreview,
+                onPick: { x, y in component.onColorPreviewRequested(x: x, y: y) },
+                onConfirm: component.onColorPreviewConfirmed,
+                onCancel: component.onColorPreviewDismissed
+            )
+        }
+        .sheet(isPresented: $isEditingBanner) {
+            BannerEditorView(form: form) { region in
+                component.onBannerRegionChanged(region: region)
+                if !form.isBannerEnabled { component.onBannerToggled(enabled: true) }
+            }
+        }
+        .alert(form.isLibraryCard ? "Couldn't Update the Card" : "Couldn't Add the Card", isPresented: Binding(
+            get: { failure != nil },
+            set: { if !$0 { component.onSubmissionErrorDismissed() } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(failure.map(Self.message) ?? "")
+        }
+    }
 
-            Section("Colour") {
+    private var codeSection: some View {
+        Section {
+            if form.codes.count > 1 {
+                Picker("Code", selection: Binding(
+                    get: { Int(form.selectedCodeIndex) },
+                    set: { component.onCodeSelected(index: Int32($0)) }
+                )) {
+                    ForEach(Array(form.codes.enumerated()), id: \.offset) { index, code in
+                        Text(code.format.displayName).tag(index)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(form.selectedCode.format.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("Code content", text: Binding(
+                    get: { form.selectedCode.value },
+                    set: { component.onCodeValueChanged(value: $0) }
+                ), axis: .vertical)
+                .font(.body.monospaced())
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .lineLimit(1...4)
+            }
+            .padding(.vertical, 2)
+        } header: {
+            Text(form.codes.count > 1 ? "Codes Found (\(form.codes.count))" : "Code")
+        } footer: {
+            if form.walletCodeFormat != form.selectedCode.format {
+                Text("Apple Wallet doesn't support \(form.selectedCode.format.displayName); it will be shown as \(form.walletCodeFormat.displayName) with the same content.")
+            }
+        }
+    }
+
+    private var colourSection: some View {
+        Section("Colour") {
+            ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
                     ForEach(Array(form.colors.enumerated()), id: \.offset) { index, color in
                         let selected = index == Int(form.selectedColorIndex)
@@ -159,52 +353,64 @@ private struct CardFormView: View {
                                 }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Colour \(index + 1)")
+                        .accessibilityLabel(index >= Int(form.suggestedColorCount) ? "Custom colour" : "Colour \(index + 1)")
                         .accessibilityAddTraits(selected ? .isSelected : [])
                     }
                 }
                 .padding(.vertical, 4)
             }
-
-            if form.banner != nil {
-                Section {
-                    Toggle("Banner from Photo", isOn: Binding(get: { form.isBannerEnabled }, set: { component.onBannerToggled(enabled: $0) }))
-                    Button("Adjust Banner…") { isEditingBanner = true }
-                }
+            ColorPicker("Custom Colour", selection: Binding(
+                get: { (form.customColor ?? form.selectedColor).swiftUIColor },
+                set: { component.onCustomColorSelected(color: CardColor(color: $0)) }
+            ), supportsOpacity: false)
+            Button {
+                isPickingColorFromPhoto = true
+            } label: {
+                Label("Pick from Photo", systemImage: "eyedropper")
             }
-
-            Section {
-                AddToWalletButton(action: component.onAddToWalletClicked)
-                    .frame(height: 52)
-                    .opacity(form.isValid && !isBusy ? 1 : 0.4)
-                    .disabled(!form.isValid || isBusy)
-                    .overlay { if isBusy { ProgressView() } }
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-            }
-        }
-        .disabled(isBusy)
-        .sheet(isPresented: $isEditingBanner) {
-            BannerEditorView(form: form) { region in
-                component.onBannerRegionChanged(region: region)
-                if !form.isBannerEnabled { component.onBannerToggled(enabled: true) }
-            }
-        }
-        .alert("Card Added", isPresented: .constant(isAdded)) {
-            Button("Done", action: component.onCloseClicked)
-        } message: {
-            Text("“\(form.name)” is now in Apple Wallet.")
-        }
-        .alert("Couldn't Add the Card", isPresented: .constant(failure != nil)) {
-            Button("OK", action: component.onSubmissionErrorDismissed)
-        } message: {
-            Text(failure.map(Self.message) ?? "")
         }
     }
 
-    private var isAdded: Bool {
-        if case .added = submission.sealedType() { return true }
-        return false
+    @ViewBuilder
+    private var bannerSection: some View {
+        if form.banner != nil {
+            Section {
+                Toggle("Banner from Photo", isOn: Binding(get: { form.isBannerEnabled }, set: { component.onBannerToggled(enabled: $0) }))
+                if form.isBannerEnabled {
+                    Button {
+                        isEditingBanner = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            BannerThumbnail(path: form.banner?.path)
+                            Text("Adjust Banner…")
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.footnote.bold()).foregroundStyle(.tertiary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                }
+            } footer: {
+                Text("A strip from your photo, shown at the top of the card in Wallet.")
+            }
+        }
+    }
+
+    /// New cards are added with the system button; library cards sync by themselves unless the pass is gone.
+    private var showsWalletButton: Bool {
+        !form.isLibraryCard || sync == nil || sync == .NOT_IN_WALLET
+    }
+
+    private var walletButton: some View {
+        AddToWalletButton(action: component.onAddToWalletClicked)
+            .frame(height: 50)
+            .opacity(isBusy ? 0 : (form.isValid ? 1 : 0.4))
+            .overlay {
+                if isBusy {
+                    RoundedRectangle(cornerRadius: 12).fill(.black)
+                        .overlay { ProgressView().tint(.white) }
+                }
+            }
+            .disabled(!form.isValid || isBusy)
     }
 
     /// Failed submissions worth telling the user about (cancelling the sheet is not an error).
@@ -222,13 +428,69 @@ private struct CardFormView: View {
         case .CANCELLED: "Cancelled."
         case .UNSUPPORTED_CODE: "This code type can't be stored in Apple Wallet."
         case .FAILED: "Apple Wallet rejected the card."
+        case .NOT_IN_WALLET: "The card is no longer in Apple Wallet."
         }
         return [text, failure.1].compactMap { $0 }.joined(separator: "\n\n")
     }
 }
 
+/// Where a library card stands with Wallet; edits are pushed automatically.
+private struct SyncStatusView: View {
+    let status: SyncStatus
+    let error: String?
+    let onRetry: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            switch status {
+            case .SYNCED:
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Text("Up to date in Wallet")
+            case .PENDING:
+                Image(systemName: "clock")
+                Text("Changes will sync to Wallet")
+            case .SYNCING:
+                ProgressView().controlSize(.mini)
+                Text("Syncing with Wallet…")
+            case .FAILED:
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Text("Couldn't sync")
+                Button("Retry", action: onRetry).font(.footnote.bold())
+            case .NOT_IN_WALLET:
+                Image(systemName: "wallet.pass").foregroundStyle(.secondary)
+                Text("Not in Wallet anymore. Add it again below.")
+            }
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .animation(.default, value: status)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(status == .FAILED ? (error ?? "") : "")
+    }
+}
+
+private struct BannerThumbnail: View {
+    let path: String?
+
+    var body: some View {
+        Group {
+            if let path, let image = UIImage(contentsOfFile: path) {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                Color.secondary.opacity(0.15)
+            }
+        }
+        .frame(width: 84, height: 28)
+        .clipShape(RoundedRectangle(cornerRadius: 5))
+    }
+}
+
+// MARK: - Card preview
+
+/// The card roughly as Wallet shows it. `compact` shrinks the code so the editor stays in view.
 private struct CardPreview: View {
     let form: CardForm
+    var compact = false
 
     var body: some View {
         let background = form.selectedColor.swiftUIColor
@@ -241,7 +503,8 @@ private struct CardPreview: View {
                 Spacer()
             }
             .foregroundStyle(content)
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
 
             if form.isBannerEnabled, let path = form.banner?.path, let banner = UIImage(contentsOfFile: path) {
                 Color.clear
@@ -255,25 +518,27 @@ private struct CardPreview: View {
             }
 
             if let code = CodeImage.make(format: form.walletCodeFormat, value: form.selectedCode.value) {
-                VStack(spacing: 6) {
+                let height: CGFloat = form.walletCodeFormat.isTwoDimensional ? (compact ? 96 : 140) : (compact ? 52 : 70)
+                VStack(spacing: 4) {
                     Image(uiImage: code)
                         .interpolation(.none)
                         .resizable()
                         .scaledToFit()
-                        .frame(maxHeight: form.walletCodeFormat.isTwoDimensional ? 130 : 70)
+                        .frame(maxHeight: height)
                     if !form.walletCodeFormat.isTwoDimensional {
-                        Text(form.selectedCode.value).font(.caption.monospaced()).foregroundStyle(.black)
+                        Text(form.selectedCode.value).font(.caption2.monospaced()).foregroundStyle(.black)
                     }
                 }
-                .padding(12)
-                .background(.white, in: RoundedRectangle(cornerRadius: 10))
-                .padding(20)
+                .padding(10)
+                .background(.white, in: RoundedRectangle(cornerRadius: 8))
+                .padding(compact ? 14 : 20)
             }
         }
         .frame(maxWidth: .infinity)
-        .background(background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
         .padding(.vertical, 8)
+        .animation(.default, value: form.selectedColor.hex)
     }
 }
 

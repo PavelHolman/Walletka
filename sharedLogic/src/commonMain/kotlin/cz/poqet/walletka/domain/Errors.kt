@@ -28,6 +28,9 @@ enum class WalletFailure {
 
     /** Signing the pass or talking to the wallet failed. */
     FAILED,
+
+    /** An update was requested, but the pass is no longer in the wallet (the user removed it there). */
+    NOT_IN_WALLET,
 }
 
 internal data class WalletError(val failure: WalletFailure, val detail: String? = null)

@@ -20,5 +20,6 @@ fun createRootComponent(
         textRecognizer = MlKitTextRecognizer(),
         imageProcessor = AndroidImageProcessor(),
         walletService = GoogleWalletService(context, config, activityBridge),
+        dataDirectory = context.filesDir.path,
     ),
 )
