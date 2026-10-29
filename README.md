@@ -78,7 +78,8 @@ typed code, the default colour palette plus a custom colour, and no banner.
   (or a welcome screen) as the detail; the stack's top child is the detail.
 - Home Screen quick actions (touch and hold the icon): *Scan Card*, *New Card*. ⌘N starts a card typed in by hand.
 - Touching and holding a library card previews the pass with a large, scannable code.
-- The … menu shows the iCloud sync status, including why it failed, and offers *Sync Now*.
+- The … menu shows the iCloud sync status, including why it failed, and offers *Sync Now*; pulling the library
+  down syncs too.
 
 ### Swift Export notes
 
