@@ -8,6 +8,7 @@ import android.graphics.ColorMatrixColorFilter
 import android.graphics.Matrix
 import android.graphics.Paint
 import arrow.core.Either
+import cz.poqet.walletka.data.LogoBackground
 import cz.poqet.walletka.domain.AnalysisError
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.ImagePixels
@@ -47,6 +48,35 @@ internal class AndroidImageProcessor : ImageProcessor {
         val scaled = Bitmap.createScaledBitmap(cropped, targetWidth, (targetWidth * h.toFloat() / w).roundToInt().coerceAtLeast(1), true)
         ByteArrayOutputStream().use { out ->
             scaled.compress(Bitmap.CompressFormat.PNG, 100, out)
+            out.toByteArray()
+        }
+    }
+
+    override suspend fun cutOutBackground(png: ByteArray): Either<AnalysisError, ByteArray> = io {
+        val bitmap = android.graphics.BitmapFactory.decodeByteArray(png, 0, png.size) ?: return@io png
+        val width = bitmap.width
+        val height = bitmap.height
+        val argb = IntArray(width * height).also { bitmap.getPixels(it, 0, width, 0, 0, width, height) }
+        val rgba = ByteArray(argb.size * 4)
+        argb.forEachIndexed { i, c ->
+            rgba[i * 4] = (c shr 16).toByte()
+            rgba[i * 4 + 1] = (c shr 8).toByte()
+            rgba[i * 4 + 2] = c.toByte()
+            rgba[i * 4 + 3] = (c ushr 24).toByte()
+        }
+        if (!LogoBackground.cutOut(rgba, width, height)) return@io png
+        // Bitmap.setPixels takes straight (not premultiplied) colours.
+        for (i in argb.indices) {
+            val alpha = rgba[i * 4 + 3].toInt() and 0xFF
+            fun straight(channel: Int): Int {
+                val premultiplied = rgba[i * 4 + channel].toInt() and 0xFF
+                return if (alpha == 0) 0 else (premultiplied * 255 / alpha).coerceAtMost(255)
+            }
+            argb[i] = Color.argb(alpha, straight(0), straight(1), straight(2))
+        }
+        val cut = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { setPixels(argb, 0, width, 0, 0, width, height) }
+        ByteArrayOutputStream().use { out ->
+            cut.compress(Bitmap.CompressFormat.PNG, 100, out)
             out.toByteArray()
         }
     }
