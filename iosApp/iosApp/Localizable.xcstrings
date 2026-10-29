@@ -1896,6 +1896,16 @@
         }
       }
     },
+    "iCloud unavailable: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud není k dispozici: %@"
+          }
+        }
+      }
+    },
     "orange" : {
       "comment" : "Colour name, combined with Dark/Light",
       "localizations" : {

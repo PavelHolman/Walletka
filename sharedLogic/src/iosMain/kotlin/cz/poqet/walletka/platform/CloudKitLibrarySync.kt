@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import platform.CloudKit.CKAccountChangedNotification
 import platform.CloudKit.CKAccountStatusAvailable
+import platform.CloudKit.CKAccountStatusRestricted
+import platform.CloudKit.CKAccountStatusTemporarilyUnavailable
 import platform.CloudKit.CKAsset
 import platform.CloudKit.CKContainer
 import platform.CloudKit.CKCurrentUserDefaultName
@@ -168,7 +170,11 @@ internal class CloudKitLibrarySync(
             isConnecting = false
             if (!isEnabled || engine != null) return@accountStatusWithCompletionHandler
             if (accountStatus != CKAccountStatusAvailable) {
-                _lastError.value = error?.localizedDescription
+                _lastError.value = error?.localizedDescription ?: when (accountStatus) {
+                    CKAccountStatusRestricted -> "iCloud is restricted on this device."
+                    CKAccountStatusTemporarilyUnavailable -> "iCloud is temporarily unavailable. Check Settings › Apple Account."
+                    else -> null
+                }
                 _status.value = CloudSyncStatus.UNAVAILABLE
                 return@accountStatusWithCompletionHandler
             }

@@ -77,7 +77,8 @@ struct LibraryMenu: View {
         case .OFF: UIDevice.current.userInterfaceIdiom == .pad
             ? String(localized: "Off: cards stay on this iPad")
             : String(localized: "Off: cards stay on this iPhone")
-        case .UNAVAILABLE: String(localized: "Sign in to iCloud to sync")
+        // An error means iCloud is there but refused (e.g. the app's iCloud access is off); no error means no account.
+        case .UNAVAILABLE: error.map { String(localized: "iCloud unavailable: \($0)") } ?? String(localized: "Sign in to iCloud to sync")
         case .SYNCING: String(localized: "Syncing…")
         case .UP_TO_DATE: String(localized: "Up to date")
         case .FAILED: error.map { String(localized: "Sync failed: \($0)") } ?? String(localized: "Sync failed, retrying later")
