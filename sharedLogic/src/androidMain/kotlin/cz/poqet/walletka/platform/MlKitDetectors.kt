@@ -64,6 +64,8 @@ internal class MlKitTextRecognizer : TextRecognizer {
         detect(image) { input, width, height ->
             recognizer.process(input).await().textBlocks
                 .flatMap { it.lines }
-                .mapNotNull { line -> line.boundingBox?.let { TextLine(line.text, it.normalizedIn(width, height)) } }
+                .mapNotNull { line ->
+                    line.boundingBox?.let { TextLine(line.text, it.normalizedIn(width, height), line.confidence) }
+                }
         }
 }

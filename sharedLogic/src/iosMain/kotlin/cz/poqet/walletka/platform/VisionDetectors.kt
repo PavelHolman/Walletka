@@ -151,11 +151,13 @@ internal class VisionTextRecognizer : TextRecognizer {
         val request = VNRecognizeTextRequest().apply {
             recognitionLevel = VNRequestTextRecognitionLevelAccurate
             usesLanguageCorrection = true
+            // Czech cards carry diacritics that the default English-only correction would strip.
+            automaticallyDetectsLanguage = true
         }
         return perform(image, request).map { results ->
             results.filterIsInstance<VNRecognizedTextObservation>().mapNotNull { observation ->
-                val text = (observation.topCandidates(1u).firstOrNull() as? VNRecognizedText)?.string
-                text?.let { TextLine(it, observation.boundingBox.visionToNormalized()) }
+                val candidate = observation.topCandidates(1u).firstOrNull() as? VNRecognizedText
+                candidate?.let { TextLine(it.string, observation.boundingBox.visionToNormalized(), it.confidence) }
             }
         }
     }
