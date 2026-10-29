@@ -81,6 +81,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalFocusManager
@@ -103,6 +104,7 @@ import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.CodeFormat
 import cz.poqet.walletka.domain.CodeIssue
 import cz.poqet.walletka.domain.WalletFailure
+import cz.poqet.walletka.ui.rememberCodeImage
 import cz.poqet.walletka.ui.rememberStoredImage
 import cz.poqet.walletka.ui.toColor
 import cz.poqet.walletka.ui.displayHex
@@ -620,14 +622,29 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
                 .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(form.walletCodeFormat.localizedName(), color = Color.Black, style = MaterialTheme.typography.labelMedium)
-                Text(
-                    form.selectedCode.value,
-                    color = Color.Black,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                val code = rememberCodeImage(form.walletCodeFormat, form.selectedCode.value)
+                val twoDimensional = form.walletCodeFormat.isTwoDimensional
+                if (code != null) {
+                    Image(
+                        code,
+                        contentDescription = null,
+                        filterQuality = FilterQuality.None,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.height(if (twoDimensional) (if (compact) 96.dp else 140.dp) else (if (compact) 52.dp else 70.dp))
+                            .then(if (twoDimensional) Modifier.aspectRatio(code.width.toFloat() / code.height) else Modifier.fillMaxWidth()),
+                    )
+                } else {
+                    Text(form.walletCodeFormat.localizedName(), color = Color.Black, style = MaterialTheme.typography.labelMedium)
+                }
+                if (!twoDimensional || code == null) {
+                    Text(
+                        form.selectedCode.value,
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

@@ -17,3 +17,7 @@ expect fun rememberImageSourceActions(onImage: (source: String) -> Unit): ImageS
 /** Decodes an image stored by [cz.poqet.walletka.platform.ImageStore], downscaled for display. */
 @Composable
 expect fun rememberStoredImage(path: String?, maxSize: Int = 1600): ImageBitmap?
+
+/** The code drawn as the wallet will show it (black on white), or `null` when it can't be drawn. */
+@Composable
+expect fun rememberCodeImage(format: cz.poqet.walletka.domain.CodeFormat, value: String): ImageBitmap?

@@ -28,6 +28,8 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
+            // Draws the card's code in the preview, like Core Image does on iOS.
+            implementation(libs.zxing.core)
         }
         commonMain.dependencies {
             api(project(":sharedLogic"))

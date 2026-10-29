@@ -361,6 +361,30 @@ class RootComponentTest {
     }
 
     @Test
+    fun goingBackWithPendingEditsStillSyncs() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val (root, home) = libraryCardWithAutoSync(wallet)
+        root.review().onNameChanged("Back quickly")
+        // The system back button / swipe, not the editor's own close.
+        root.onBackClicked()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("Back quickly", wallet.updated.single().name)
+        assertEquals("Back quickly", home.model.value.cards.single().name)
+    }
+
+    @Test
+    fun deletingTheOpenCardElsewhereClosesItsEditor() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val (root, home) = libraryCardWithAutoSync(wallet)
+        // iPad: the card is deleted from the sidebar while its editor is open next to it.
+        home.onCardDeleteClicked(home.model.value.cards.single().id)
+        testScheduler.advanceUntilIdle()
+
+        assertIs<RootComponent.Child.Home>(root.children.value.single())
+    }
+
+    @Test
     fun removedPassIsReportedAsNotInWallet() = kotlinx.coroutines.test.runTest {
         val wallet = FakeWalletService()
         val (root, _) = libraryCardWithAutoSync(wallet)

@@ -176,6 +176,13 @@ private class ReviewStore(
     private fun autoSyncs(form: CardForm) = form.isLibraryCard && dependencies.walletService.canUpdateInPlace
 
     init {
+        // The card was deleted elsewhere (the iPad sidebar, another device through iCloud): nothing left to edit.
+        scope.launch {
+            library.cards.collect { cards ->
+                val id = (_model.value as? Model.Editing)?.form?.cardId ?: return@collect
+                if (cards.none { it.id == id } && library.get(id) == null) onFinished()
+            }
+        }
         if (savedForm == null) {
             load()
         } else if (savedForm.cardId != null) {
@@ -285,6 +292,16 @@ private class ReviewStore(
 
     /** Leaves the screen; unsynced edits of a library card are still pushed to the wallet in the background. */
     fun close() {
+        flushInBackground()
+        onFinished()
+    }
+
+    /**
+     * Pushes unsynced edits of a library card to the wallet after the screen is gone, whichever way it was left
+     * (back button, swipe, another card picked in the iPad sidebar). Returns whether a flush was started.
+     */
+    private fun flushInBackground(): Boolean {
+        if (isFlushingOnClose) return true
         val editing = _model.value as? Model.Editing
         if (editing != null && autoSyncs(editing.form) && editing.hasChanges && editing.form.isValid) {
             isFlushingOnClose = true
@@ -302,8 +319,9 @@ private class ReviewStore(
                 }
                 scope.cancel()
             }
+            return true
         }
-        onFinished()
+        return false
     }
 
     /** Decoded photo for colour sampling, kept while the user drags across it. */
@@ -535,8 +553,8 @@ private class ReviewStore(
     }
 
     override fun onDestroy() {
-        // A sync still running on close owns the images and the model (see [close]).
-        if (isFlushingOnClose) return
+        // A sync still running on close owns the images and the model (see [close]); leaving any other way flushes too.
+        if (flushInBackground()) return
         scope.cancel()
         // Working copies in the cache go; images that belong to a library card stay.
         (_model.value as? Model.Editing)?.form?.let { form ->

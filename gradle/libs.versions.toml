@@ -1,4 +1,5 @@
 [versions]
+zxing = "3.5.3"
 agp = "9.1.1"
 android-compileSdk = "37"
 android-minSdk = "28"
@@ -24,6 +25,7 @@ mlkit-text = "16.0.1"
 playServices-pay = "16.5.0"
 
 [libraries]
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
 

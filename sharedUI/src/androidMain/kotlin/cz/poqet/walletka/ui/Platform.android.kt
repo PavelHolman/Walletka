@@ -6,6 +6,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.produceState
+import cz.poqet.walletka.domain.CodeFormat
+import com.google.zxing.MultiFormatWriter
+import com.google.zxing.EncodeHintType
+import com.google.zxing.BarcodeFormat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,4 +81,39 @@ actual fun rememberStoredImage(path: String?, maxSize: Int): ImageBitmap? {
         }
     }
     return bitmap
+}
+
+@Composable
+actual fun rememberCodeImage(format: CodeFormat, value: String): ImageBitmap? {
+    val image by produceState<ImageBitmap?>(null, format, value) {
+        this.value = withContext(Dispatchers.Default) { codeBitmap(format, value)?.asImageBitmap() }
+    }
+    return image
+}
+
+/** One pixel per module; the UI scales it up without smoothing. */
+private fun codeBitmap(format: CodeFormat, value: String): android.graphics.Bitmap? {
+    if (value.isBlank()) return null
+    val barcodeFormat = when (format) {
+        CodeFormat.QR -> BarcodeFormat.QR_CODE
+        CodeFormat.AZTEC -> BarcodeFormat.AZTEC
+        CodeFormat.PDF417 -> BarcodeFormat.PDF_417
+        CodeFormat.DATA_MATRIX -> BarcodeFormat.DATA_MATRIX
+        CodeFormat.CODE_128 -> BarcodeFormat.CODE_128
+        CodeFormat.CODE_39 -> BarcodeFormat.CODE_39
+        CodeFormat.CODE_93 -> BarcodeFormat.CODE_93
+        CodeFormat.CODABAR -> BarcodeFormat.CODABAR
+        CodeFormat.EAN_13 -> BarcodeFormat.EAN_13
+        CodeFormat.EAN_8 -> BarcodeFormat.EAN_8
+        CodeFormat.UPC_A -> BarcodeFormat.UPC_A
+        CodeFormat.UPC_E -> BarcodeFormat.UPC_E
+        CodeFormat.ITF -> BarcodeFormat.ITF
+    }
+    val matrix = runCatching {
+        MultiFormatWriter().encode(value, barcodeFormat, 0, 0, mapOf(EncodeHintType.MARGIN to 0))
+    }.getOrNull() ?: return null
+    val pixels = IntArray(matrix.width * matrix.height) { i ->
+        if (matrix[i % matrix.width, i / matrix.width]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+    }
+    return android.graphics.Bitmap.createBitmap(pixels, matrix.width, matrix.height, android.graphics.Bitmap.Config.ARGB_8888)
 }
