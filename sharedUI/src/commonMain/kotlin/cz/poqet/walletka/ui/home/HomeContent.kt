@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentPaste
-import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.DocumentScanner
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.QrCodeScanner
@@ -154,7 +154,7 @@ fun HomeContent(component: HomeComponent) {
             )
             Spacer(Modifier.height(32.dp))
             Button(onClick = actions.takePhoto, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Outlined.PhotoCamera, null)
+                Icon(Icons.Outlined.DocumentScanner, null)
                 Spacer(Modifier.size(8.dp))
                 Text(stringResource(Res.string.action_take_photo))
             }
@@ -242,7 +242,7 @@ private fun CardLibrary(
                 DropdownMenu(expanded = isAddMenuOpen, onDismissRequest = { isAddMenuOpen = false }) {
                     DropdownMenuItem(
                         text = { Text(stringResource(Res.string.action_take_photo)) },
-                        leadingIcon = { Icon(Icons.Outlined.PhotoCamera, null) },
+                        leadingIcon = { Icon(Icons.Outlined.DocumentScanner, null) },
                         onClick = { isAddMenuOpen = false; actions.takePhoto() },
                     )
                     DropdownMenuItem(

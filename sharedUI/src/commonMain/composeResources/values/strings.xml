@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="action_take_photo">Take photo</string>
+    <string name="action_take_photo">Scan card</string>
     <string name="action_choose_photo">Choose photo</string>
     <string name="action_paste_image">Paste image</string>
     <string name="action_enter_manually">Enter manually</string>

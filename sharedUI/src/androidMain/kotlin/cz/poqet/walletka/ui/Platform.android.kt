@@ -6,6 +6,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
+import androidx.activity.result.IntentSenderRequest
 import androidx.compose.runtime.produceState
 import cz.poqet.walletka.domain.CodeFormat
 import com.google.zxing.MultiFormatWriter
@@ -41,13 +45,34 @@ actual fun rememberImageSourceActions(onImage: (source: String) -> Unit): ImageS
         pendingCapture = null
         if (saved && file != null && file.length() > 0) currentOnImage(file.path) else file?.delete()
     }
-    return remember(context, picker, camera) {
+    val scanner = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        val page = GmsDocumentScanningResult.fromActivityResultIntent(result.data)?.pages?.firstOrNull()
+        page?.imageUri?.let { currentOnImage(it.toString()) }
+    }
+    return remember(context, picker, camera, scanner) {
+        fun takePlainPhoto() {
+            val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${System.currentTimeMillis()}.jpg")
+            pendingCapture = file
+            camera.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+        }
         ImageSourceActions(
             pickPhoto = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
             takePhoto = {
-                val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${System.currentTimeMillis()}.jpg")
-                pendingCapture = file
-                camera.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+                // Google's document scanner finds the card and straightens it; without Play services, the camera.
+                val activity = context.findActivity()
+                if (activity == null) {
+                    takePlainPhoto()
+                } else {
+                    val options = GmsDocumentScannerOptions.Builder()
+                        .setGalleryImportAllowed(false)
+                        .setPageLimit(1)
+                        .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+                        .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_BASE)
+                        .build()
+                    GmsDocumentScanning.getClient(options).getStartScanIntent(activity)
+                        .addOnSuccessListener { scanner.launch(IntentSenderRequest.Builder(it).build()) }
+                        .addOnFailureListener { takePlainPhoto() }
+                }
             },
             pasteImage = {
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -120,3 +145,9 @@ private fun codeBitmap(format: CodeFormat, value: String): android.graphics.Bitm
 
 actual fun formatLocalDate(epochDay: Long): String =
     java.time.LocalDate.ofEpochDay(epochDay).format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM))
+
+private tailrec fun Context.findActivity(): android.app.Activity? = when (this) {
+    is android.app.Activity -> this
+    is android.content.ContextWrapper -> baseContext.findActivity()
+    else -> null
+}

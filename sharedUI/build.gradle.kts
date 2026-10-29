@@ -30,6 +30,8 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             // Draws the card's code in the preview, like Core Image does on iOS.
             implementation(libs.zxing.core)
+            // Scan Card: finds the card's edges and straightens it while capturing, like VisionKit on iOS.
+            implementation(libs.mlkit.documentScanner)
         }
         commonMain.dependencies {
             api(project(":sharedLogic"))

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="action_take_photo">Vyfotit</string>
+    <string name="action_take_photo">Naskenovat kartu</string>
     <string name="action_choose_photo">Vybrat fotku</string>
     <string name="action_paste_image">Vložit obrázek</string>
     <string name="action_enter_manually">Zadat ručně</string>
