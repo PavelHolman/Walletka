@@ -428,6 +428,10 @@ private fun Editing(
             }
         }
 
+        // A card entered by hand has no photo to cut a logo from.
+        if (form.hasPhoto) CardLogoSection(form, component, enabled = !busy, onInteraction = focusManager::clearFocus)
+        CardDetailsSection(form, component, enabled = !busy)
+
         Spacer(Modifier.height(8.dp))
     }
 
@@ -521,15 +525,18 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
             .clip(RoundedCornerShape(20.dp))
             .background(background),
     ) {
-        Text(
-            form.name.ifBlank { "Card name" },
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = if (compact) 14.dp else 20.dp),
-            color = content,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(Modifier.padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            CardLogoImage(form, size = 32.dp)
+            Text(
+                form.name.ifBlank { "Card name" },
+                modifier = Modifier.padding(start = if (form.logo.isEnabled) 10.dp else 4.dp, end = 20.dp, top = if (compact) 14.dp else 20.dp, bottom = if (compact) 14.dp else 20.dp),
+                color = content,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         if (banner != null) {
             Image(
                 banner,

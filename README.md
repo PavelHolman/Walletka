@@ -58,7 +58,8 @@ The platform interfaces are `internal`: each platform has a composition root
    contrast-boosted greyscale, upscaled centre/tile crops, ±20° rotations), stopping at the first hit or after a
    time budget. If that finds nothing either, the form opens with an empty code to type in and a format picker;
    the photo still provides banner and colours. `Failed` is left for images that can't be read.
-3. The user edits name / code / colour / banner and taps *Add to Wallet* → `WalletService`.
+3. The user edits name / code / colour / banner, optionally a logo cut from the photo and pass details (card number,
+   member name, expiry, notes; Apple `backFields`, Google `textModulesData`), and taps *Add to Wallet* → `WalletService`.
 
 *Enter manually* on Home skips the photo: the review form starts with no photo (`CardForm.photo == null`), a
 typed code, the default colour palette plus a custom colour, and no banner.

@@ -10,6 +10,9 @@ internal data class CardDraft(
     val backgroundColor: CardColor,
     /** PNG cut out of the original photo, shown as the strip (Apple) / hero (Google) image. */
     val banner: StoredImage?,
+    /** PNG cut out of the photo, shown as the pass logo. */
+    val logo: StoredImage? = null,
+    val details: CardDetails = CardDetails.Empty,
 ) {
     val foregroundColor: CardColor get() = backgroundColor.contentColor
 }

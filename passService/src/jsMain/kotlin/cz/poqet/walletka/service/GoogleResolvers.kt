@@ -57,4 +57,10 @@ private fun googlePass(input: dynamic) = GooglePass(
     barcodeType = input.barcodeType as String,
     barcodeValue = input.barcodeValue as String,
     heroImageUrl = input.heroImageUrl as String?,
+    logoUrl = input.logoUrl as String?,
+    subheader = input.subheader as String?,
+    expiryDate = input.expiryDate as String?,
+    textModules = (input.textModules as Array<dynamic>?).orEmpty().map { module ->
+        GoogleTextModule(id = module.id as String, header = module.header as String, body = module.body as String)
+    },
 )

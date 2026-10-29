@@ -119,6 +119,41 @@ class GoogleWalletJvmTest {
     }
 
     @Test
+    fun saveForwardsLogoAndDetails() = runTest {
+        val detailed = GooglePass(
+            id = pass.id,
+            cardTitle = pass.cardTitle,
+            header = pass.header,
+            hexBackgroundColor = pass.hexBackgroundColor,
+            barcodeType = pass.barcodeType,
+            barcodeValue = pass.barcodeValue,
+            heroImageUrl = null,
+            logoUrl = "$baseUrl/banners/fedcba9876543210fedcba9876543210.png",
+            subheader = " Jana Nováková ",
+            expiryDate = "2027-05-31",
+            textModules = listOf(GoogleTextModule("member_number", "Card number", " 1234 "), GoogleTextModule("notes", "Notes", "Valid in all cafés")),
+        )
+        issuer.save(detailed, baseUrl)
+
+        val created = Json.parseToJsonElement(google.requests.last().body!!).jsonObject
+        assertNull(created["heroImage"])
+        assertEquals(detailed.logoUrl, created["logo"]!!.jsonObject["sourceUri"]!!.jsonObject["uri"]!!.jsonPrimitive.content)
+        assertEquals("Jana Nováková", created["subheader"]!!.jsonObject["defaultValue"]!!.jsonObject["value"]!!.jsonPrimitive.content)
+        assertEquals("2027-05-31T23:59:59Z", created["validTimeInterval"]!!.jsonObject["end"]!!.jsonObject["date"]!!.jsonPrimitive.content)
+        val modules = created["textModulesData"]!!.jsonArray.map { it.jsonObject }
+        assertEquals(listOf("member_number", "notes"), modules.map { it["id"]!!.jsonPrimitive.content })
+        assertEquals("1234", modules.first()["body"]!!.jsonPrimitive.content)
+        assertEquals("Card number", modules.first()["header"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun plainPassHasNoDetailFields() = runTest {
+        issuer.save(pass, baseUrl)
+        val created = Json.parseToJsonElement(google.requests.last().body!!).jsonObject
+        for (field in listOf("logo", "subheader", "validTimeInterval", "textModulesData")) assertNull(created[field], field)
+    }
+
+    @Test
     fun tokenRequestIsASignedJwtBearerGrant() = runTest {
         issuer.save(pass, baseUrl)
         val tokenRequest = google.requests.first()
@@ -189,7 +224,11 @@ class GoogleWalletJvmTest {
             type: String = pass.barcodeType,
             value: String = pass.barcodeValue,
             hero: String? = pass.heroImageUrl,
-        ) = GooglePass(id, pass.cardTitle, header, color, type, value, hero)
+            logo: String? = null,
+            subheader: String? = null,
+            expiry: String? = null,
+            modules: List<GoogleTextModule> = emptyList(),
+        ) = GooglePass(id, pass.cardTitle, header, color, type, value, hero, logo, subheader, expiry, modules)
 
         rejects(copy(id = "../classes/x"), "Pass id")
         rejects(copy(header = " "), "header")
@@ -200,6 +239,17 @@ class GoogleWalletJvmTest {
         rejects(copy(hero = "https://evil.example.com/banners/0123456789abcdef0123456789abcdef.png"), "heroImageUrl")
         rejects(copy(hero = "$baseUrl/banners/../secret.png"), "heroImageUrl")
         assertNull(GoogleWalletIssuer.validate(copy(hero = null), baseUrl).heroImageUrl)
+        rejects(copy(logo = "https://evil.example.com/logo.png"), "logoUrl")
+        rejects(copy(subheader = "x".repeat(101)), "subheader")
+        rejects(copy(expiry = "31.5.2027"), "expiryDate")
+        rejects(copy(expiry = "2027-13-01"), "expiryDate")
+        rejects(copy(modules = listOf(GoogleTextModule("bad id", "Notes", "x"))), "textModules id")
+        rejects(copy(modules = listOf(GoogleTextModule("notes", "Notes", " "))), "textModules body")
+        rejects(copy(modules = listOf(GoogleTextModule("notes", "A", "x"), GoogleTextModule("notes", "B", "y"))), "unique")
+        rejects(copy(modules = List(11) { GoogleTextModule("m$it", "H", "x") }), "At most")
+        val normalised = GoogleWalletIssuer.validate(copy(subheader = "  ", expiry = " 2027-05-31 "), baseUrl)
+        assertNull(normalised.subheader)
+        assertEquals("2027-05-31", normalised.expiryDate)
         assertTrue(google.requests.isEmpty())
     }
 }

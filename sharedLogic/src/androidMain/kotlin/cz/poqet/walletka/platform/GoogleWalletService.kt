@@ -14,6 +14,7 @@ import cz.poqet.walletka.data.PassJson
 import cz.poqet.walletka.data.PassServiceClient
 import cz.poqet.walletka.data.WalletConfig
 import cz.poqet.walletka.domain.CardDraft
+import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.domain.WalletError
 import cz.poqet.walletka.domain.WalletFailure
 import kotlinx.coroutines.CompletableDeferred
@@ -107,11 +108,16 @@ internal class GoogleWalletService(
             WalletError(WalletFailure.NOT_CONFIGURED, "Google Wallet issuer ID/e-mail missing")
         }
         ensure(isAvailable()) { WalletError(WalletFailure.UNAVAILABLE) }
-        val heroImageUrl = heroImageUrl(card)
+        val heroImageUrl = imageUrl(card.banner)
+        val logoUrl = imageUrl(card.logo)
         // The service signs a JWT for an object it created with the card's walletId; the fallback is unsigned JSON.
-        val jwt = if (viaService) passService.saveGooglePass(PassJson.googleServiceInput(card, config, heroImageUrl)).bind() else null
+        val jwt = if (viaService) {
+            passService.saveGooglePass(PassJson.googleServiceInput(card, config, heroImageUrl, logoUrl)).bind()
+        } else {
+            null
+        }
         val json = if (jwt == null) {
-            PassJson.google(card, config, objectId = UUID.randomUUID().toString(), heroImageUrl = heroImageUrl)
+            PassJson.google(card, config, objectId = UUID.randomUUID().toString(), heroImageUrl = heroImageUrl, logoUrl = logoUrl)
         } else {
             null
         }
@@ -133,7 +139,7 @@ internal class GoogleWalletService(
 
     override suspend fun updateCard(card: CardDraft): Either<WalletError, AddedCard> = either {
         ensure(usesServiceSync()) { WalletError(WalletFailure.UNAVAILABLE, "Google Wallet passes can't be updated from the device") }
-        passService.updateGooglePass(PassJson.googleServiceInput(card, config, heroImageUrl(card))).bind()
+        passService.updateGooglePass(PassJson.googleServiceInput(card, config, imageUrl(card.banner), imageUrl(card.logo))).bind()
         AddedCard(replacedExisting = true)
     }
 
@@ -160,12 +166,12 @@ internal class GoogleWalletService(
     }
 
     /**
-     * Google Wallet only takes images by public URL, so the banner is uploaded to the pass service first. The banner
-     * is decoration: without a service, or if the upload fails, the card is saved without it.
+     * Google Wallet only takes images by public URL, so the banner and logo are uploaded to the pass service first.
+     * They are decoration: without a service, or if the upload fails, the card is saved without them.
      */
-    private suspend fun heroImageUrl(card: CardDraft): String? {
-        val banner = card.banner?.takeIf { config.isServiceConfigured } ?: return null
-        val png = withContext(Dispatchers.IO) { runCatching { File(banner.path).readBytes() }.getOrNull() } ?: return null
-        return passService.uploadBanner(png).onLeft { Log.w("Walletka", "Banner upload failed: ${it.detail}") }.getOrNull()
+    private suspend fun imageUrl(image: StoredImage?): String? {
+        val source = image?.takeIf { config.isServiceConfigured } ?: return null
+        val png = withContext(Dispatchers.IO) { runCatching { File(source.path).readBytes() }.getOrNull() } ?: return null
+        return passService.uploadBanner(png).onLeft { Log.w("Walletka", "Image upload failed: ${it.detail}") }.getOrNull()
     }
 }

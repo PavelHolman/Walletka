@@ -22,7 +22,7 @@ object WalletkaApi {
           "Signs an Apple Wallet pass. The service sets passTypeIdentifier and teamIdentifier in pass.json."
           signApplePass(files: [PassFileInput!]!): SignedPass!
 
-          "Stores a PNG banner and returns its public URL (used as the Google Wallet hero image)."
+          "Stores a PNG image and returns its public URL (used as the Google Wallet hero image or logo)."
           uploadBanner(pngBase64: String!): Banner!
 
           "Creates or replaces a Google Wallet generic object and returns a signed Save to Google Wallet JWT for it."
@@ -54,6 +54,21 @@ object WalletkaApi {
           barcodeValue: String!
           "A banner URL returned by uploadBanner."
           heroImageUrl: String
+          "A logo uploaded with uploadBanner; shown in a circle."
+          logoUrl: String
+          "Line under the header, e.g. the member name."
+          subheader: String
+          "Last valid day, YYYY-MM-DD (the pass ends at 23:59:59 UTC)."
+          expiryDate: String
+          "Back-of-pass details (Google textModulesData), at most 10."
+          textModules: [GoogleTextModuleInput!]
+        }
+
+        input GoogleTextModuleInput {
+          "[A-Za-z0-9_], up to 32 characters, unique within the pass."
+          id: ID!
+          header: String!
+          body: String!
         }
 
         type GoogleSaveLink {

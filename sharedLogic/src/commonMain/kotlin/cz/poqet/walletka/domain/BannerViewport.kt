@@ -4,20 +4,25 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Geometry of the banner crop editor, shared by the SwiftUI and Compose UIs.
+ * Geometry of the photo crop editors (banner and logo), shared by the SwiftUI and Compose UIs.
  *
- * The editor shows a fixed window with the wallet's strip aspect ratio ([ASPECT_RATIO]) over the photo, which the
- * user pans and zooms. Lengths are in units of the window width: the window is `1` wide and `1 / ASPECT_RATIO` tall,
- * and the UI multiplies by its width in points/pixels. At zoom `1` the photo exactly covers the window.
+ * The editor shows a fixed window with the crop's aspect ratio ([aspectRatio], the wallet's strip by default) over
+ * the photo, which the user pans and zooms. Lengths are in units of the window width: the window is `1` wide and
+ * `1 / aspectRatio` tall, and the UI multiplies by its width in points/pixels. At zoom `1` the photo exactly covers
+ * the window.
  *
  * @param photoAspectRatio width / height of the photo.
+ * @param aspectRatio width / height of the crop.
  */
-class BannerViewport(val photoAspectRatio: Float) {
+class BannerViewport(val photoAspectRatio: Float, val aspectRatio: Float) {
+
+    /** The banner (strip) editor. */
+    constructor(photoAspectRatio: Float) : this(photoAspectRatio, ASPECT_RATIO)
 
     /** Photo placement: its size and top-left corner relative to the window's top-left corner. */
     data class Transform(val zoom: Float, val width: Float, val height: Float, val offsetX: Float, val offsetY: Float)
 
-    val windowHeight: Float get() = 1f / ASPECT_RATIO
+    val windowHeight: Float get() = 1f / aspectRatio
 
     /** Photo height at zoom 1: the smallest size that still covers the window. */
     private val coverHeight: Float get() = max(windowHeight, 1f / photoAspectRatio)
@@ -62,10 +67,10 @@ class BannerViewport(val photoAspectRatio: Float) {
         return regionFor(zoom, offsetX, offsetY)
     }
 
-    /** Forces [region] to the strip aspect ratio and inside the photo, keeping its centre where possible. */
+    /** Forces [region] to the crop's aspect ratio and inside the photo, keeping its centre where possible. */
     fun clamp(region: NormalizedRect): NormalizedRect {
-        // A region `w` wide (normalized) is `w * photoAspectRatio / ASPECT_RATIO` tall.
-        val heightPerWidth = photoAspectRatio / ASPECT_RATIO
+        // A region `w` wide (normalized) is `w * photoAspectRatio / aspectRatio` tall.
+        val heightPerWidth = photoAspectRatio / aspectRatio
         val maxWidth = min(1f, 1f / heightPerWidth)
         val width = region.width.takeIf { it > 0f }?.coerceIn(maxWidth / MAX_ZOOM, maxWidth) ?: maxWidth
         val height = width * heightPerWidth

@@ -14,8 +14,11 @@ class GoogleResolversTest {
     private val calls = mutableListOf<String>()
     private var objectExists = false
 
+    private val bodies = mutableListOf<String?>()
+
     private val fakeGoogle = HttpTransport { request ->
         calls += request.method + " " + request.url.removePrefix(GoogleWalletIssuer.API_BASE)
+        bodies += request.body
         when {
             request.url == GoogleServiceAccount.DEFAULT_TOKEN_URI -> HttpResponse(200, """{"access_token":"t","expires_in":3600}""")
             request.method == "POST" && request.url.endsWith("genericObject") -> HttpResponse(200, "{}").also { objectExists = true }
@@ -75,6 +78,21 @@ class GoogleResolversTest {
         val deleted = execute(issuer, WalletkaApi.DELETE_GOOGLE_PASS, jsObject { id = "card-1" })
         assertEquals(true, deleted.data.deleteGooglePass)
         assertEquals("PATCH genericObject/3388000000000000000.card-1", calls.last())
+    }
+
+    @Test
+    fun logoAndDetailsReachGoogle() = runTest {
+        passInput.logoUrl = "$baseUrl/banners/0123456789abcdef0123456789abcdef.png"
+        passInput.subheader = "Jana"
+        passInput.expiryDate = "2027-05-31"
+        passInput.textModules = arrayOf(jsObject { id = "notes"; header = "Notes"; body = "Valid in all cafés" })
+        val saved = execute(issuer, WalletkaApi.SAVE_GOOGLE_PASS, jsObject { this.pass = passInput })
+        assertEquals(null, saved.errors, JSON.stringify(saved.errors))
+        val created = JSON.parse<dynamic>(bodies[calls.indexOf("POST genericObject")]!!)
+        assertEquals(passInput.logoUrl, created.logo.sourceUri.uri)
+        assertEquals("Jana", created.subheader.defaultValue.value)
+        assertEquals("2027-05-31T23:59:59Z", created.validTimeInterval.end.date)
+        assertEquals("Valid in all cafés", created.textModulesData[0].body)
     }
 
     @Test

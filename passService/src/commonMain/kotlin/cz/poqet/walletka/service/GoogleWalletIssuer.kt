@@ -21,7 +21,18 @@ class GooglePass(
     val barcodeType: String,
     val barcodeValue: String,
     val heroImageUrl: String?,
+    /** A logo uploaded like the banner; Google Wallet shows it in a circle. */
+    val logoUrl: String? = null,
+    /** Line under the header, e.g. the member name. */
+    val subheader: String? = null,
+    /** Last day the card is valid, ISO 8601 (`2027-05-31`); the pass ends at 23:59:59 UTC that day. */
+    val expiryDate: String? = null,
+    /** Back-of-pass details. */
+    val textModules: List<GoogleTextModule> = emptyList(),
 )
+
+/** A Google Wallet text module: [header] over [body], identified by [id]. */
+class GoogleTextModule(val id: String, val header: String, val body: String)
 
 class GoogleSaveLink(val jwt: String, val saveUrl: String, val objectId: String)
 
@@ -148,6 +159,29 @@ class GoogleWalletIssuer(
                 putJsonObject("contentDescription") { localized(pass.header) }
             }
         }
+        pass.logoUrl?.let { url ->
+            putJsonObject("logo") {
+                putJsonObject("sourceUri") { put("uri", url) }
+                putJsonObject("contentDescription") { localized(pass.header) }
+            }
+        }
+        pass.subheader?.let { putJsonObject("subheader") { localized(it) } }
+        pass.expiryDate?.let { date ->
+            putJsonObject("validTimeInterval") {
+                putJsonObject("end") { put("date", "${date}T23:59:59Z") }
+            }
+        }
+        if (pass.textModules.isNotEmpty()) {
+            putJsonArray("textModulesData") {
+                pass.textModules.forEach { module ->
+                    addJsonObject {
+                        put("id", module.id)
+                        put("header", module.header)
+                        put("body", module.body)
+                    }
+                }
+            }
+        }
         putJsonObject("barcode") {
             put("type", pass.barcodeType)
             put("value", pass.barcodeValue)
@@ -168,11 +202,15 @@ class GoogleWalletIssuer(
         const val CLASS_SUFFIX = "walletka_generic"
         const val MAX_TEXT = 100
         const val MAX_BARCODE_VALUE = 2048
+        const val MAX_TEXT_MODULES = 10
+        const val MAX_TEXT_MODULE_BODY = 1000
         private const val MAX_ALTERNATE_TEXT = 64
 
         private val idRegex = Regex("[A-Za-z0-9._-]{1,64}")
         private val issuerIdRegex = Regex("[0-9]{1,32}")
         private val colorRegex = Regex("#[0-9a-fA-F]{6}")
+        private val dateRegex = Regex("[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])")
+        private val moduleIdRegex = Regex("[A-Za-z0-9_]{1,32}")
 
         /** Google Wallet `BarcodeType`s the app produces (see the app's `WalletSymbology`). */
         val barcodeTypes = setOf(
@@ -186,7 +224,7 @@ class GoogleWalletIssuer(
             if (!idRegex.matches(id)) throw ServiceException("Pass id must be 1-64 characters of A-Z, a-z, 0-9, '.', '_' or '-'")
         }
 
-        /** Checks [pass] and normalises its texts; the hero image must be a banner hosted by this service. */
+        /** Checks [pass] and normalises its texts; the hero image and logo must be banners hosted by this service. */
         fun validate(pass: GooglePass, baseUrl: String): GooglePass {
             validateId(pass.id)
             val cardTitle = pass.cardTitle.trim()
@@ -200,14 +238,46 @@ class GoogleWalletIssuer(
             if (pass.barcodeValue.isEmpty() || pass.barcodeValue.length > MAX_BARCODE_VALUE) {
                 throw ServiceException("barcodeValue must be 1-$MAX_BARCODE_VALUE characters")
             }
-            pass.heroImageUrl?.let { url ->
-                val bannerPrefix = baseUrl.trimEnd('/') + WalletkaApi.BANNERS_PATH
-                val path = url.removePrefix(baseUrl.trimEnd('/'))
-                if (!url.startsWith(bannerPrefix) || PassService.bannerKeyForPath(path) == null) {
-                    throw ServiceException("heroImageUrl must be a banner uploaded to this service")
+            pass.heroImageUrl?.let { validateHostedImage("heroImageUrl", it, baseUrl) }
+            pass.logoUrl?.let { validateHostedImage("logoUrl", it, baseUrl) }
+            val subheader = pass.subheader?.trim()?.ifEmpty { null }
+            if (subheader != null && subheader.length > MAX_TEXT) throw ServiceException("subheader is longer than $MAX_TEXT characters")
+            val expiryDate = pass.expiryDate?.trim()?.ifEmpty { null }
+            if (expiryDate != null && !dateRegex.matches(expiryDate)) throw ServiceException("expiryDate must be YYYY-MM-DD")
+            if (pass.textModules.size > MAX_TEXT_MODULES) throw ServiceException("At most $MAX_TEXT_MODULES textModules")
+            val modules = pass.textModules.map { module ->
+                if (!moduleIdRegex.matches(module.id)) throw ServiceException("textModules id must be 1-32 characters of A-Z, a-z, 0-9 or '_'")
+                val moduleHeader = module.header.trim()
+                val body = module.body.trim()
+                if (moduleHeader.length > MAX_TEXT) throw ServiceException("textModules header is longer than $MAX_TEXT characters")
+                if (body.isEmpty() || body.length > MAX_TEXT_MODULE_BODY) {
+                    throw ServiceException("textModules body must be 1-$MAX_TEXT_MODULE_BODY characters")
                 }
+                GoogleTextModule(module.id, moduleHeader, body)
             }
-            return GooglePass(pass.id, cardTitle, header, pass.hexBackgroundColor.lowercase(), pass.barcodeType, pass.barcodeValue, pass.heroImageUrl)
+            if (modules.map { it.id }.toSet().size != modules.size) throw ServiceException("textModules ids must be unique")
+            return GooglePass(
+                id = pass.id,
+                cardTitle = cardTitle,
+                header = header,
+                hexBackgroundColor = pass.hexBackgroundColor.lowercase(),
+                barcodeType = pass.barcodeType,
+                barcodeValue = pass.barcodeValue,
+                heroImageUrl = pass.heroImageUrl,
+                logoUrl = pass.logoUrl,
+                subheader = subheader,
+                expiryDate = expiryDate,
+                textModules = modules,
+            )
+        }
+
+        /** Images must be banners uploaded to this service, so passes can't point Google at arbitrary URLs. */
+        private fun validateHostedImage(field: String, url: String, baseUrl: String) {
+            val bannerPrefix = baseUrl.trimEnd('/') + WalletkaApi.BANNERS_PATH
+            val path = url.removePrefix(baseUrl.trimEnd('/'))
+            if (!url.startsWith(bannerPrefix) || PassService.bannerKeyForPath(path) == null) {
+                throw ServiceException("$field must be a banner uploaded to this service")
+            }
         }
     }
 }

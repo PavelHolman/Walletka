@@ -4,10 +4,13 @@ import SwiftUI
 typealias NormalizedRect = ExportedKotlinPackages.cz.poqet.walletka.domain.NormalizedRect
 typealias BannerViewport = ExportedKotlinPackages.cz.poqet.walletka.domain.BannerViewport
 
-/// Pan & pinch the photo under a fixed strip-shaped window to choose the banner. The geometry is the shared
-/// `BannerViewport`, so it behaves like the Android editor.
-struct BannerEditorView: View {
-    let form: CardForm
+/// Pan & pinch the photo under a fixed window to choose a crop of it (the banner, the logo). The geometry is the
+/// shared `BannerViewport`, so it behaves like the Android editor.
+struct CropEditorView: View {
+    let title: String
+    let hint: String
+    let photoPath: String
+    let viewport: BannerViewport
     let onDone: (NormalizedRect) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -15,13 +18,34 @@ struct BannerEditorView: View {
     @State private var gestureStart: NormalizedRect?
     @State private var photo: UIImage?
 
-    init(form: CardForm, onDone: @escaping (NormalizedRect) -> Void) {
-        self.form = form
+    init(
+        title: String,
+        hint: String,
+        photoPath: String,
+        viewport: BannerViewport,
+        region: NormalizedRect,
+        onDone: @escaping (NormalizedRect) -> Void
+    ) {
+        self.title = title
+        self.hint = hint
+        self.photoPath = photoPath
+        self.viewport = viewport
         self.onDone = onDone
-        _region = State(initialValue: form.bannerRegion)
+        _region = State(initialValue: region)
     }
 
-    private var viewport: BannerViewport { form.bannerViewport }
+    /// The banner editor: a strip-shaped window. `nil` for a card without a photo (entered manually).
+    init?(bannerOf form: CardForm, onDone: @escaping (NormalizedRect) -> Void) {
+        guard let photo = form.photo else { return nil }
+        self.init(
+            title: "Adjust Banner",
+            hint: "Drag and pinch the photo. The bright strip becomes the banner.",
+            photoPath: photo.path,
+            viewport: form.bannerViewport,
+            region: form.bannerRegion,
+            onDone: onDone
+        )
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,14 +53,14 @@ struct BannerEditorView: View {
                 GeometryReader { geometry in
                     editor(size: geometry.size)
                 }
-                Text("Drag and pinch the photo. The bright strip becomes the banner.")
+                Text(hint)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal)
             .padding(.bottom)
-            .navigationTitle("Adjust Banner")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -54,9 +78,8 @@ struct BannerEditorView: View {
                     }
                 }
             }
-            .task(id: form.photo?.path) {
-                guard let path = form.photo?.path else { return }
-                photo = await Task.detached { [path] in
+            .task(id: photoPath) {
+                photo = await Task.detached { [path = photoPath] in
                     UIImage(contentsOfFile: path)?.preparingThumbnail(of: CGSize(width: 2400, height: 2400))
                 }.value
             }
@@ -64,11 +87,13 @@ struct BannerEditorView: View {
         .presentationDetents([.medium, .large])
     }
 
-    /// The strip-shaped window, vertically centred in the available space; the photo around it stays visible but
-    /// dimmed, so it's clear what the crop is cut from.
+    /// The crop window, centred in the available space (full width unless that makes it too tall); the photo around
+    /// it stays visible but dimmed, so it's clear what the crop is cut from.
     private func editor(size: CGSize) -> some View {
-        let width = size.width
-        let windowHeight = width / CGFloat(BannerViewport.Companion.shared.ASPECT_RATIO)
+        let aspectRatio = CGFloat(viewport.aspectRatio)
+        let width = min(size.width, size.height * 0.6 * aspectRatio)
+        let windowHeight = width / aspectRatio
+        let windowLeft = (size.width - width) / 2
         let windowTop = max(0, (size.height - windowHeight) / 2)
         let transform = viewport.transformFor(region: region)
         return ZStack(alignment: .topLeading) {
@@ -77,7 +102,7 @@ struct BannerEditorView: View {
                 Image(uiImage: photo)
                     .resizable()
                     .frame(width: CGFloat(transform.width) * width, height: CGFloat(transform.height) * width)
-                    .offset(x: CGFloat(transform.offsetX) * width, y: windowTop + CGFloat(transform.offsetY) * width)
+                    .offset(x: windowLeft + CGFloat(transform.offsetX) * width, y: windowTop + CGFloat(transform.offsetY) * width)
             } else {
                 ProgressView().tint(.white).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -85,13 +110,13 @@ struct BannerEditorView: View {
             Rectangle()
                 .fill(Color.black.opacity(0.6))
                 .reverseMask {
-                    Rectangle().frame(width: width, height: windowHeight).offset(y: windowTop)
+                    Rectangle().frame(width: width, height: windowHeight).offset(x: windowLeft, y: windowTop)
                 }
                 .allowsHitTesting(false)
             RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(.white, lineWidth: 2)
                 .frame(width: width, height: windowHeight)
-                .offset(y: windowTop)
+                .offset(x: windowLeft, y: windowTop)
                 .allowsHitTesting(false)
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)

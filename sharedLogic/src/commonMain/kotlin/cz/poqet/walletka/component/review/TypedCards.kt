@@ -3,6 +3,7 @@ package cz.poqet.walletka.component.review
 import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
 import cz.poqet.walletka.data.ColorPalette
 import cz.poqet.walletka.domain.BannerViewport
+import cz.poqet.walletka.domain.CardDetails
 import cz.poqet.walletka.domain.CodeFormat
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
@@ -11,7 +12,7 @@ import cz.poqet.walletka.platform.WalletPlatform
 /** The empty code the user types in when there is none to detect; Code 128 takes any text and every wallet shows it. */
 internal val EmptyTypedCode = ScannedCode(CodeFormat.CODE_128, value = "")
 
-/** A card entered by hand, without a photo: default palette, no banner, an empty code to type in. */
+/** A card entered by hand, without a photo: default palette, no banner or logo, an empty code to type in. */
 internal fun manualCardForm(walletPlatform: WalletPlatform) = CardForm(
     photo = null,
     name = "",
@@ -28,6 +29,8 @@ internal fun manualCardForm(walletPlatform: WalletPlatform) = CardForm(
     walletPlatform = walletPlatform,
     cardId = null,
     isCodeTyped = true,
+    logo = CardLogo(image = null, isEnabled = false, region = NormalizedRect.Full),
+    details = CardDetails.Empty,
 )
 
 /** Sets the format of a typed code; detected codes keep the format they were read with. */

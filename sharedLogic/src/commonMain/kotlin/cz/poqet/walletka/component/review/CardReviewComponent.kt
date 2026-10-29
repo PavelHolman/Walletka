@@ -1,9 +1,11 @@
 package cz.poqet.walletka.component.review
 
+import cz.poqet.walletka.data.LogoRegion
 import cz.poqet.walletka.data.WalletSymbology
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.BannerViewport
 import cz.poqet.walletka.domain.CardColor
+import cz.poqet.walletka.domain.CardDetails
 import cz.poqet.walletka.domain.CodeFormat
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
@@ -51,6 +53,15 @@ interface CardReviewComponent {
 
     /** The user moved/zoomed the banner crop; see [CardForm.bannerViewport] for the editor geometry. */
     fun onBannerRegionChanged(region: NormalizedRect)
+
+    /** Turns the logo cut out of the photo on or off; see [CardForm.logo]. */
+    fun onLogoToggled(enabled: Boolean)
+
+    /** The user moved/zoomed the logo crop; see [CardForm.logoViewport] for the editor geometry. */
+    fun onLogoRegionChanged(region: NormalizedRect)
+
+    /** Edits the optional pass details (number, member name, expiry, notes). */
+    fun onDetailsChanged(details: CardDetails)
 
     fun onAddToWalletClicked()
 
@@ -134,6 +145,8 @@ interface CardReviewComponent {
          * and its format can be changed.
          */
         val isCodeTyped: Boolean = false,
+        val logo: CardLogo,
+        val details: CardDetails,
     ) {
         val isLibraryCard: Boolean get() = cardId != null
 
@@ -143,6 +156,9 @@ interface CardReviewComponent {
         val typedCodeFormats: List<CodeFormat> get() = TypedCodeFormats
 
         val bannerViewport: BannerViewport get() = BannerViewport(photoAspectRatio)
+
+        /** Editor geometry of [logo]; its shape depends on how the wallet shows logos. */
+        val logoViewport: BannerViewport get() = LogoRegion.viewport(photoAspectRatio, walletPlatform)
 
         val selectedCode: ScannedCode get() = codes[selectedCodeIndex]
 
