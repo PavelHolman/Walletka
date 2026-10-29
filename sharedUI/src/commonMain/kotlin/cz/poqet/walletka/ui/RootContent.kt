@@ -1,6 +1,13 @@
 package cz.poqet.walletka.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.stack.animation.fade
@@ -19,9 +26,15 @@ fun RootContent(component: RootComponent, modifier: Modifier = Modifier) {
             modifier = modifier,
             animation = stackAnimation(fade() + slide()),
         ) { child ->
-            when (val instance = child.instance) {
-                is RootComponent.Child.Home -> HomeContent(instance.component)
-                is RootComponent.Child.Review -> CardReviewContent(instance.component)
+            // On tablets and unfolded foldables, a readable column in the middle instead of edge-to-edge forms;
+            // the background still fills the window.
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
+                Box(Modifier.widthIn(max = 640.dp).fillMaxSize()) {
+                    when (val instance = child.instance) {
+                        is RootComponent.Child.Home -> HomeContent(instance.component)
+                        is RootComponent.Child.Review -> CardReviewContent(instance.component)
+                    }
+                }
             }
         }
     }
