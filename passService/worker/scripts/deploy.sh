@@ -1,5 +1,6 @@
 #!/bin/sh
-# Deploys the pass service with the certificates in .secrets/ (pass-cert.pem, pass-key.pem, wwdr.pem, api-key.txt).
+# Deploys the pass service with the certificates in .secrets/ (pass-cert.pem, pass-key.pem, wwdr.pem, api-key.txt,
+# and optionally google-service-account.json).
 # Requires `npx wrangler login` first. Safe to re-run: it updates the secrets and redeploys.
 set -e
 cd "$(dirname "$0")/.."
@@ -23,4 +24,8 @@ npx wrangler secret put PASS_CERTIFICATE < "$secrets/pass-cert.pem"
 npx wrangler secret put PASS_PRIVATE_KEY < "$secrets/pass-key.pem"
 npx wrangler secret put WWDR_CERTIFICATE < "$secrets/wwdr.pem"
 tr -d '\n' < "$secrets/api-key.txt" | npx wrangler secret put API_KEY
+# Optional Google Wallet sync: the issuer's service account key (GOOGLE_ISSUER_ID is set in wrangler.toml).
+if [ -f "$secrets/google-service-account.json" ]; then
+  npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_JSON < "$secrets/google-service-account.json"
+fi
 echo "Deployed. Configure the apps with the workers.dev URL above and the key in $secrets/api-key.txt."

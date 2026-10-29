@@ -83,6 +83,13 @@ private suspend fun executeGraphQl(request: WorkerRequest, env: WorkerEnv, baseU
 
     val root = jsObject {
         health = { env.PASS_TYPE_IDENTIFIER ?: "unconfigured" }
+        capabilities = {
+            jsObject {
+                appleWallet = !env.PASS_CERTIFICATE.isNullOrBlank() && !env.PASS_PRIVATE_KEY.isNullOrBlank() &&
+                    !env.WWDR_CERTIFICATE.isNullOrBlank()
+                googleWallet = googleIssuerFor(env) != null
+            }
+        }
         signApplePass = { args: dynamic ->
             resolve {
                 val files = (args.files as Array<dynamic>).map { file ->
@@ -99,6 +106,7 @@ private suspend fun executeGraphQl(request: WorkerRequest, env: WorkerEnv, baseU
             }
         }
     }
+    addGoogleResolvers(root, googleIssuerFor(env), baseUrl)
 
     val result = graphql(
         jsObject {
@@ -114,7 +122,7 @@ private suspend fun executeGraphQl(request: WorkerRequest, env: WorkerEnv, baseU
 
 /** Runs a resolver, exposing only [ServiceException] messages to clients. */
 @OptIn(DelicateCoroutinesApi::class)
-private fun resolve(block: suspend () -> dynamic): Promise<dynamic> = GlobalScope.promise {
+internal fun resolve(block: suspend () -> dynamic): Promise<dynamic> = GlobalScope.promise {
     try {
         block()
     } catch (e: ServiceException) {

@@ -11,9 +11,13 @@ id = "631cd152ad8d453cb5b99fe9601ae20e"
 [vars]
 PASS_TYPE_IDENTIFIER = "pass.cz.poqet.walletka"
 TEAM_IDENTIFIER = "8744SN33B3"
+# Google Wallet issuer ID (Google Pay & Wallet Console). Empty = Google Wallet sync off; the app then saves passes
+# on the device and edits need a manual "Save to Google Wallet".
+GOOGLE_ISSUER_ID = ""
 
 # Secrets (wrangler secret put <NAME>):
 #   PASS_CERTIFICATE  PEM of the Pass Type ID certificate
 #   PASS_PRIVATE_KEY  PEM private key of that certificate (PKCS#8 or PKCS#1, unencrypted)
 #   WWDR_CERTIFICATE  PEM of Apple's WWDR intermediate (G4)
 #   API_KEY           shared key the app sends as "Authorization: Bearer <key>"
+#   GOOGLE_SERVICE_ACCOUNT_JSON  optional: key file of the service account added as a Google Wallet issuer user

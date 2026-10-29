@@ -36,7 +36,7 @@ androidApp/    Activity: Decompose context, share/view intents, Google Wallet re
 iosApp/        SwiftUI app + ShareExtension (app row) + ActionExtension ("Add to Walletka" action)
                sharing ExtensionSupport/, which hands the image to the app via the App Group
 serviceApi/    GraphQL schema + operations shared by the app and the service (the API contract)
-passService/   Cloudflare Worker (Kotlin/JS): Apple pass signing + banner hosting
+passService/   Cloudflare Worker (Kotlin/JS): Apple pass signing, Google Wallet REST API, banner hosting
   commonMain/    pass packaging, CMS/PKCS#7 signing (own DER encoder), zip writer, validation
   jsMain/        Worker fetch handler, GraphQL resolvers, WebCrypto, KV
   jvmTest/       signs with test certificates and verifies with `openssl cms -verify`
@@ -77,6 +77,12 @@ The platform interfaces are `internal`: each platform has a composition root
   (detached CMS, SHA-256, signer + WWDR certificates) and returns the zipped `.pkpass`.
 - `uploadBanner(pngBase64)` stores a PNG in Workers KV under a content hash and returns its public URL,
   `GET /banners/<id>.png` (immutable caching). Android uses it as the Google Wallet `heroImage`.
+- `saveGooglePass(pass)` / `updateGooglePass(pass)` / `deleteGooglePass(id)` create, replace and expire Google Wallet
+  generic objects through the Google Wallet REST API, authenticated as the issuer's service account (an RS256 JWT
+  signed with WebCrypto, exchanged for an OAuth token that is cached until it expires). `saveGooglePass` returns a
+  signed *Save to Google Wallet* JWT, so the app needs no issuer credentials. Optional: see
+  [Google Wallet setup](#google-wallet-setup).
+- `capabilities { appleWallet googleWallet }` says what the deployment is set up for.
 
 Requests need `Authorization: Bearer <API_KEY>`; until the `API_KEY` secret is set, every GraphQL request is refused. Signing uses WebCrypto (native),
 so a request stays within the Workers free plan's CPU budget; KV is part of the Free plan with hard limits (1 GB, 1,000 writes a day): past them uploads fail instead of
@@ -123,6 +129,43 @@ real Pass Type ID certificate gets a pass into Apple Wallet.
 
 `./scripts/dev-vars.sh .secrets` runs `wrangler dev` with the real certificate instead of the test one.
 
+### Google Wallet setup
+
+Optional. Without it `capabilities.googleWallet` is `false` and Android keeps saving passes on the device (unsigned
+JSON, issuer ID/e-mail from `local.properties`); edits of library cards then need a manual *Save to Google Wallet*.
+With it, Android library cards sync like Apple ones: edits update the saved pass in place and deleting a card
+expires its pass (the Google Wallet API can't delete passes).
+
+1. **Issuer account:** sign in to the [Google Pay & Wallet Console](https://pay.google.com/business/console), create
+   a business profile and open *Google Wallet API*; note the **Issuer ID**. Until Google approves publishing access,
+   only the test accounts you add there can save passes.
+2. **Pass class:** nothing to do: the service creates the generic class `<issuer ID>.walletka_generic` on the first
+   save. (You may create a *Generic* class with that ID in the console instead, e.g. to style it.)
+3. **Service account:** in the [Google Cloud console](https://console.cloud.google.com/), pick or create a project,
+   enable the **Google Wallet API** (*APIs & Services → Library*), create a service account (*IAM & Admin → Service
+   accounts*, no roles needed) and add a JSON key (*Keys → Add key → JSON*). Save it as
+   `passService/worker/.secrets/google-service-account.json` (`.secrets/` is never committed).
+4. **Authorise it for the issuer:** in the Pay & Wallet Console open *Users*, invite the service account's e-mail
+   (`…@….iam.gserviceaccount.com`) with *Developer* access.
+5. **Configure the Worker:** set `GOOGLE_ISSUER_ID` in `passService/worker/wrangler.toml` `[vars]` to the issuer ID,
+   and store the key as a secret (`deploy.sh` also does this when the file from step 3 exists):
+   ```bash
+   cd passService/worker && npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_JSON < .secrets/google-service-account.json
+   ```
+6. **Deploy:**
+   ```bash
+   cd passService/worker && ./scripts/deploy.sh
+   ```
+   Then check that the service reports `"googleWallet":true`:
+   ```bash
+   curl -s https://walletka-pass-service.<account>.workers.dev/graphql -H "Authorization: Bearer $(cat .secrets/api-key.txt)" -H 'content-type: application/json' -d '{"query":"{ capabilities { googleWallet } }"}'
+   ```
+
+The app needs only `walletka.serviceUrl` and `walletka.serviceApiKey` for this; it asks the service for its
+capabilities at start-up. Cards added before the service had Google Wallet set up have a different pass ID, so
+their first edit reports *Not in Google Wallet anymore* and they are added again once. Google keeps an object after
+the user removes the pass from their wallet, so edits of such a card still report it as synced.
+
 The API key ships inside the app, so it only keeps casual traffic out. For a public release, add App Attest /
 Play Integrity checks or Cloudflare rate limiting in front of `/graphql`.
 
@@ -140,8 +183,10 @@ Play Integrity checks or Cloudflare rate limiting in front of `/graphql`.
    walletka.serviceApiKey=<API_KEY>
    ```
 
-Walletka saves a *generic pass* through `PayClient.savePasses` (unsigned JSON, allowed for allow-listed apps). The
-service settings are optional on Android: without them the card is saved without a hero image.
+When the pass service has [Google Wallet set up](#google-wallet-setup), Walletka saves the *generic pass* the
+service created through `PayClient.savePassesJwt` and syncs later edits; the issuer settings above are then unused.
+Otherwise it saves it through `PayClient.savePasses` (unsigned JSON, allowed for allow-listed apps). The service
+settings are optional on Android: without them the card is saved without a hero image and edits aren't synced.
 
 ### Apple Wallet (iOS)
 

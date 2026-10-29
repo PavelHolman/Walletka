@@ -55,7 +55,10 @@ internal interface WalletService {
     /** Adds the card, or replaces the pass with the same [CardDraft.walletId] where the wallet allows it. */
     suspend fun addCard(card: CardDraft): Either<WalletError, AddedCard>
 
-    /** Whether [updateCard] can replace a pass without any UI (Apple Wallet yes, the on-device Google API no). */
+    /**
+     * Whether [updateCard] can replace a pass without any UI: Apple Wallet always, Google Wallet once the pass service
+     * has reported a configured Google issuer (so the value can change from `false` to `true` at runtime).
+     */
     val canUpdateInPlace: Boolean
 
     /** Silently replaces the pass with the same [CardDraft.walletId]; fails with `NOT_IN_WALLET` if it's gone. */

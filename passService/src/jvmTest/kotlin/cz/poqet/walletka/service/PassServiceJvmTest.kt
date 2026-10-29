@@ -16,7 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private class JvmPassCrypto(privateKeyPkcs8: ByteArray) : PassCrypto {
+internal class JvmPassCrypto(privateKeyPkcs8: ByteArray) : PassCrypto {
     private val key = KeyFactory.getInstance("RSA").generatePrivate(PKCS8EncodedKeySpec(privateKeyPkcs8))
     override suspend fun sha1(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-1").digest(data)
     override suspend fun sha256(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(data)
