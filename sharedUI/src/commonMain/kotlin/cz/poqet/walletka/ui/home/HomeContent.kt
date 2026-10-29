@@ -37,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -121,17 +122,12 @@ fun HomeContent(component: HomeComponent) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(112.dp)
-                    .background(
-                        Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)),
-                        RoundedCornerShape(28.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Outlined.QrCodeScanner, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.onPrimary)
-            }
+            // The app icon, as on the launcher.
+            Image(
+                painterResource(Res.drawable.brand_mark),
+                contentDescription = null,
+                modifier = Modifier.size(112.dp).clip(RoundedCornerShape(28.dp)),
+            )
             Spacer(Modifier.height(24.dp))
             Text("Walletka", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
             Spacer(Modifier.height(8.dp))
