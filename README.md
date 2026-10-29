@@ -54,6 +54,10 @@ The platform interfaces are `internal`: each platform has a composition root
 2. `CardReview` (state retained in an `InstanceKeeper` instance, edit form saved through `StateKeeper`)
    copies the image into app storage, then `ImageAnalyzer` runs barcode detection, OCR and pixel sampling in
    parallel (`parZip`) and builds a suggestion: codes, names, palette, banner crop that avoids the code.
+   A photo of the card on a table is first cut down to the card: `CardDetector` (Vision rectangles on iOS) finds
+   outlines, `CardFraming` keeps the one that is card-shaped and surrounds every code, and the straightened card
+   (slightly inset, so rounded corners don't bring the background along) replaces the photo, unless it loses a
+   code. On iOS, *Scan Card* uses VisionKit's document camera, which does the same while capturing.
    When no code is found, `ScanFallbacks` retries on processed copies (`ImageProcessor.renderForScan`:
    contrast-boosted greyscale, upscaled centre/tile crops, ±20° rotations), stopping at the first hit or after a
    time budget. If that finds nothing either, the form opens with an empty code to type in and a format picker;
@@ -61,8 +65,20 @@ The platform interfaces are `internal`: each platform has a composition root
 3. The user edits name / code / colour / banner, optionally a logo cut from the photo and pass details (card number,
    member name, expiry, notes; Apple `backFields`, Google `textModulesData`), and taps *Add to Wallet* → `WalletService`.
 
+Typed codes are checked against their symbology (`CodeFormat.issueWith`: digits only, length, the EAN/UPC
+check digit, the characters Code 39/93 and Codabar can hold); the form explains the problem and the wallet button
+waits. Logos cut from the photo get a transparent background (`LogoBackground`) when their border is one colour.
+
 *Enter manually* on Home skips the photo: the review form starts with no photo (`CardForm.photo == null`), a
 typed code, the default colour palette plus a custom colour, and no banner.
+
+### iOS app
+
+- iPhone: a navigation stack. iPad (regular width): a split view with the library as the sidebar and the open card
+  (or a welcome screen) as the detail; the stack's top child is the detail.
+- Home Screen quick actions (touch and hold the icon): *Scan Card*, *New Card*. ⌘N starts a card typed in by hand.
+- Touching and holding a library card previews the pass with a large, scannable code.
+- The … menu shows the iCloud sync status, including why it failed, and offers *Sync Now*.
 
 ### Swift Export notes
 
