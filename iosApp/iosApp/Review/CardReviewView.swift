@@ -245,6 +245,8 @@ private struct CardFormView: View {
             codeSection
             colourSection
             bannerSection
+            CardLogoSection(form: form, component: component)
+            CardDetailsSection(form: form, component: component)
 
             if showsWalletButton {
                 Section {
@@ -282,7 +284,7 @@ private struct CardFormView: View {
             )
         }
         .sheet(isPresented: $isEditingBanner) {
-            BannerEditorView(form: form) { region in
+            CropEditorView(bannerOf: form) { region in
                 component.onBannerRegionChanged(region: region)
                 if !form.isBannerEnabled { component.onBannerToggled(enabled: true) }
             }
@@ -497,9 +499,14 @@ private struct CardPreview: View {
         let content = form.selectedColor.contentColor.swiftUIColor
         VStack(spacing: 0) {
             HStack {
-                Text(form.name.isEmpty ? "Card Name" : form.name)
-                    .font(.headline)
-                    .lineLimit(1)
+                // Like Wallet: a logo replaces the name in the header.
+                if let logo = form.logo.activeImage?.path {
+                    PassLogoView(path: logo)
+                } else {
+                    Text(form.name.isEmpty ? "Card Name" : form.name)
+                        .font(.headline)
+                        .lineLimit(1)
+                }
                 Spacer()
             }
             .foregroundStyle(content)

@@ -12,6 +12,7 @@ import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
+import cz.poqet.walletka.domain.TextLine
 import cz.poqet.walletka.platform.BarcodeDetector
 import cz.poqet.walletka.platform.ImageProcessor
 import cz.poqet.walletka.platform.ImageStore
@@ -28,15 +29,21 @@ internal data class CardSuggestion(
     val bannerRegion: NormalizedRect,
     /** PNG cut out of the photo for the card banner, `null` when it could not be produced. */
     val banner: StoredImage?,
+    /** Text found in the photo, for placing crops (e.g. the logo) that depend on the wallet. */
+    val lines: List<TextLine> = emptyList(),
 )
 
-/** Cuts the banner out of the photo and stores it as a PNG. */
+/** Cuts the banner (or another crop, such as the logo) out of the photo and stores it as a PNG. */
 internal class BannerCropper(
     private val imageProcessor: ImageProcessor,
     private val imageStore: ImageStore,
 ) {
-    suspend fun crop(image: StoredImage, region: NormalizedRect): Either<AnalysisError, StoredImage> = either {
-        val png = imageProcessor.cropToPng(image, region, targetWidth = BANNER_WIDTH).bind()
+    suspend fun crop(
+        image: StoredImage,
+        region: NormalizedRect,
+        targetWidth: Int = BANNER_WIDTH,
+    ): Either<AnalysisError, StoredImage> = either {
+        val png = imageProcessor.cropToPng(image, region, targetWidth).bind()
         imageStore.save(png).bind()
     }
 
@@ -78,6 +85,7 @@ internal class ImageAnalyzer(
             bannerRegion = bannerRegion,
             // The banner is decoration; a card without one is still a good card.
             banner = bannerCropper.crop(image, bannerRegion).getOrNull(),
+            lines = lines,
         )
     }
 }

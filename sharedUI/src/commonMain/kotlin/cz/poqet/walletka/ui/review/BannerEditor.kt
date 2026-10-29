@@ -51,17 +51,38 @@ import kotlin.math.roundToInt
  */
 @Composable
 internal fun BannerEditorDialog(form: CardForm, onDone: (NormalizedRect) -> Unit, onDismiss: () -> Unit) {
-    val viewport = remember(form.photoAspectRatio) { form.bannerViewport }
-    var region by remember(form.photo) { mutableStateOf(form.bannerRegion) }
-    val photo = rememberStoredImage(form.photo.path, maxSize = 2400)
+    CropEditorDialog(
+        title = "Adjust banner",
+        hint = "Drag and pinch the photo. The bright strip becomes the banner.",
+        photoPath = form.photo.path,
+        viewport = remember(form.photoAspectRatio) { form.bannerViewport },
+        initialRegion = form.bannerRegion,
+        onDone = onDone,
+        onDismiss = onDismiss,
+    )
+}
+
+/** Pan & pinch [photoPath] under a fixed window with [viewport]'s aspect ratio to choose a crop of it. */
+@Composable
+internal fun CropEditorDialog(
+    title: String,
+    hint: String,
+    photoPath: String,
+    viewport: BannerViewport,
+    initialRegion: NormalizedRect,
+    onDone: (NormalizedRect) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var region by remember(photoPath) { mutableStateOf(initialRegion) }
+    val photo = rememberStoredImage(photoPath, maxSize = 2400)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Adjust banner") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    "Drag and pinch the photo. The bright strip becomes the banner.",
+                    hint,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -84,8 +105,11 @@ internal fun BannerEditorDialog(form: CardForm, onDone: (NormalizedRect) -> Unit
     )
 }
 
-/** Height of the editing area relative to the strip-shaped window; the extra space shows the photo around it. */
+/** Height of the editing area relative to a strip-shaped window; the extra space shows the photo around it. */
 private const val CONTEXT_FACTOR = 2.2f
+
+/** Narrower windows (e.g. a square logo) leave this much of the area's width around them. */
+private const val MAX_WINDOW_HEIGHT_FRACTION = 0.6f
 
 @Composable
 private fun BannerWindow(
@@ -102,8 +126,10 @@ private fun BannerWindow(
             .clip(RoundedCornerShape(12.dp))
             .background(Color.Black),
     ) {
-        val windowPx = constraints.maxWidth.toFloat()
-        val windowHeightPx = windowPx / BannerViewport.ASPECT_RATIO
+        // The window spans the full width, unless that would make it too tall for the area.
+        val windowPx = minOf(constraints.maxWidth.toFloat(), constraints.maxHeight * MAX_WINDOW_HEIGHT_FRACTION * viewport.aspectRatio)
+        val windowHeightPx = windowPx / viewport.aspectRatio
+        val windowLeftPx = (constraints.maxWidth - windowPx) / 2
         val windowTopPx = (constraints.maxHeight - windowHeightPx) / 2
         val transform = viewport.transformFor(region)
         val density = LocalDensity.current
@@ -116,7 +142,7 @@ private fun BannerWindow(
                             viewport.applyGesture(
                                 currentRegion,
                                 scaleBy = zoom,
-                                anchorX = centroid.x / windowPx,
+                                anchorX = (centroid.x - windowLeftPx) / windowPx,
                                 anchorY = (centroid.y - windowTopPx) / windowPx,
                                 panX = pan.x / windowPx,
                                 panY = pan.y / windowPx,
@@ -130,7 +156,7 @@ private fun BannerWindow(
                     Modifier
                         .offset {
                             IntOffset(
-                                (transform.offsetX * windowPx).roundToInt(),
+                                (windowLeftPx + transform.offsetX * windowPx).roundToInt(),
                                 (windowTopPx + transform.offsetY * windowPx).roundToInt(),
                             )
                         }
@@ -142,7 +168,9 @@ private fun BannerWindow(
                     val dim = Color.Black.copy(alpha = 0.6f)
                     drawRect(dim, size = Size(size.width, windowTopPx))
                     drawRect(dim, topLeft = Offset(0f, windowTopPx + windowHeightPx), size = Size(size.width, size.height - windowTopPx - windowHeightPx))
-                    drawRect(Color.White, topLeft = Offset(0f, windowTopPx), size = Size(size.width, windowHeightPx), style = Stroke(2.dp.toPx()))
+                    drawRect(dim, topLeft = Offset(0f, windowTopPx), size = Size(windowLeftPx, windowHeightPx))
+                    drawRect(dim, topLeft = Offset(windowLeftPx + windowPx, windowTopPx), size = Size(size.width - windowLeftPx - windowPx, windowHeightPx))
+                    drawRect(Color.White, topLeft = Offset(windowLeftPx, windowTopPx), size = Size(windowPx, windowHeightPx), style = Stroke(2.dp.toPx()))
                 }
             }
         }

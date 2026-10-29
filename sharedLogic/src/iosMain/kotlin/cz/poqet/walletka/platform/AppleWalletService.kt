@@ -15,6 +15,7 @@ import kotlinx.cinterop.ObjCObjectVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.useContents
 import kotlinx.cinterop.value
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ import platform.UIKit.UIApplication
 import platform.UIKit.UIColor
 import platform.UIKit.UIGraphicsImageRenderer
 import platform.UIKit.UIGraphicsImageRendererFormat
+import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.UIRectFill
 import platform.UIKit.UISceneActivationStateForegroundActive
@@ -119,7 +121,26 @@ internal class AppleWalletService(
             card.banner?.let { banner ->
                 NSFileManager.defaultManager.contentsAtPath(banner.path)?.let { put("strip@3x.png", it.toByteArray()) }
             }
+            card.logo?.let { logo ->
+                UIImage.imageWithContentsOfFile(logo.path)?.let { image ->
+                    for ((name, scale) in listOf("logo.png" to 1.0, "logo@2x.png" to 2.0, "logo@3x.png" to 3.0)) {
+                        scaledPng(image, width = LOGO_WIDTH, scale = scale)?.let { put(name, it) }
+                    }
+                }
+            }
         }
+    }
+
+    /** [image] drawn [width] points wide (keeping its aspect ratio) at [scale]. */
+    private fun scaledPng(image: UIImage, width: Double, scale: Double): ByteArray? {
+        val (imageWidth, imageHeight) = image.size.useContents { width to height }
+        if (imageWidth <= 0.0 || imageHeight <= 0.0) return null
+        val height = width * imageHeight / imageWidth
+        val format = UIGraphicsImageRendererFormat().apply { this.scale = scale }
+        val scaled = UIGraphicsImageRenderer(size = CGSizeMake(width, height), format = format).imageWithActions {
+            image.drawInRect(CGRectMake(0.0, 0.0, width, height))
+        }
+        return UIImagePNGRepresentation(scaled)?.toByteArray()
     }
 
     /** Presents the add-pass sheet and returns whether the pass ended up in the library. */
@@ -164,6 +185,11 @@ internal class AppleWalletService(
             UIRectFill(CGRectMake(0.0, 0.0, size, size))
         }
         return UIImagePNGRepresentation(image)?.toByteArray() ?: ByteArray(0)
+    }
+
+    private companion object {
+        /** Apple Wallet logos are at most 160x50 points; the logo crop has exactly that shape. */
+        const val LOGO_WIDTH = 160.0
     }
 
     private class AddPassDelegate(private val onFinish: () -> Unit) : NSObject(), PKAddPassesViewControllerDelegateProtocol {

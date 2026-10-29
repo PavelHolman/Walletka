@@ -46,3 +46,26 @@ enum CodeImage {
         return UIImage(cgImage: cgImage)
     }
 }
+
+/// A pass logo as Apple Wallet lays it out: at most 160x50 points, scaled down to [height] in previews.
+struct PassLogoView: View {
+    let path: String
+    var height: CGFloat = 30
+
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image).resizable().scaledToFit()
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: height * 160 / 50, height: height, alignment: .leading)
+        .accessibilityLabel("Logo")
+        .task(id: path) {
+            image = await Task.detached { [path] in UIImage(contentsOfFile: path) }.value
+        }
+    }
+}

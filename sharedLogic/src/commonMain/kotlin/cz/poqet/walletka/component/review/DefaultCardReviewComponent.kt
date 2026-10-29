@@ -14,9 +14,11 @@ import cz.poqet.walletka.data.CardLibrary
 import cz.poqet.walletka.data.CardSuggestion
 import cz.poqet.walletka.data.ColorPalette
 import cz.poqet.walletka.data.ImageAnalyzer
+import cz.poqet.walletka.data.LogoRegion
 import cz.poqet.walletka.data.StoredCard
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.CardColor
+import cz.poqet.walletka.domain.CardDetails
 import cz.poqet.walletka.domain.CardDraft
 import cz.poqet.walletka.domain.ImagePixels
 import cz.poqet.walletka.domain.NormalizedRect
@@ -107,6 +109,12 @@ internal class DefaultCardReviewComponent(
 
     override fun onBannerRegionChanged(region: NormalizedRect) = store.updateBannerRegion(region)
 
+    override fun onLogoToggled(enabled: Boolean) = store.toggleLogo(enabled)
+
+    override fun onLogoRegionChanged(region: NormalizedRect) = store.updateLogoRegion(region)
+
+    override fun onDetailsChanged(details: CardDetails) = store.updateForm { copy(details = details) }
+
     override fun onAddToWalletClicked() = store.addToWallet()
 
     override fun onRetryClicked() = store.load()
@@ -141,6 +149,7 @@ private class ReviewStore(
     val model: StateFlow<Model> = _model.asStateFlow()
     private var job: Job? = null
     private var bannerJob: Job? = null
+    private var logoJob: Job? = null
 
     /** The form as it is in the wallet; `null` while the card has never been added. */
     private var issuedForm: CardForm? = null
@@ -217,6 +226,7 @@ private class ReviewStore(
         syncJob = scope.launch {
             delay(delayMillis)
             bannerJob?.join() // sync the final crop
+            logoJob?.join()
             sync()
         }
     }
@@ -241,6 +251,9 @@ private class ReviewStore(
                     val form = model.form.copy(
                         photo = if (model.form.photo == editing.form.photo) saved.photo else model.form.photo,
                         banner = if (model.form.banner == editing.form.banner) saved.banner else model.form.banner,
+                        logo = model.form.logo.copy(
+                            image = if (model.form.logo.image == editing.form.logo.image) saved.logo.image else model.form.logo.image,
+                        ),
                     )
                     val changed = hasChanges(form)
                     model.copy(form = form, hasChanges = changed, sync = if (changed) SyncStatus.PENDING else SyncStatus.SYNCED, syncError = null)
@@ -259,11 +272,13 @@ private class ReviewStore(
             CoroutineScope(Dispatchers.Main + SupervisorJob()).launch {
                 withContext(NonCancellable) {
                     bannerJob?.join()
+                    logoJob?.join()
                     sync()
                     // The working copies were moved into the library by the sync, or are no longer needed.
                     val form = (_model.value as? Model.Editing)?.form ?: editing.form
                     deleteUnlessInLibrary(form.photo)
                     form.banner?.let { deleteUnlessInLibrary(it) }
+                    form.logo.image?.let { deleteUnlessInLibrary(it) }
                 }
                 scope.cancel()
             }
@@ -323,13 +338,49 @@ private class ReviewStore(
         }
     }
 
+    /** Turns the logo on or off; the first time it is turned on, it is cut out of the photo. */
+    fun toggleLogo(enabled: Boolean) {
+        val editing = _model.value as? Model.Editing ?: return
+        updateForm { copy(logo = logo.copy(isEnabled = enabled)) }
+        if (enabled && editing.form.logo.image == null && logoJob?.isActive != true) recropLogo(editing.form.logo.region, delayMillis = 0)
+    }
+
+    /** Like [updateBannerRegion], for the logo. */
+    fun updateLogoRegion(region: NormalizedRect) {
+        val editing = _model.value as? Model.Editing ?: return
+        val clamped = editing.form.logoViewport.clamp(region)
+        if (clamped == editing.form.logo.region) return
+        updateForm { copy(logo = logo.copy(region = clamped)) }
+        recropLogo(clamped, delayMillis = BANNER_RECROP_DEBOUNCE)
+    }
+
+    private fun recropLogo(region: NormalizedRect, delayMillis: Long) {
+        val editing = _model.value as? Model.Editing ?: return
+        logoJob?.cancel()
+        logoJob = scope.launch {
+            delay(delayMillis)
+            val width = LogoRegion.targetWidth(editing.form.walletPlatform)
+            val image = dependencies.bannerCropper.crop(editing.form.photo, region, width).getOrNull() ?: return@launch
+            val current = _model.value as? Model.Editing
+            if (current == null || current.form.logo.region != region) {
+                imageStore.delete(image) // superseded by a newer crop
+                return@launch
+            }
+            val form = current.form.copy(logo = current.form.logo.copy(image = image, isEnabled = true))
+            _model.value = current.copy(form = form, hasChanges = hasChanges(form))
+            current.form.logo.image?.let { deleteUnlessInLibrary(it) }
+            scheduleSync()
+        }
+    }
+
     fun addToWallet() {
         val editing = _model.value as? Model.Editing ?: return
         if (!editing.form.isValid || editing.submission == Submission.InProgress) return
-        // Use the banner for the final crop, even if a re-crop is still pending.
-        if (bannerJob?.isActive == true) {
+        // Use the banner and logo for the final crop, even if a re-crop is still pending.
+        if (bannerJob?.isActive == true || logoJob?.isActive == true) {
             scope.launch {
                 bannerJob?.join()
+                logoJob?.join()
                 addToWallet()
             }
             return
@@ -358,8 +409,9 @@ private class ReviewStore(
     private suspend fun saveToLibrary(form: CardForm, existing: StoredCard?, walletId: String): CardForm {
         val photo = library.keepImage(form.photo)
         val banner = form.banner?.let { library.keepImage(it) }
+        val logo = form.logo.image?.let { library.keepImage(it) }
         val now = Clock.System.now().toEpochMilliseconds()
-        val saved = form.copy(photo = photo, banner = banner, cardId = form.cardId ?: newId())
+        val saved = form.copy(photo = photo, banner = banner, logo = form.logo.copy(image = logo), cardId = form.cardId ?: newId())
         library.save(
             StoredCard(
                 id = saved.cardId!!,
@@ -373,6 +425,8 @@ private class ReviewStore(
         if (photo != form.photo) imageStore.delete(form.photo)
         if (banner != form.banner) form.banner?.let { imageStore.delete(it) }
         existing?.form?.banner?.takeIf { it != banner?.path }?.let { imageStore.delete(StoredImage(it)) }
+        if (logo != form.logo.image) form.logo.image?.let { imageStore.delete(it) }
+        existing?.form?.logo?.image?.takeIf { it != logo?.path }?.let { imageStore.delete(StoredImage(it)) }
         return saved
     }
 
@@ -408,6 +462,10 @@ private class ReviewStore(
         photoAspectRatio = photoAspectRatio,
         walletPlatform = dependencies.walletService.platform,
         cardId = null,
+        logo = LogoRegion.viewport(photoAspectRatio, dependencies.walletService.platform).let { viewport ->
+            CardLogo(image = null, isEnabled = false, region = LogoRegion.pick(viewport, codes, lines))
+        },
+        details = CardDetails.Empty,
     )
 
     private fun CardForm.toDraft(walletId: String) = CardDraft(
@@ -416,6 +474,8 @@ private class ReviewStore(
         code = selectedCode.copy(value = selectedCode.value.trim()),
         backgroundColor = selectedColor,
         banner = banner.takeIf { isBannerEnabled },
+        logo = logo.activeImage,
+        details = details.trimmed(),
     )
 
     /** Whether [form] differs from the issued card in anything that ends up in the pass. */
@@ -425,7 +485,10 @@ private class ReviewStore(
             form.selectedCode != issued.selectedCode ||
             form.selectedColor != issued.selectedColor ||
             form.isBannerEnabled != issued.isBannerEnabled ||
-            (form.isBannerEnabled && form.bannerRegion != issued.bannerRegion)
+            (form.isBannerEnabled && form.bannerRegion != issued.bannerRegion) ||
+            form.logo.isEnabled != issued.logo.isEnabled ||
+            (form.logo.isEnabled && form.logo.region != issued.logo.region) ||
+            form.details.trimmed() != issued.details.trimmed()
     }
 
     private fun refreshChanges() {
@@ -455,6 +518,7 @@ private class ReviewStore(
                 withContext(NonCancellable) {
                     deleteUnlessInLibrary(form.photo)
                     form.banner?.let { deleteUnlessInLibrary(it) }
+                    form.logo.image?.let { deleteUnlessInLibrary(it) }
                 }
             }
         }

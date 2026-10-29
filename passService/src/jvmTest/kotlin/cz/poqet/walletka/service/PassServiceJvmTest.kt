@@ -95,6 +95,13 @@ class PassServiceJvmTest {
     }
 
     @Test
+    fun acceptsLogoImages() = runTest {
+        val logos = listOf("logo.png", "logo@2x.png", "logo@3x.png")
+        val signed = service.signApplePass(listOf("pass.json" to "{}".encodeToByteArray(), "icon.png" to png) + logos.map { it to png })
+        assertTrue(unzip(signed.pkpass).keys.containsAll(logos))
+    }
+
+    @Test
     fun rejectsUnexpectedFiles() = runTest {
         val error = kotlin.runCatching {
             service.signApplePass(listOf("pass.json" to "{}".encodeToByteArray(), "icon.png" to png, "../evil" to png))

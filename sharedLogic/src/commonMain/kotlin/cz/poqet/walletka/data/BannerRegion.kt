@@ -25,7 +25,7 @@ internal object BannerRegion {
      */
     fun pick(imageAspectRatio: Float, codes: List<ScannedCode>, lines: List<TextLine> = emptyList()): NormalizedRect {
         val codeBounds = codes.mapNotNull { it.bounds }
-        framingText(imageAspectRatio, codeBounds, lines)?.let { return it }
+        framingText(BannerViewport(imageAspectRatio), codeBounds, lines)?.let { return it }
 
         val bandHeight = (imageAspectRatio / ASPECT_RATIO).coerceAtMost(1f)
         val candidates = generateSequence(0f) { it + 0.05f }
@@ -36,19 +36,24 @@ internal object BannerRegion {
             ?: candidates.minBy { band -> codeBounds.sumOf { overlap(it, band).toDouble() } }
     }
 
-    private fun framingText(imageAspectRatio: Float, codeBounds: List<NormalizedRect>, lines: List<TextLine>): NormalizedRect? {
-        val viewport = BannerViewport(imageAspectRatio)
+    /**
+     * A crop with [viewport]'s aspect ratio around the most prominent text line that is clear of the codes, or `null`
+     * when there is none.
+     */
+    fun framingText(viewport: BannerViewport, codeBounds: List<NormalizedRect>, lines: List<TextLine>): NormalizedRect? {
+        val imageAspectRatio = viewport.photoAspectRatio
+        val aspectRatio = viewport.aspectRatio
         return lines
             .filter { line -> line.text.count { it.isLetter() } >= 2 && codeBounds.none { it.intersects(line.bounds) } }
             .sortedByDescending { it.bounds.height }
             .firstNotNullOfOrNull { line ->
                 val width = maxOf(
                     line.bounds.width * TEXT_MARGIN,
-                    line.bounds.height * MIN_TEXT_HEIGHT_RATIO * ASPECT_RATIO / imageAspectRatio,
+                    line.bounds.height * MIN_TEXT_HEIGHT_RATIO * aspectRatio / imageAspectRatio,
                 )
                 val centerX = (line.bounds.left + line.bounds.right) / 2
                 val centerY = (line.bounds.top + line.bounds.bottom) / 2
-                val height = width * imageAspectRatio / ASPECT_RATIO
+                val height = width * imageAspectRatio / aspectRatio
                 val region = viewport.clamp(
                     NormalizedRect(centerX - width / 2, centerY - height / 2, centerX + width / 2, centerY + height / 2),
                 )

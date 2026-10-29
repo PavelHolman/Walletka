@@ -92,6 +92,7 @@ internal class CardLibrary(
         removePass(card.walletId)
         deleteImage(StoredImage(card.form.photo))
         card.form.banner?.let { deleteImage(StoredImage(it)) }
+        card.form.logo?.image?.let { deleteImage(StoredImage(it)) }
         return card
     }
 
@@ -126,7 +127,11 @@ internal class CardLibrary(
     }
 
     private fun StoredCard.withImagePaths(transform: (String) -> String) = copy(
-        form = form.copy(photo = transform(form.photo), banner = form.banner?.let(transform)),
+        form = form.copy(
+            photo = transform(form.photo),
+            banner = form.banner?.let(transform),
+            logo = form.logo?.let { it.copy(image = it.image?.let(transform)) },
+        ),
     )
 
     private suspend fun write(cards: List<StoredCard>) {

@@ -1,7 +1,9 @@
 package cz.poqet.walletka.component.review
 
 import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
+import cz.poqet.walletka.data.LogoRegion
 import cz.poqet.walletka.domain.CardColor
+import cz.poqet.walletka.domain.CardDetails
 import cz.poqet.walletka.domain.CodeFormat
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
@@ -29,9 +31,23 @@ internal data class SavedCardForm(
     val photoAspectRatio: Float,
     val walletPlatform: WalletPlatform,
     val cardId: String? = null,
+    // Added later: optional, so library files and saved state from older versions still load.
+    val logo: Logo? = null,
+    val details: Details? = null,
 ) {
     @Serializable
     data class Code(val format: CodeFormat, val value: String, val bounds: List<Float>?)
+
+    @Serializable
+    data class Logo(val image: String?, val isEnabled: Boolean, val region: List<Float>)
+
+    @Serializable
+    data class Details(
+        val memberNumber: String = "",
+        val memberName: String = "",
+        val expiryDate: String = "",
+        val notes: String = "",
+    )
 
     fun toForm() = CardForm(
         photo = StoredImage(photo),
@@ -50,6 +66,9 @@ internal data class SavedCardForm(
         photoAspectRatio = photoAspectRatio,
         walletPlatform = walletPlatform,
         cardId = cardId,
+        logo = logo?.let { CardLogo(it.image?.let(::StoredImage), it.isEnabled, it.region.let { (l, t, r, b) -> NormalizedRect(l, t, r, b) }) }
+            ?: CardLogo(image = null, isEnabled = false, region = LogoRegion.viewport(photoAspectRatio, walletPlatform).clamp(NormalizedRect.Full)),
+        details = details?.run { CardDetails(memberNumber, memberName, expiryDate, notes) } ?: CardDetails.Empty,
     )
 
     companion object {
@@ -70,6 +89,8 @@ internal data class SavedCardForm(
             photoAspectRatio = form.photoAspectRatio,
             walletPlatform = form.walletPlatform,
             cardId = form.cardId,
+            logo = form.logo.run { Logo(image?.path, isEnabled, region.run { listOf(left, top, right, bottom) }) },
+            details = form.details.run { Details(memberNumber, memberName, expiryDate, notes) },
         )
     }
 }

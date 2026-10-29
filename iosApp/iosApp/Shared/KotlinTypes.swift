@@ -19,3 +19,5 @@ typealias AnalysisFailure = ExportedKotlinPackages.cz.poqet.walletka.domain.Anal
 typealias WalletFailure = ExportedKotlinPackages.cz.poqet.walletka.domain.WalletFailure
 typealias CardSummary = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_home_HomeComponent_CardSummary
 typealias SyncStatus = SharedLogic._ExportedKotlinPackages_cz_poqet_walletka_component_review_CardReviewComponent_SyncStatus
+typealias CardLogo = ExportedKotlinPackages.cz.poqet.walletka.component.review.CardLogo
+typealias CardDetails = ExportedKotlinPackages.cz.poqet.walletka.domain.CardDetails

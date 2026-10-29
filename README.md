@@ -54,7 +54,8 @@ The platform interfaces are `internal`: each platform has a composition root
 2. `CardReview` (state retained in an `InstanceKeeper` instance, edit form saved through `StateKeeper`)
    copies the image into app storage, then `ImageAnalyzer` runs barcode detection, OCR and pixel sampling in
    parallel (`parZip`) and builds a suggestion: codes, names, palette, banner crop that avoids the code.
-3. The user edits name / code / colour / banner and taps *Add to Wallet* → `WalletService`.
+3. The user edits name / code / colour / banner, optionally a logo cut from the photo and pass details (card number,
+   member name, expiry, notes; Apple `backFields`, Google `textModulesData`), and taps *Add to Wallet* → `WalletService`.
 
 ### Swift Export notes
 

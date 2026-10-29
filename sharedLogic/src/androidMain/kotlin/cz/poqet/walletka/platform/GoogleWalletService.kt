@@ -14,6 +14,7 @@ import cz.poqet.walletka.data.PassJson
 import cz.poqet.walletka.data.PassServiceClient
 import cz.poqet.walletka.data.WalletConfig
 import cz.poqet.walletka.domain.CardDraft
+import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.domain.WalletError
 import cz.poqet.walletka.domain.WalletFailure
 import kotlinx.coroutines.CompletableDeferred
@@ -80,7 +81,13 @@ internal class GoogleWalletService(
     override suspend fun addCard(card: CardDraft): Either<WalletError, AddedCard> = either {
         ensure(config.isGoogleConfigured) { WalletError(WalletFailure.NOT_CONFIGURED, "Google Wallet issuer ID/e-mail missing") }
         ensure(isAvailable()) { WalletError(WalletFailure.UNAVAILABLE) }
-        val json = PassJson.google(card, config, objectId = UUID.randomUUID().toString(), heroImageUrl = heroImageUrl(card))
+        val json = PassJson.google(
+            card,
+            config,
+            objectId = UUID.randomUUID().toString(),
+            heroImageUrl = imageUrl(card.banner),
+            logoUrl = imageUrl(card.logo),
+        )
         val (resultCode, data) = activityBridge.launch { activity, requestCode -> client.savePasses(json, activity, requestCode) }
             ?: raise(WalletError(WalletFailure.FAILED, "No activity attached"))
         when (resultCode) {
@@ -100,12 +107,12 @@ internal class GoogleWalletService(
     override suspend fun removeCard(walletId: String): Boolean = false
 
     /**
-     * Google Wallet only takes images by public URL, so the banner is uploaded to the pass service first. The banner
-     * is decoration: without a service, or if the upload fails, the card is saved without it.
+     * Google Wallet only takes images by public URL, so the banner and logo are uploaded to the pass service first.
+     * They are decoration: without a service, or if the upload fails, the card is saved without them.
      */
-    private suspend fun heroImageUrl(card: CardDraft): String? {
-        val banner = card.banner?.takeIf { config.isServiceConfigured } ?: return null
-        val png = withContext(Dispatchers.IO) { runCatching { File(banner.path).readBytes() }.getOrNull() } ?: return null
-        return passService.uploadBanner(png).onLeft { Log.w("Walletka", "Banner upload failed: ${it.detail}") }.getOrNull()
+    private suspend fun imageUrl(image: StoredImage?): String? {
+        val source = image?.takeIf { config.isServiceConfigured } ?: return null
+        val png = withContext(Dispatchers.IO) { runCatching { File(source.path).readBytes() }.getOrNull() } ?: return null
+        return passService.uploadBanner(png).onLeft { Log.w("Walletka", "Image upload failed: ${it.detail}") }.getOrNull()
     }
 }
