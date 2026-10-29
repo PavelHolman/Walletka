@@ -437,6 +437,16 @@
         }
       }
     },
+    "Card Not Found" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta nenalezena"
+          }
+        }
+      }
+    },
     "Card Number" : {
       "localizations" : {
         "cs" : {
@@ -1665,6 +1675,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logo značky vyříznuté z vaší fotky, zobrazené v horní části karty místo názvu."
+          }
+        }
+      }
+    },
+    "The card has been deleted, maybe on another device." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta byla smazána, možná na jiném zařízení."
           }
         }
       }

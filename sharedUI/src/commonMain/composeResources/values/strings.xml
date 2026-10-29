@@ -42,7 +42,7 @@
     <string name="failure_image_unreadable">This doesn’t look like an image Walletka can read.</string>
     <string name="failure_no_code">No QR code or barcode found. Try a sharper photo with the whole code visible.</string>
     <string name="failure_detection">Something went wrong while scanning the photo.</string>
-    <string name="failure_choose_another">Choose another</string>
+    <string name="failure_card_not_found">The card has been deleted, maybe on another device.</string>
     <string name="section_name">Name</string>
     <string name="name_placeholder">e.g. Coffee Club</string>
     <string name="name_clear">Clear name</string>

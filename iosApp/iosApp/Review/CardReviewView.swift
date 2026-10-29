@@ -138,7 +138,7 @@ private struct FailedView: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label(title, systemImage: failure == .NO_CODE_FOUND ? "qrcode.viewfinder" : "exclamationmark.triangle")
+            Label(title, systemImage: symbol)
         } description: {
             Text(message)
         } actions: {
@@ -149,11 +149,20 @@ private struct FailedView: View {
         }
     }
 
+    private var symbol: String {
+        switch failure {
+        case .NO_CODE_FOUND: "qrcode.viewfinder"
+        case .CARD_NOT_FOUND: "creditcard"
+        default: "exclamationmark.triangle"
+        }
+    }
+
     private var title: String {
         switch failure {
         case .IMAGE_UNREADABLE: String(localized: "Can't Read Image")
         case .NO_CODE_FOUND: String(localized: "No Code Found")
         case .DETECTION_FAILED: String(localized: "Scanning Failed")
+        case .CARD_NOT_FOUND: String(localized: "Card Not Found")
         }
     }
 
@@ -162,6 +171,7 @@ private struct FailedView: View {
         case .IMAGE_UNREADABLE: String(localized: "This doesn't look like an image Walletka can read.")
         case .NO_CODE_FOUND: String(localized: "Try a sharper photo with the whole QR code or barcode in view.")
         case .DETECTION_FAILED: String(localized: "Something went wrong while scanning the photo.")
+        case .CARD_NOT_FOUND: String(localized: "The card has been deleted, maybe on another device.")
         }
     }
 }

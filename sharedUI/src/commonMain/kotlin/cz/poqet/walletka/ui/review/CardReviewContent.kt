@@ -252,6 +252,7 @@ private fun Failed(failure: AnalysisFailure, onRetry: () -> Unit, onClose: () ->
                 AnalysisFailure.IMAGE_UNREADABLE -> stringResource(Res.string.failure_image_unreadable)
                 AnalysisFailure.NO_CODE_FOUND -> stringResource(Res.string.failure_no_code)
                 AnalysisFailure.DETECTION_FAILED -> stringResource(Res.string.failure_detection)
+                AnalysisFailure.CARD_NOT_FOUND -> stringResource(Res.string.failure_card_not_found)
             },
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             textAlign = TextAlign.Center,
@@ -259,7 +260,7 @@ private fun Failed(failure: AnalysisFailure, onRetry: () -> Unit, onClose: () ->
         )
         Spacer(Modifier.height(24.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
-            OutlinedButton(onClick = onClose) { Text(stringResource(Res.string.failure_choose_another)) }
+            OutlinedButton(onClick = onClose) { Text(stringResource(Res.string.action_back)) }
             if (failure == AnalysisFailure.DETECTION_FAILED) Button(onClick = onRetry) { Text(stringResource(Res.string.action_try_again)) }
         }
     }

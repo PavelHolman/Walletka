@@ -10,6 +10,9 @@ enum class AnalysisFailure {
 
     /** A platform detector failed unexpectedly. */
     DETECTION_FAILED,
+
+    /** The library card to open no longer exists (deleted, e.g. on another device). */
+    CARD_NOT_FOUND,
 }
 
 /** Why adding a card to the wallet did not succeed. */

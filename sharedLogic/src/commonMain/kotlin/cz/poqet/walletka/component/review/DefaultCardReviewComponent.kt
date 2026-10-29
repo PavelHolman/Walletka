@@ -215,7 +215,7 @@ private class ReviewStore(
                         val sync = if (inWallet) SyncStatus.SYNCED else SyncStatus.NOT_IN_WALLET
                         Model.Editing(it, Submission.Idle, hasChanges = !inWallet, sync = sync.takeIf { _ -> autoSyncs(it) })
                     }
-                        ?: Model.Failed(AnalysisFailure.IMAGE_UNREADABLE)
+                        ?: Model.Failed(AnalysisFailure.CARD_NOT_FOUND)
                 }
 
                 ReviewSource.Manual ->

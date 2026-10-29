@@ -149,6 +149,14 @@ class RootComponentTest {
     }
 
     @Test
+    fun openingACardThatNoLongerExistsSaysSo() {
+        val root = root(fakeServices(listOf(code)))
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        home.onCardClicked("deleted-elsewhere")
+        assertEquals(Model.Failed(AnalysisFailure.CARD_NOT_FOUND), root.review().model.value)
+    }
+
+    @Test
     fun addsEditedCardToWalletAndCleansUpOnClose() {
         val wallet = FakeWalletService()
         val store = FakeImageStore()

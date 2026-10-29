@@ -42,7 +42,7 @@
     <string name="failure_image_unreadable">Tohle nevypadá jako obrázek, který Walletka dokáže přečíst.</string>
     <string name="failure_no_code">Nenašel se žádný QR kód ani čárový kód. Zkuste ostřejší fotku, na které je vidět celý kód.</string>
     <string name="failure_detection">Při skenování fotky se něco pokazilo.</string>
-    <string name="failure_choose_another">Vybrat jinou</string>
+    <string name="failure_card_not_found">Karta byla smazána, možná na jiném zařízení.</string>
     <string name="section_name">Název</string>
     <string name="name_placeholder">např. Kavárna U Mlýna</string>
     <string name="name_clear">Vymazat název</string>
