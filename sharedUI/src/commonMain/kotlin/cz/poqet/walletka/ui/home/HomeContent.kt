@@ -112,6 +112,7 @@ fun HomeContent(component: HomeComponent) {
             search = if (model.isSearchAvailable) ({ LibrarySearchField(model.searchQuery, component::onSearchQueryChanged) }) else null,
             onMove = component::onCardMoved.takeIf { model.canReorder },
             canMove = model.canReorder,
+            query = model.searchQuery,
         )
         return
     }
@@ -204,6 +205,8 @@ private fun CardLibrary(
     onMove: ((Int, Int) -> Unit)? = null,
     /** Whether the order can be changed at all (screen readers get move actions instead of dragging). */
     canMove: Boolean = false,
+    /** The search text, to say when nothing matches it. */
+    query: String = "",
 ) {
     var isAddMenuOpen by remember { mutableStateOf(false) }
     var pendingDeletion by remember { mutableStateOf<HomeComponent.CardSummary?>(null) }
@@ -259,6 +262,15 @@ private fun CardLibrary(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (search != null) item(key = "search") { search() }
+            if (shown.isEmpty() && query.isNotBlank()) item(key = "no-results") {
+                Text(
+                    stringResource(Res.string.home_search_empty, query.trim()),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                )
+            }
             items(shown, key = { it.id }) { card ->
                 val index = cards.indexOf(card)
                 CardTile(

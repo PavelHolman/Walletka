@@ -68,6 +68,7 @@ struct CardReviewView: View {
     }
 
     private var title: String {
+        if isAdded { return "" } // the success screen has its own headline
         if case .editing(let editing) = model.value.sealedType(), editing.value.form.isLibraryCard {
             return String(localized: "Edit Card")
         }
@@ -143,7 +144,7 @@ private struct FailedView: View {
             if failure == .DETECTION_FAILED {
                 Button("Try Again", action: onRetry).buttonStyle(.borderedProminent)
             }
-            Button("Choose Another Photo", action: onClose)
+            Button("Back", action: onClose)
         }
     }
 
@@ -194,6 +195,8 @@ private struct CardAddedView: View {
                 CardPreview(form: form)
             }
             .padding(24)
+            .frame(maxWidth: 460)
+            .frame(maxWidth: .infinity)
         }
         .onAppear { hasAppeared = true }
         // The pass made it into Wallet.
@@ -213,6 +216,8 @@ private struct CardAddedView: View {
                 }
                 .buttonStyle(.bordered)
             }
+            .frame(maxWidth: 460)
+            .frame(maxWidth: .infinity)
             .controlSize(.large)
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
@@ -302,6 +307,13 @@ private struct CardFormView: View {
                     walletButton
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                } footer: {
+                    // Why the button is disabled; a code that can't be encoded is explained at the code.
+                    if form.name.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Text("Enter a name to add the card.").frame(maxWidth: .infinity)
+                    } else if form.selectedCode.value.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Text("Enter the card's code to add it.").frame(maxWidth: .infinity)
+                    }
                 }
             }
         }
@@ -573,7 +585,7 @@ private struct CardFormView: View {
     private static func message(_ failure: (WalletFailure, String?)) -> String {
         let text = switch failure.0 {
         case .UNAVAILABLE: String(localized: "Apple Wallet isn't available on this device.")
-        case .NOT_CONFIGURED: String(localized: "Apple Wallet passes are signed by the Walletka pass service. Set WALLETKA_SERVICE_URL (and WALLETKA_SERVICE_API_KEY) in Config.xcconfig.")
+        case .NOT_CONFIGURED: String(localized: "Walletka can't create wallet passes right now. Try again later.")
         case .CANCELLED: String(localized: "Cancelled.")
         case .UNSUPPORTED_CODE: String(localized: "This code type can't be stored in Apple Wallet.")
         case .FAILED: String(localized: "Apple Wallet rejected the card.")
@@ -590,6 +602,20 @@ private struct SyncStatusView: View {
     let onRetry: () -> Void
 
     var body: some View {
+        VStack(spacing: 2) {
+            row
+            // Why it failed, as the wallet reported it.
+            if status == .FAILED, let error, !error.isEmpty {
+                Text(verbatim: error)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .accessibilityHidden(true) // read as the row's hint
+            }
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: 6) {
             switch status {
             case .SYNCED:
@@ -740,14 +766,18 @@ private struct CardPreview: View {
 private struct AddToWalletButton: UIViewRepresentable {
     let action: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     func makeUIView(context: Context) -> PKAddPassButton {
-        let button = PKAddPassButton(addPassButtonStyle: .black)
+        // The outlined style keeps the black button visible on a dark background.
+        let button = PKAddPassButton(addPassButtonStyle: colorScheme == .dark ? .blackOutline : .black)
         button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
         return button
     }
 
     func updateUIView(_ uiView: PKAddPassButton, context: Context) {
         context.coordinator.action = action
+        uiView.addPassButtonStyle = colorScheme == .dark ? .blackOutline : .black
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(action: action) }

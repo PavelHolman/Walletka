@@ -357,6 +357,16 @@
         }
       }
     },
+    "Back" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zpět"
+          }
+        }
+      }
+    },
     "Banner" : {
       "localizations" : {
         "cs" : {
@@ -647,6 +657,16 @@
         }
       }
     },
+    "Couldn't Open the Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotku se nepodařilo otevřít"
+          }
+        }
+      }
+    },
     "Couldn't Update the Card" : {
       "localizations" : {
         "cs" : {
@@ -824,6 +844,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zadat ručně"
+          }
+        }
+      }
+    },
+    "Enter a name to add the card." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu přidáte, až vyplníte název."
+          }
+        }
+      }
+    },
+    "Enter the card's code to add it." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu přidáte, až vyplníte její kód."
           }
         }
       }
@@ -1699,6 +1739,16 @@
         }
       }
     },
+    "Try another photo, or download it from iCloud in Photos first." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkuste jinou fotku, nebo ji nejdřív stáhněte z iCloudu v aplikaci Fotky."
+          }
+        }
+      }
+    },
     "Type it in by hand" : {
       "localizations" : {
         "cs" : {
@@ -1791,6 +1841,16 @@
     },
     "Walletka" : {
       "shouldTranslate" : false
+    },
+    "Walletka can't create wallet passes right now. Try again later." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walletka teď nemůže vytvářet karty do peněženky. Zkuste to později."
+          }
+        }
+      }
     },
     "White" : {
       "localizations" : {

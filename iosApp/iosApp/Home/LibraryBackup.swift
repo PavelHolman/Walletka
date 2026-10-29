@@ -92,6 +92,11 @@ extension View {
     func libraryBackup(component: any HomeComponent, backup: any BackupState, isImporting: Binding<Bool>) -> some View {
         modifier(LibraryBackupModifier(component: component, backup: backup, isImporting: isImporting))
     }
+
+    @ViewBuilder
+    func libraryBackup(if condition: Bool, component: any HomeComponent, backup: any BackupState, isImporting: Binding<Bool>) -> some View {
+        if condition { libraryBackup(component: component, backup: backup, isImporting: isImporting) } else { self }
+    }
 }
 
 private struct LibraryBackupModifier: ViewModifier {

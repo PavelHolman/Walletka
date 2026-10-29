@@ -21,7 +21,7 @@
     <string name="home_intro">Snap or share a photo of any loyalty card, ticket or membership, and Walletka turns it into a Google Wallet card.</string>
     <string name="home_share_tip">Tip: use Share → Add to Walletka from Photos or any app</string>
     <string name="home_restore">Restore from backup</string>
-    <string name="home_delete_message">The card is removed from Walletka. Remove it in Google Wallet too if you no longer need it.</string>
+    <string name="home_delete_message">The card is removed from Walletka. Its Google Wallet pass is marked as expired; remove it there too if you don’t want to see it.</string>
     <string name="home_reorder_hint">Drag to reorder</string>
     <string name="wallet_unavailable">Google Wallet isn’t available on this device.</string>
     <string name="delete_card_title">Delete “%1$s”?</string>
@@ -36,7 +36,7 @@
     <string name="review_title_edit">Edit card</string>
     <string name="review_title_new">New card</string>
     <string name="review_delete_card">Delete card</string>
-    <string name="review_delete_message">The card is removed from Walletka, and its pass in Google Wallet is marked as expired. Remove it there too if you don’t want to see it.</string>
+    <string name="review_delete_message">The card is removed from Walletka. Its Google Wallet pass is marked as expired; remove it there too if you don’t want to see it.</string>
     <string name="loading_importing">Reading the image…</string>
     <string name="loading_analyzing">Looking for codes…</string>
     <string name="failure_image_unreadable">This doesn’t look like an image Walletka can read.</string>
@@ -73,7 +73,7 @@
     <string name="preview_with_logo">with logo</string>
     <string name="preview_with_banner">with banner</string>
     <string name="wallet_failure_unavailable">Google Wallet isn’t available on this device.</string>
-    <string name="wallet_failure_not_configured">No Google Wallet issuer is configured. Set one up on the pass service (see README), or set walletka.googleIssuerId and walletka.googleIssuerEmail in local.properties.</string>
+    <string name="wallet_failure_not_configured">Walletka can’t create wallet passes right now. Try again later.</string>
     <string name="wallet_failure_cancelled">Cancelled.</string>
     <string name="wallet_failure_unsupported_code">This code type can’t be stored in the wallet.</string>
     <string name="wallet_failure_failed">The wallet rejected the card.</string>
@@ -163,4 +163,5 @@
     <string name="code_issue_characters_39">%1$s holds only capital letters, digits, spaces and - . $ / + %.</string>
     <string name="code_issue_characters_codabar">Codabar holds only digits and - $ : / . +.</string>
     <string name="code_issue_characters">%1$s can’t hold some of these characters. Try QR code instead.</string>
+    <string name="home_search_empty">No cards match “%1$s”.</string>
 </resources>

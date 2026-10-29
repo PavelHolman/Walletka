@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -142,7 +143,13 @@ fun CardReviewContent(component: CardReviewComponent) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(if ((model as? Model.Editing)?.form?.isLibraryCard == true) Res.string.review_title_edit else Res.string.review_title_new)) },
+                title = {
+                    val editing = model as? Model.Editing
+                    // The success screen has its own headline.
+                    if (editing?.submission !is Submission.Added) {
+                        Text(stringResource(if (editing?.form?.isLibraryCard == true) Res.string.review_title_edit else Res.string.review_title_new))
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = component::onCloseClicked) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(Res.string.action_back))
@@ -304,7 +311,8 @@ private fun Editing(
             onDismiss = { isEditingBanner = false },
         )
     }
-    Column(Modifier.fillMaxSize()) {
+    // imePadding: the fields lower in the form (details, notes) scroll above the keyboard.
+    Column(Modifier.fillMaxSize().imePadding()) {
     Column(
         Modifier
             .weight(1f)

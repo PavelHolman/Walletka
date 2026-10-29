@@ -24,6 +24,7 @@ struct HomeView: View {
     @State private var isImportingBackup = false
     /// A picked photo is being read from the library; that can take a moment for large or iCloud photos.
     @State private var isLoadingPhoto = false
+    @State private var isPhotoUnreadable = false
     /// Checked without reading the clipboard, so no paste prompt appears.
     @State private var hasPasteboardImage = UIPasteboard.general.hasImages
 
@@ -68,7 +69,8 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             hasPasteboardImage = UIPasteboard.general.hasImages
         }
-        .libraryBackup(component: component, backup: model.value.backup, isImporting: $isImportingBackup)
+        // Once per screen: on iPad the welcome screen shares the sidebar's component.
+        .libraryBackup(if: presentation != .welcome, component: component, backup: model.value.backup, isImporting: $isImportingBackup)
         .background(isDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
         .onDrop(of: [.image], isTargeted: $isDropTargeted) { providers in
             guard let provider = providers.first else { return false }
@@ -85,10 +87,17 @@ struct HomeView: View {
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self), let path = ImageInbox.store(data) {
                     component.onImagePicked(source: path)
+                } else {
+                    isPhotoUnreadable = true
                 }
                 pickedPhoto = nil
                 isLoadingPhoto = false
             }
+        }
+        .alert("Couldn't Open the Photo", isPresented: $isPhotoUnreadable) {
+            Button("OK") {}
+        } message: {
+            Text("Try another photo, or download it from iCloud in Photos first.")
         }
         .photosPicker(isPresented: $isPhotoPickerPresented, selection: $pickedPhoto, matching: .images, photoLibrary: .shared())
         .fullScreenCover(isPresented: $isCameraPresented) {
@@ -223,7 +232,15 @@ struct HomeView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
-        .toolbar(.hidden, for: .navigationBar)
+        // iPhone: no title over the intro, but the … menu (iCloud sync, import) stays. iPad welcome screen: keep the
+        // bar, which holds the button that shows the library.
+        .toolbar {
+            if presentation == .full {
+                ToolbarItem(placement: .topBarTrailing) {
+                    LibraryMenu(component: component, cloudSync: model.value.cloudSync, cloudSyncError: model.value.cloudSyncError, isImporting: $isImportingBackup)
+                }
+            }
+        }
     }
 
     private var emptyStateContent: some View {
@@ -283,7 +300,8 @@ struct HomeView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                if !isWelcomeWithCards {
+                // On iPad the sidebar's … menu imports backups.
+                if presentation == .full {
                     Button("Restore from Backup…") { isImportingBackup = true }
                         .font(.footnote.weight(.medium))
                 }

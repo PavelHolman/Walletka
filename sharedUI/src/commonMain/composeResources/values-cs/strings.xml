@@ -21,7 +21,7 @@
     <string name="home_intro">Vyfoťte nebo nasdílejte fotku libovolné věrnostní karty, vstupenky nebo členské karty a Walletka z ní udělá kartu v Peněžence Google.</string>
     <string name="home_share_tip">Tip: ve Fotkách nebo jiné aplikaci zvolte Sdílet → Přidat do Walletky</string>
     <string name="home_restore">Obnovit ze zálohy</string>
-    <string name="home_delete_message">Karta se odstraní z Walletky. Pokud ji už nepotřebujete, odstraňte ji i z Peněženky Google.</string>
+    <string name="home_delete_message">Karta se odstraní z Walletky a v Peněžence Google se označí jako prošlá. Pokud ji tam už nechcete vidět, odstraňte ji i tam.</string>
     <string name="home_reorder_hint">Přetažením změníte pořadí</string>
     <string name="wallet_unavailable">Peněženka Google není v tomto zařízení k dispozici.</string>
     <string name="delete_card_title">Smazat kartu „%1$s“?</string>
@@ -73,11 +73,11 @@
     <string name="preview_with_logo">s logem</string>
     <string name="preview_with_banner">s bannerem</string>
     <string name="wallet_failure_unavailable">Peněženka Google není v tomto zařízení k dispozici.</string>
-    <string name="wallet_failure_not_configured">Není nastavený vydavatel pro Peněženku Google. Nastavte ho ve službě pro karty (viz README), nebo v local.properties nastavte walletka.googleIssuerId a walletka.googleIssuerEmail.</string>
+    <string name="wallet_failure_not_configured">Walletka teď nemůže vytvářet karty do peněženky. Zkuste to později.</string>
     <string name="wallet_failure_cancelled">Zrušeno.</string>
     <string name="wallet_failure_unsupported_code">Tento typ kódu nejde do peněženky uložit.</string>
     <string name="wallet_failure_failed">Peněženka kartu odmítla.</string>
-    <string name="wallet_failure_not_in_wallet">Karta už v Peněženka Google není.</string>
+    <string name="wallet_failure_not_in_wallet">Karta už v Peněžence Google není.</string>
     <string name="crop_photo">Fotka</string>
     <string name="crop_fit">Celá fotka</string>
     <string name="crop_reset">Obnovit</string>
@@ -169,4 +169,5 @@
     <string name="code_issue_characters_39">%1$s umí jen velká písmena, číslice, mezery a - . $ / + %.</string>
     <string name="code_issue_characters_codabar">Codabar umí jen číslice a - $ : / . +.</string>
     <string name="code_issue_characters">%1$s neumí zapsat některé z těchto znaků. Zkuste raději QR kód.</string>
+    <string name="home_search_empty">Žádná karta neodpovídá „%1$s“.</string>
 </resources>
