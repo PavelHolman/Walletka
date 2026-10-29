@@ -38,7 +38,9 @@ struct HomeView: View {
         Group {
             switch presentation {
             case .full:
-                if model.value.cards.isEmpty { emptyState } else { library }
+                if !model.value.isLoaded {
+                    Color.clear // a moment at launch, instead of flashing the intro
+                } else if model.value.cards.isEmpty { emptyState } else { library }
             case .sidebar:
                 library
             case .welcome:
@@ -149,7 +151,9 @@ struct HomeView: View {
         }
         .listStyle(.plain)
         .overlay {
-            if model.value.cards.isEmpty {
+            if !model.value.isLoaded {
+                EmptyView()
+            } else if model.value.cards.isEmpty {
                 ContentUnavailableView("No Cards Yet", systemImage: "wallet.pass", description: Text("Cards you add appear here."))
             } else if model.value.visibleCards.isEmpty {
                 ContentUnavailableView.search(text: model.value.searchQuery)

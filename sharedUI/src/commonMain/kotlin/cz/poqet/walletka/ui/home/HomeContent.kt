@@ -110,7 +110,10 @@ fun HomeContent(component: HomeComponent) {
     )
     BackupEffects(model.backup, backupFiles, snackbar, onDismiss = component::onBackupMessageDismissed)
 
-    if (model.cards.isNotEmpty()) {
+    if (!model.isLoaded) {
+        // A moment at launch, instead of flashing the intro.
+        Box(Modifier.fillMaxSize())
+    } else if (model.cards.isNotEmpty()) {
         CardLibrary(
             model.visibleCards,
             actions,

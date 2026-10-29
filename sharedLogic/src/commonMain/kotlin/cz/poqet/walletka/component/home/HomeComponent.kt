@@ -54,6 +54,8 @@ interface HomeComponent {
         val isWalletAvailable: Boolean?,
         /** Cards added through Walletka, in the user's order (new cards on top). */
         val cards: List<CardSummary>,
+        /** `false` until the library has been read, so an empty [cards] doesn't flash the "no cards" screen. */
+        val isLoaded: Boolean = true,
         /** [cards] matching [searchQuery]. */
         val visibleCards: List<CardSummary> = cards,
         val searchQuery: String = "",

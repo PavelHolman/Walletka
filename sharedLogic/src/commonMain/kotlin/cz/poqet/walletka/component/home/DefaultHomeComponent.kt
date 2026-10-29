@@ -52,6 +52,7 @@ internal class DefaultHomeComponent(
         val backup: BackupState = BackupState.Idle,
         val cloudSync: CloudSyncStatus? = null,
         val cloudSyncError: String? = null,
+        val isLoaded: Boolean = false,
     )
 
     private val state = MutableStateFlow(State(library.cards.value, cloudSync = librarySync?.status?.value))
@@ -68,7 +69,7 @@ internal class DefaultHomeComponent(
         scope.launch {
             library.load()
             library.cards.collect { cards ->
-                update { it.copy(cards = cards) }
+                update { it.copy(cards = cards, isLoaded = true) }
                 refreshWalletStatus()
             }
         }
@@ -201,6 +202,7 @@ internal class DefaultHomeComponent(
             walletPlatform = walletService.platform,
             isWalletAvailable = isWalletAvailable,
             cards = summaries,
+            isLoaded = isLoaded,
             visibleCards = if (query.isEmpty()) summaries else summaries.filter { it.matches(query) },
             searchQuery = this.query,
             isSearchAvailable = isSearchAvailable,

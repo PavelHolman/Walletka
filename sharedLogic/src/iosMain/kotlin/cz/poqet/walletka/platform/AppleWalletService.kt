@@ -71,7 +71,13 @@ internal class AppleWalletService(
         AddedCard(walletUrl = pass.passURL?.absoluteString, replacedExisting = true)
     }
 
-    override suspend fun isAvailable(): Boolean = PKPassLibrary.isPassLibraryAvailable() && PKAddPassesViewController.canAddPasses()
+    /** Asked once: both calls wait for the system's Wallet service, which can take seconds right after boot. */
+    private var available: Boolean? = null
+
+    override suspend fun isAvailable(): Boolean = available ?: withContext(Dispatchers.Default) {
+        // Off the main thread: at launch the app would otherwise show a blank screen until the Wallet service answers.
+        PKPassLibrary.isPassLibraryAvailable() && PKAddPassesViewController.canAddPasses()
+    }.also { available = it }
 
     override suspend fun addCard(card: CardDraft): Either<WalletError, AddedCard> = either {
         ensure(config.isServiceConfigured) { WalletError(WalletFailure.NOT_CONFIGURED, "Pass service URL missing") }
@@ -97,7 +103,8 @@ internal class AppleWalletService(
         true
     }
 
-    override suspend fun isInWallet(walletId: String): Boolean? = withContext(Dispatchers.Main) {
+    // Reading the pass library is a synchronous call into the Wallet service; keep it off the main thread.
+    override suspend fun isInWallet(walletId: String): Boolean? = withContext(Dispatchers.Default) {
         if (!PKPassLibrary.isPassLibraryAvailable()) return@withContext null
         PKPassLibrary().passes().filterIsInstance<PKPass>().any { it.serialNumber == walletId }
     }
