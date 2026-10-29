@@ -212,7 +212,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pruh z vaší fotky zobrazený v horní části karty ve Wallet."
+            "value" : "Pruh z vaší fotky zobrazený v horní části karty v Peněžence."
           }
         }
       }
@@ -242,7 +242,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Importované karty přidáte do Apple Wallet z jejich editoru."
+            "value" : "Importované karty přidáte do Peněženky Apple z jejich editoru."
           }
         }
       }
@@ -252,7 +252,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Přidat do Apple Wallet"
+            "value" : "Přidat do Peněženky Apple"
           }
         }
       }
@@ -262,7 +262,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Přidáno do Apple Wallet"
+            "value" : "Přidáno do Peněženky Apple"
           }
         }
       }
@@ -272,7 +272,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Přidávání do Apple Wallet…"
+            "value" : "Přidávání do Peněženky Apple…"
           }
         }
       }
@@ -322,7 +322,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple Wallet nepodporuje %1$@; zobrazí se jako %2$@ se stejným obsahem."
+            "value" : "Peněženka Apple nepodporuje %1$@; zobrazí se jako %2$@ se stejným obsahem."
           }
         }
       }
@@ -332,7 +332,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple Wallet není na tomto zařízení k dispozici."
+            "value" : "Peněženka Apple není na tomto zařízení k dispozici."
           }
         }
       }
@@ -342,7 +342,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Karty pro Apple Wallet podepisuje služba Walletka. Nastavte WALLETKA_SERVICE_URL (a WALLETKA_SERVICE_API_KEY) v Config.xcconfig."
+            "value" : "Karty pro Peněženku Apple podepisuje služba Walletka. Nastavte WALLETKA_SERVICE_URL (a WALLETKA_SERVICE_API_KEY) v Config.xcconfig."
           }
         }
       }
@@ -352,7 +352,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple Wallet kartu odmítla."
+            "value" : "Peněženka Apple kartu odmítla."
           }
         }
       }
@@ -482,7 +482,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Změny se synchronizují do Wallet"
+            "value" : "Změny se synchronizují do Peněženky"
           }
         }
       }
@@ -723,7 +723,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Smazat z Walletky i z Wallet"
+            "value" : "Smazat z Walletky i z Peněženky"
           }
         }
       }
@@ -913,7 +913,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "V Apple Wallet"
+            "value" : "V Peněžence Apple"
           }
         }
       }
@@ -923,7 +923,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ve Wallet"
+            "value" : "V Peněžence"
           }
         }
       }
@@ -1164,7 +1164,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Není v Apple Wallet"
+            "value" : "Není v Peněžence Apple"
           }
         }
       }
@@ -1174,7 +1174,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Karta není v Apple Wallet na tomto zařízení. Přidejte ji níže."
+            "value" : "Karta není v Peněžence Apple na tomto zařízení. Přidejte ji níže."
           }
         }
       }
@@ -1184,7 +1184,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Není ve Wallet"
+            "value" : "Není v Peněžence"
           }
         }
       }
@@ -1194,7 +1194,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Karta už ve Wallet není. Přidejte ji znovu níže."
+            "value" : "Karta už v Peněžence není. Přidejte ji znovu níže."
           }
         }
       }
@@ -1254,7 +1254,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Otevřít ve Wallet"
+            "value" : "Otevřít v Peněžence"
           }
         }
       }
@@ -1384,7 +1384,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Odstraní kartu z Walletky i z Apple Wallet"
+            "value" : "Odstraní kartu z Walletky i z Peněženky Apple"
           }
         }
       }
@@ -1464,7 +1464,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vyfoťte nebo nasdílejte fotku věrnostní karty, vstupenky či členské karty a Walletka z ní udělá kartu pro Apple Wallet."
+            "value" : "Vyfoťte nebo nasdílejte fotku věrnostní karty, vstupenky či členské karty a Walletka z ní udělá kartu pro Peněženku Apple."
           }
         }
       }
@@ -1544,7 +1544,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synchronizace s Wallet…"
+            "value" : "Synchronizace s Peněženkou…"
           }
         }
       }
@@ -1604,7 +1604,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Karta už v Apple Wallet není."
+            "value" : "Karta už v Peněžence Apple není."
           }
         }
       }
@@ -1614,7 +1614,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Karta bude odstraněna z Walletky i z Apple Wallet."
+            "value" : "Karta bude odstraněna z Walletky i z Peněženky Apple."
           }
         }
       }
@@ -1654,7 +1654,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tento typ kódu nelze v Apple Wallet uložit."
+            "value" : "Tento typ kódu nelze v Peněžence Apple uložit."
           }
         }
       }
@@ -1754,7 +1754,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ve Wallet je aktuální"
+            "value" : "V Peněžence je aktuální"
           }
         }
       }
@@ -1764,7 +1764,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aktualizováno v Apple Wallet"
+            "value" : "Aktualizováno v Peněžence Apple"
           }
         }
       }
@@ -1987,7 +1987,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Karta „%@“ je připravená ke skenování z Wallet."
+            "value" : "Karta „%@“ je připravená ke skenování z Peněženky."
           }
         }
       }
