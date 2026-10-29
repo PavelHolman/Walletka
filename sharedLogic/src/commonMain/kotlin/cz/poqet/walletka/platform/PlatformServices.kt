@@ -1,6 +1,7 @@
 package cz.poqet.walletka.platform
 
 import arrow.core.Either
+import arrow.core.right
 import cz.poqet.walletka.domain.AnalysisError
 import cz.poqet.walletka.domain.CardDraft
 import cz.poqet.walletka.domain.ImagePixels
@@ -63,6 +64,12 @@ internal interface ImageProcessor {
 
     /** Crops [region] out of the image, scales it to [targetWidth] and encodes it as PNG. */
     suspend fun cropToPng(image: StoredImage, region: NormalizedRect, targetWidth: Int): Either<AnalysisError, ByteArray>
+
+    /**
+     * Makes the background of a logo cut out of a card transparent: the colour along its border, and colours close to
+     * it, so the logo sits on whatever colour the pass gets. Platforms that can't keep the PNG as it is.
+     */
+    suspend fun cutOutBackground(png: ByteArray): Either<AnalysisError, ByteArray> = png.right()
 
     /** Renders [variant] of the image for another detection attempt, encoded as JPEG. */
     suspend fun renderForScan(image: StoredImage, variant: ScanVariant): Either<AnalysisError, ByteArray>

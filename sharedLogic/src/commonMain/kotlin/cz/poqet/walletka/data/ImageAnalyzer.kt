@@ -37,13 +37,17 @@ internal class BannerCropper(
     private val imageProcessor: ImageProcessor,
     private val imageStore: ImageStore,
 ) {
+    /** [transparentBackground] for logos, which sit on the pass's own colour. */
     suspend fun crop(
         image: StoredImage,
         region: NormalizedRect,
         targetWidth: Int = BANNER_WIDTH,
+        transparentBackground: Boolean = false,
     ): Either<AnalysisError, StoredImage> = either {
         val png = imageProcessor.cropToPng(image, region, targetWidth).bind()
-        imageStore.save(png).bind()
+        // A logo with its background is still a good logo.
+        val logo = if (transparentBackground) imageProcessor.cutOutBackground(png).getOrNull() ?: png else png
+        imageStore.save(logo).bind()
     }
 
     private companion object {

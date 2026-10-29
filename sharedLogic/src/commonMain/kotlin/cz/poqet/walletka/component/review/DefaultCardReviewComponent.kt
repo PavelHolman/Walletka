@@ -384,7 +384,7 @@ private class ReviewStore(
         logoJob = scope.launch {
             delay(delayMillis)
             val width = LogoRegion.targetWidth(editing.form.walletPlatform)
-            val image = dependencies.bannerCropper.crop(photo, region, width).getOrNull() ?: return@launch
+            val image = dependencies.bannerCropper.crop(photo, region, width, transparentBackground = true).getOrNull() ?: return@launch
             val current = _model.value as? Model.Editing
             if (current == null || current.form.logo.region != region) {
                 imageStore.delete(image) // superseded by a newer crop

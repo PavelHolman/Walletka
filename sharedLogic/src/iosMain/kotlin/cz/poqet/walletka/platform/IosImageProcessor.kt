@@ -3,6 +3,7 @@ package cz.poqet.walletka.platform
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
+import cz.poqet.walletka.data.LogoBackground
 import cz.poqet.walletka.domain.AnalysisError
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.ImagePixels
@@ -14,6 +15,7 @@ import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import platform.CoreGraphics.CGBitmapContextCreate
+import platform.CoreGraphics.CGBitmapContextCreateImage
 import platform.CoreGraphics.CGColorSpaceCreateDeviceRGB
 import platform.CoreGraphics.CGColorSpaceRelease
 import platform.CoreGraphics.CGContextDrawImage
@@ -134,6 +136,38 @@ internal class IosImageProcessor : ImageProcessor {
         }
         val output = if (variant.enhanced) ensureNotNull(enhance(rendered)) { unreadable() } else rendered
         ensureNotNull(UIImageJPEGRepresentation(output, 0.92)) { unreadable() }.toByteArray()
+    }
+
+    override suspend fun cutOutBackground(png: ByteArray): Either<AnalysisError, ByteArray> = background {
+        val cgImage = ensureNotNull(UIImage(data = png.toNSData()).CGImage) { unreadable() }
+        val width = CGImageGetWidth(cgImage).toInt()
+        val height = CGImageGetHeight(cgImage).toInt()
+        val rgba = ByteArray(width * height * 4)
+        rgba.usePinned { pinned ->
+            val colorSpace = CGColorSpaceCreateDeviceRGB()
+            val context = CGBitmapContextCreate(
+                data = pinned.addressOf(0),
+                width = width.toULong(),
+                height = height.toULong(),
+                bitsPerComponent = 8u,
+                bytesPerRow = (width * 4).toULong(),
+                space = colorSpace,
+                bitmapInfo = CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value,
+            )
+            CGContextDrawImage(context, CGRectMake(0.0, 0.0, width.toDouble(), height.toDouble()), cgImage)
+            if (!LogoBackground.cutOut(rgba, width, height)) {
+                CGContextRelease(context)
+                CGColorSpaceRelease(colorSpace)
+                return@background png
+            }
+            val cut = CGBitmapContextCreateImage(context)
+            CGContextRelease(context)
+            CGColorSpaceRelease(colorSpace)
+            val image = ensureNotNull(cut) { unreadable() }
+            val result = UIImagePNGRepresentation(UIImage(cGImage = image))
+            CGImageRelease(image)
+            ensureNotNull(result) { unreadable() }.toByteArray()
+        }
     }
 
     /** Greyscale with the contrast boosted around mid-grey. */
