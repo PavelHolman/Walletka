@@ -236,6 +236,7 @@ private struct CardFormView: View {
 
     @State private var isEditingBanner = false
     @State private var isEditingLogo = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @ScaledMetric private var swatchSize: CGFloat = 38
     @State private var isPickingColorFromPhoto = false
     @State private var isConfirmingDelete = false
@@ -257,8 +258,9 @@ private struct CardFormView: View {
             }
             Section {
                 CardPreview(form: form, compact: true)
-                    // Wallet passes have a fixed width; a stretched preview on iPad would look nothing like one.
-                    .frame(maxWidth: 420)
+                    // Wallet passes have a fixed width; a stretched preview on iPad would look nothing like one. In
+                    // landscape on iPhone it stays small enough to leave room for the form.
+                    .frame(maxWidth: verticalSizeClass == .compact ? 220 : 420)
                     .frame(maxWidth: .infinity)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
