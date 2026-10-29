@@ -86,7 +86,12 @@ interface CardReviewComponent {
 
     sealed interface Model {
         /** [photo] is set once the image has been imported, so the UI can show what is being scanned. */
-        data class Loading(val stage: LoadingStage, val photo: StoredImage?) : Model
+        data class Loading(
+            val stage: LoadingStage,
+            val photo: StoredImage?,
+            /** A card from the library is being opened (not a new one), for the screen's title. */
+            val isLibraryCard: Boolean = false,
+        ) : Model
 
         data class Failed(val failure: AnalysisFailure) : Model
 

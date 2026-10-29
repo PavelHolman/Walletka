@@ -72,7 +72,16 @@ struct LibraryMenu: View {
         .accessibilityHint(Text("Export, import and iCloud sync"))
     }
 
-    static func describe(_ status: CloudSyncStatus, error: String? = nil) -> String {
+    static func describe(_ status: CloudSyncStatus, error rawError: String? = nil) -> String {
+        let error: String? = switch rawError {
+        case CloudSyncReason.shared.RESTRICTED: String(localized: "iCloud is restricted on this device.")
+        case CloudSyncReason.shared.TEMPORARILY_UNAVAILABLE: String(localized: "iCloud is temporarily unavailable. Check Settings › Apple Account.")
+        default: rawError
+        }
+        return describeLocalized(status, error: error)
+    }
+
+    private static func describeLocalized(_ status: CloudSyncStatus, error: String?) -> String {
         switch status {
         case .OFF: UIDevice.current.userInterfaceIdiom == .pad
             ? String(localized: "Off: cards stay on this iPad")

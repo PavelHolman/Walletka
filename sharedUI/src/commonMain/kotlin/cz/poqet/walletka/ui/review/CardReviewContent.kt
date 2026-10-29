@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -166,7 +167,8 @@ fun CardReviewContent(component: CardReviewComponent) {
             )
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        // The Scaffold's insets are used here, so the keyboard padding below doesn't add them again.
+        Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
             when (val state = model) {
                 is Model.Loading -> Loading(state.stage, state.photo?.path)
                 is Model.Failed -> Failed(state.failure, onRetry = component::onRetryClicked, onClose = component::onCloseClicked)
@@ -525,6 +527,24 @@ private fun Editing(
                         Text(stringResource(if (form.isLibraryCard) Res.string.wallet_save else Res.string.wallet_add))
                     }
                 }
+                // Why the button is disabled; a code that can't be encoded is explained at the code.
+                if (!busy && form.name.isBlank()) {
+                    Text(
+                        stringResource(Res.string.wallet_needs_name),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                    )
+                } else if (!busy && form.selectedCode.value.isBlank()) {
+                    Text(
+                        stringResource(Res.string.wallet_needs_code),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 if (form.isLibraryCard && !hasChanges && sync == null) {
                     Text(
                         stringResource(Res.string.wallet_edit_to_save),
@@ -637,7 +657,8 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
                         code,
                         contentDescription = null,
                         filterQuality = FilterQuality.None,
-                        contentScale = ContentScale.Fit,
+                        // A linear code is one module row: stretch it to the bars' height.
+                        contentScale = if (twoDimensional) ContentScale.Fit else ContentScale.FillBounds,
                         modifier = Modifier.height(if (twoDimensional) (if (compact) 96.dp else 140.dp) else (if (compact) 52.dp else 70.dp))
                             .then(if (twoDimensional) Modifier.aspectRatio(code.width.toFloat() / code.height) else Modifier.fillMaxWidth()),
                     )

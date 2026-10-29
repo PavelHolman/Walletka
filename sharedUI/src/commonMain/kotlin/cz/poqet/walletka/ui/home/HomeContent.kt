@@ -113,6 +113,7 @@ fun HomeContent(component: HomeComponent) {
     if (!model.isLoaded) {
         // A moment at launch, instead of flashing the intro.
         Box(Modifier.fillMaxSize())
+        return
     } else if (model.cards.isNotEmpty()) {
         CardLibrary(
             model.visibleCards,

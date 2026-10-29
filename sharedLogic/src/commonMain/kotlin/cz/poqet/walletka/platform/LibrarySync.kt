@@ -17,6 +17,12 @@ enum class CloudSyncStatus {
     FAILED,
 }
 
+/** Reasons iCloud can't be used that the UI words itself; other errors arrive already localized by the system. */
+object CloudSyncReason {
+    const val RESTRICTED = "walletka.cloud.restricted"
+    const val TEMPORARILY_UNAVAILABLE = "walletka.cloud.temporarilyUnavailable"
+}
+
 /**
  * Keeps the [CardLibrary] in sync with the user's other devices. The engine uploads what the library reports through
  * [CardLibrary.changeListener] and hands what it fetches to [CardLibrary.applyRemote], whose merge rules decide.

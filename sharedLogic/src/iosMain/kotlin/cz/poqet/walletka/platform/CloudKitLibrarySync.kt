@@ -64,6 +64,7 @@ import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSLog
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSKeyedArchiver
+import platform.Foundation.NSLock
 import platform.Foundation.NSKeyedUnarchiver
 import platform.Foundation.NSNumber
 import platform.Foundation.NSString
@@ -167,12 +168,15 @@ internal class CloudKitLibrarySync(
         val container = CKContainer.containerWithIdentifier(containerIdentifier)
         container.accountStatusWithCompletionHandler { accountStatus, error ->
             log("account status $accountStatus ${error?.localizedDescription.orEmpty()}")
-            isConnecting = false
-            if (!isEnabled || engine != null) return@accountStatusWithCompletionHandler
+            if (!isEnabled || engine != null) {
+                isConnecting = false
+                return@accountStatusWithCompletionHandler
+            }
             if (accountStatus != CKAccountStatusAvailable) {
+                isConnecting = false
                 _lastError.value = error?.localizedDescription ?: when (accountStatus) {
-                    CKAccountStatusRestricted -> "iCloud is restricted on this device."
-                    CKAccountStatusTemporarilyUnavailable -> "iCloud is temporarily unavailable. Check Settings › Apple Account."
+                    CKAccountStatusRestricted -> CloudSyncReason.RESTRICTED
+                    CKAccountStatusTemporarilyUnavailable -> CloudSyncReason.TEMPORARILY_UNAVAILABLE
                     else -> null
                 }
                 _status.value = CloudSyncStatus.UNAVAILABLE
@@ -188,12 +192,15 @@ internal class CloudKitLibrarySync(
             )
             val engine = CKSyncEngine(configuration)
             this.engine = engine
+            isConnecting = false
             if (state == null || uploadAll) queueEverything(engine)
-            if (queuedBeforeConnect.isNotEmpty() || orderQueuedBeforeConnect) {
-                queue(queuedBeforeConnect.toSet(), orderQueuedBeforeConnect)
-                queuedBeforeConnect.clear()
-                orderQueuedBeforeConnect = false
-            }
+            queueLock.lock()
+            val earlier = queuedBeforeConnect.toSet()
+            val earlierOrder = orderQueuedBeforeConnect
+            queuedBeforeConnect.clear()
+            orderQueuedBeforeConnect = false
+            queueLock.unlock()
+            if (earlier.isNotEmpty() || earlierOrder) queue(earlier, earlierOrder)
             engine.fetchChangesWithCompletionHandler { fetchError -> fetchError?.let { fail("fetch", it) } }
         }
     }
@@ -202,11 +209,16 @@ internal class CloudKitLibrarySync(
     private val queuedBeforeConnect = mutableSetOf<String>()
     private var orderQueuedBeforeConnect = false
 
+    /** Guards the two above: the library reports changes on its own thread, CloudKit answers on its queue. */
+    private val queueLock = NSLock()
+
     private fun queue(ids: Set<String>, orderChanged: Boolean) {
         val engine = engine ?: run {
             if (isEnabled) {
+                queueLock.lock()
                 queuedBeforeConnect += ids
                 orderQueuedBeforeConnect = orderQueuedBeforeConnect || orderChanged
+                queueLock.unlock()
             }
             return
         }

@@ -57,9 +57,13 @@ struct CardReviewView: View {
         }
     }
 
+    /** Also while a library card is still loading, so the title and the iPad Cancel button don't flicker. */
     private var isLibraryCard: Bool {
-        if case .editing(let editing) = model.value.sealedType() { return editing.value.form.isLibraryCard }
-        return false
+        switch model.value.sealedType() {
+        case .editing(let editing): editing.value.form.isLibraryCard
+        case .loading(let loading): loading.value.isLibraryCard
+        default: false
+        }
     }
 
     private var isAdded: Bool {
@@ -69,10 +73,7 @@ struct CardReviewView: View {
 
     private var title: String {
         if isAdded { return "" } // the success screen has its own headline
-        if case .editing(let editing) = model.value.sealedType(), editing.value.form.isLibraryCard {
-            return String(localized: "Edit Card")
-        }
-        return String(localized: "New Card")
+        return isLibraryCard ? String(localized: "Edit Card") : String(localized: "New Card")
     }
 }
 

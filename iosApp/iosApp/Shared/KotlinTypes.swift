@@ -26,3 +26,4 @@ typealias CardDetails = ExportedKotlinPackages.cz.poqet.walletka.domain.CardDeta
 typealias BackupState = ExportedKotlinPackages.cz.poqet.walletka.component.home.BackupState
 typealias DuplicateCard = ExportedKotlinPackages.cz.poqet.walletka.component.review.DuplicateCard
 typealias CloudSyncStatus = ExportedKotlinPackages.cz.poqet.walletka.platform.CloudSyncStatus
+typealias CloudSyncReason = ExportedKotlinPackages.cz.poqet.walletka.platform.CloudSyncReason

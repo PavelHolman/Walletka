@@ -173,4 +173,6 @@
     <string name="backup_exported">Knihovna je vyexportovaná</string>
     <string name="backup_export_write_failed">Zálohu se tam nepodařilo uložit. Zkuste jiné místo.</string>
     <string name="backup_import_unreadable">Soubor nejde otevřít.</string>
+    <string name="wallet_needs_name">Kartu přidáte, až vyplníte název.</string>
+    <string name="wallet_needs_code">Kartu přidáte, až vyplníte její kód.</string>
 </resources>

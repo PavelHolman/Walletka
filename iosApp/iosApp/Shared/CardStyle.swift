@@ -22,7 +22,8 @@ enum CodeImage {
         let message = Data(value.utf8)
         let filter: CIFilter
         switch format {
-        case .QR:
+        // Wallet shows Data Matrix codes as QR codes with the same content (WalletSymbology).
+        case .QR, .DATA_MATRIX:
             let qr = CIFilter.qrCodeGenerator()
             qr.message = message
             qr.correctionLevel = "M"

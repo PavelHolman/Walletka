@@ -157,7 +157,7 @@ private class ReviewStore(
 
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     private val _model = MutableStateFlow<Model>(
-        savedForm?.let { Model.Editing(it, Submission.Idle, hasChanges = true) } ?: Model.Loading(LoadingStage.IMPORTING, photo = null),
+        savedForm?.let { Model.Editing(it, Submission.Idle, hasChanges = true) } ?: Model.Loading(LoadingStage.IMPORTING, photo = null, isLibraryCard = source is ReviewSource.LibraryCard),
     )
     val model: StateFlow<Model> = derivedStateOf(_model, library.cards) { model, cards -> model.withDuplicateOf(cards) }
     private var job: Job? = null
@@ -194,7 +194,7 @@ private class ReviewStore(
     fun load() {
         job?.cancel()
         job = scope.launch {
-            _model.value = Model.Loading(LoadingStage.IMPORTING, photo = null)
+            _model.value = Model.Loading(LoadingStage.IMPORTING, photo = null, isLibraryCard = source is ReviewSource.LibraryCard)
             when (source) {
                 is ReviewSource.Photo -> either {
                     val image = imageStore.import(source.source).bind()

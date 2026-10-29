@@ -1966,6 +1966,26 @@
         }
       }
     },
+    "iCloud is restricted on this device." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud je na tomto zařízení omezený."
+          }
+        }
+      }
+    },
+    "iCloud is temporarily unavailable. Check Settings › Apple Account." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud je dočasně nedostupný. Zkontrolujte Nastavení › Apple účet."
+          }
+        }
+      }
+    },
     "iCloud unavailable: %@" : {
       "localizations" : {
         "cs" : {

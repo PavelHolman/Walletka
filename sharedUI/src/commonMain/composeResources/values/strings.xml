@@ -167,4 +167,6 @@
     <string name="backup_exported">Library exported</string>
     <string name="backup_export_write_failed">The backup couldn’t be saved there. Try another place.</string>
     <string name="backup_import_unreadable">The file couldn’t be opened.</string>
+    <string name="wallet_needs_name">Enter a name to add the card.</string>
+    <string name="wallet_needs_code">Enter the card’s code to add it.</string>
 </resources>

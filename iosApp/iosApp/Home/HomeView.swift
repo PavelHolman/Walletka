@@ -44,7 +44,7 @@ struct HomeView: View {
             case .sidebar:
                 library
             case .welcome:
-                emptyState
+                if model.value.isLoaded { emptyState } else { Color.clear }
             }
         }
         .overlay {
