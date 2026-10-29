@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Walletka</string>
+    <string name="app_name" translatable="false">Walletka</string>
     <string name="share_label">Add to Walletka</string>
 </resources>

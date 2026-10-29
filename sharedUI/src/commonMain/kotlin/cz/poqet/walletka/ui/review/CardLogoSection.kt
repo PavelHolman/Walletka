@@ -33,6 +33,13 @@ import androidx.compose.ui.unit.dp
 import cz.poqet.walletka.component.review.CardReviewComponent
 import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
 import cz.poqet.walletka.ui.rememberStoredImage
+import cz.poqet.walletka.ui.resources.*
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 
 /** Turns the logo cut out of the photo on and off and opens its crop editor. */
 @Composable
@@ -41,8 +48,8 @@ internal fun CardLogoSection(form: CardForm, component: CardReviewComponent, ena
     val photo = form.photo
     if (isEditing && photo != null) {
         CropEditorDialog(
-            title = "Adjust logo",
-            hint = "Drag and pinch the photo. The bright square becomes the logo, shown in a circle.",
+            title = stringResource(Res.string.logo_adjust),
+            hint = stringResource(Res.string.logo_hint),
             photoPath = photo.path,
             viewport = remember(form.photoAspectRatio, form.walletPlatform) { form.logoViewport },
             initialRegion = form.logo.region,
@@ -55,30 +62,36 @@ internal fun CardLogoSection(form: CardForm, component: CardReviewComponent, ena
         )
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Logo", style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(Res.string.section_logo), style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .toggleable(form.logo.isEnabled, enabled = enabled, role = Role.Switch) { onInteraction(); component.onLogoToggled(it) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(Modifier.weight(1f)) {
-                Text("Logo from photo", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(Res.string.logo_from_photo), style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    "The brand logo cut out of your photo, shown in a circle on the card.",
+                    stringResource(Res.string.logo_explanation),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Switch(checked = form.logo.isEnabled, onCheckedChange = { onInteraction(); component.onLogoToggled(it) }, enabled = enabled)
+            Switch(checked = form.logo.isEnabled, onCheckedChange = null, enabled = enabled)
         }
         if (form.logo.isEnabled) {
             Row(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable(enabled = enabled) { onInteraction(); isEditing = true }
+                    .clickable(enabled = enabled, role = Role.Button) { onInteraction(); isEditing = true }
+                    .heightIn(min = 48.dp)
                     .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CardLogoImage(form, size = 40.dp)
-                Text("Adjust logo", Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(Res.string.logo_adjust), Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
                 Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -91,6 +104,6 @@ internal fun CardLogoImage(form: CardForm, size: Dp, modifier: Modifier = Modifi
     if (!form.logo.isEnabled) return
     val logo = rememberStoredImage(form.logo.image?.path, maxSize = 300)
     Box(modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-        if (logo != null) Image(logo, contentDescription = "Logo", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        if (logo != null) Image(logo, contentDescription = stringResource(Res.string.logo_image), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
     }
 }

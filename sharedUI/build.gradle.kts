@@ -49,3 +49,7 @@ kotlin {
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
 }
+
+compose.resources {
+    packageOfResClass = "cz.poqet.walletka.ui.resources"
+}

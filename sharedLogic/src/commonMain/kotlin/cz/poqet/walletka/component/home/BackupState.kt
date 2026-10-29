@@ -14,5 +14,11 @@ sealed interface BackupState {
 
     data class Imported(val added: Int, val updated: Int, val skipped: Int) : BackupState
 
-    data class Failed(val message: String) : BackupState
+    /** [operation] failed; [detail] is a technical reason (English, for diagnostics), the UI words the message. */
+    data class Failed(val operation: BackupOperation, val detail: String?) : BackupState
+}
+
+enum class BackupOperation {
+    EXPORT,
+    IMPORT,
 }

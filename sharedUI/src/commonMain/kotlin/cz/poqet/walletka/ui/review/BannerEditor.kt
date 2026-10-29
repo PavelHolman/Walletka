@@ -44,6 +44,13 @@ import cz.poqet.walletka.domain.BannerViewport
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.ui.rememberStoredImage
 import kotlin.math.roundToInt
+import cz.poqet.walletka.ui.resources.*
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 
 /**
  * Pan & pinch the photo under a fixed strip-shaped window to choose the banner. The geometry is the shared
@@ -54,8 +61,8 @@ internal fun BannerEditorDialog(form: CardForm, onDone: (NormalizedRect) -> Unit
     // A card entered by hand has no photo to cut a banner from.
     val photo = form.photo ?: return
     CropEditorDialog(
-        title = "Adjust banner",
-        hint = "Drag and pinch the photo. The bright strip becomes the banner.",
+        title = stringResource(Res.string.banner_adjust),
+        hint = stringResource(Res.string.banner_hint),
         photoPath = photo.path,
         viewport = remember(form.photoAspectRatio) { form.bannerViewport },
         initialRegion = form.bannerRegion,
@@ -88,20 +95,26 @@ internal fun CropEditorDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                BannerWindow(viewport, region, onRegionChange = { region = it }) {
+                BannerWindow(
+                    viewport,
+                    region,
+                    onRegionChange = { region = it },
+                    description = "$title. $hint",
+                    onReset = { region = viewport.clamp(initialRegion) },
+                ) {
                     if (photo != null) {
-                        Image(photo, contentDescription = "Photo", contentScale = ContentScale.FillBounds)
+                        Image(photo, contentDescription = null, contentScale = ContentScale.FillBounds)
                     } else {
                         CircularProgressIndicator(Modifier.wrapContentSize())
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onDone(region) }) { Text("Done") } },
+        confirmButton = { TextButton(onClick = { onDone(region) }) { Text(stringResource(Res.string.action_done)) } },
         dismissButton = {
             Row {
-                TextButton(onClick = { region = viewport.clamp(NormalizedRect(0f, 0f, 1f, 1f)) }) { Text("Fit") }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = { region = viewport.clamp(NormalizedRect(0f, 0f, 1f, 1f)) }) { Text(stringResource(Res.string.crop_fit)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
             }
         },
     )
@@ -118,15 +131,39 @@ private fun BannerWindow(
     viewport: BannerViewport,
     region: NormalizedRect,
     onRegionChange: (NormalizedRect) -> Unit,
+    /** What the editing area is, for screen readers, which get zoom, move and reset actions instead of gestures. */
+    description: String,
+    onReset: () -> Unit,
     photo: @Composable () -> Unit,
 ) {
     val currentRegion by rememberUpdatedState(region)
+    val zoomPercent = (viewport.transformFor(region).zoom * 100).roundToInt()
+    val zoomState = stringResource(Res.string.crop_zoom_state, zoomPercent)
+    // Steps for the accessibility actions, in window widths (panning) and zoom factors.
+    fun step(scaleBy: Float = 1f, panX: Float = 0f, panY: Float = 0f): Boolean {
+        onRegionChange(viewport.applyGesture(currentRegion, scaleBy, 0.5f, viewport.windowHeight / 2, panX, panY))
+        return true
+    }
+    val actions = listOf(
+        CustomAccessibilityAction(stringResource(Res.string.crop_zoom_in)) { step(scaleBy = 1.25f) },
+        CustomAccessibilityAction(stringResource(Res.string.crop_zoom_out)) { step(scaleBy = 0.8f) },
+        CustomAccessibilityAction(stringResource(Res.string.crop_move_left)) { step(panX = -0.1f) },
+        CustomAccessibilityAction(stringResource(Res.string.crop_move_right)) { step(panX = 0.1f) },
+        CustomAccessibilityAction(stringResource(Res.string.crop_move_up)) { step(panY = -0.1f) },
+        CustomAccessibilityAction(stringResource(Res.string.crop_move_down)) { step(panY = 0.1f) },
+        CustomAccessibilityAction(stringResource(Res.string.crop_reset)) { onReset(); true },
+    )
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
             .aspectRatio(BannerViewport.ASPECT_RATIO / CONTEXT_FACTOR)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black),
+            .background(Color.Black)
+            .semantics {
+                contentDescription = description
+                stateDescription = zoomState
+                customActions = actions
+            },
     ) {
         // The window spans the full width, unless that would make it too tall for the area.
         val windowPx = minOf(constraints.maxWidth.toFloat(), constraints.maxHeight * MAX_WINDOW_HEIGHT_FRACTION * viewport.aspectRatio)

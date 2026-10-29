@@ -7,8 +7,8 @@ typealias BannerViewport = ExportedKotlinPackages.cz.poqet.walletka.domain.Banne
 /// Pan & pinch the photo under a fixed window to choose a crop of it (the banner, the logo). The geometry is the
 /// shared `BannerViewport`, so it behaves like the Android editor.
 struct CropEditorView: View {
-    let title: String
-    let hint: String
+    let title: LocalizedStringKey
+    let hint: LocalizedStringKey
     let photoPath: String
     let viewport: BannerViewport
     let onDone: (NormalizedRect) -> Void
@@ -17,10 +17,12 @@ struct CropEditorView: View {
     @State private var region: NormalizedRect
     @State private var gestureStart: NormalizedRect?
     @State private var photo: UIImage?
+    /// Where the editor opened, for the VoiceOver "Reset" action.
+    private let initialRegion: NormalizedRect
 
     init(
-        title: String,
-        hint: String,
+        title: LocalizedStringKey,
+        hint: LocalizedStringKey,
         photoPath: String,
         viewport: BannerViewport,
         region: NormalizedRect,
@@ -31,6 +33,7 @@ struct CropEditorView: View {
         self.photoPath = photoPath
         self.viewport = viewport
         self.onDone = onDone
+        initialRegion = region
         _region = State(initialValue: region)
     }
 
@@ -53,6 +56,22 @@ struct CropEditorView: View {
                 GeometryReader { geometry in
                     editor(size: geometry.size)
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(title))
+                .accessibilityValue(Text(verbatim: zoomDescription))
+                .accessibilityHint(Text("Swipe up or down to zoom. Use the actions to move the photo or reset it."))
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment: adjust(scaleBy: 1.25)
+                    case .decrement: adjust(scaleBy: 0.8)
+                    @unknown default: break
+                    }
+                }
+                .accessibilityAction(named: Text("Move Photo Left")) { adjust(panX: -0.1) }
+                .accessibilityAction(named: Text("Move Photo Right")) { adjust(panX: 0.1) }
+                .accessibilityAction(named: Text("Move Photo Up")) { adjust(panY: -0.1) }
+                .accessibilityAction(named: Text("Move Photo Down")) { adjust(panY: 0.1) }
+                .accessibilityAction(named: Text("Reset")) { region = viewport.clamp(region: initialRegion) }
                 Text(hint)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -85,6 +104,24 @@ struct CropEditorView: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    /// "Zoom: 150 %", for VoiceOver.
+    private var zoomDescription: String {
+        let zoom = Double(viewport.transformFor(region: region).zoom)
+        return String(localized: "Zoom: \(zoom.formatted(.percent.precision(.fractionLength(0))))")
+    }
+
+    /// One step of the VoiceOver adjustments: zoom around the window's centre and/or pan (in window widths).
+    private func adjust(scaleBy: Float = 1, panX: Float = 0, panY: Float = 0) {
+        region = viewport.applyGesture(
+            region: region,
+            scaleBy: scaleBy,
+            anchorX: 0.5,
+            anchorY: viewport.windowHeight / 2,
+            panX: panX,
+            panY: panY
+        )
     }
 
     /// The crop window, centred in the available space (full width unless that makes it too tall); the photo around

@@ -11,6 +11,7 @@ import com.google.android.gms.pay.Pay
 import com.google.android.gms.pay.PayApiAvailabilityStatus
 import com.google.android.gms.pay.PayClient
 import cz.poqet.walletka.data.PassJson
+import cz.poqet.walletka.data.PassStrings
 import cz.poqet.walletka.data.PassServiceClient
 import cz.poqet.walletka.data.WalletConfig
 import cz.poqet.walletka.domain.CardDraft
@@ -112,12 +113,12 @@ internal class GoogleWalletService(
         val logoUrl = imageUrl(card.logo)
         // The service signs a JWT for an object it created with the card's walletId; the fallback is unsigned JSON.
         val jwt = if (viaService) {
-            passService.saveGooglePass(PassJson.googleServiceInput(card, config, heroImageUrl, logoUrl)).bind()
+            passService.saveGooglePass(PassJson.googleServiceInput(card, config, heroImageUrl, logoUrl, PassStrings.forDevice())).bind()
         } else {
             null
         }
         val json = if (jwt == null) {
-            PassJson.google(card, config, objectId = UUID.randomUUID().toString(), heroImageUrl = heroImageUrl, logoUrl = logoUrl)
+            PassJson.google(card, config, objectId = UUID.randomUUID().toString(), heroImageUrl = heroImageUrl, logoUrl = logoUrl, strings = PassStrings.forDevice())
         } else {
             null
         }
@@ -139,7 +140,7 @@ internal class GoogleWalletService(
 
     override suspend fun updateCard(card: CardDraft): Either<WalletError, AddedCard> = either {
         ensure(usesServiceSync()) { WalletError(WalletFailure.UNAVAILABLE, "Google Wallet passes can't be updated from the device") }
-        passService.updateGooglePass(PassJson.googleServiceInput(card, config, imageUrl(card.banner), imageUrl(card.logo))).bind()
+        passService.updateGooglePass(PassJson.googleServiceInput(card, config, imageUrl(card.banner), imageUrl(card.logo), PassStrings.forDevice())).bind()
         AddedCard(replacedExisting = true)
     }
 

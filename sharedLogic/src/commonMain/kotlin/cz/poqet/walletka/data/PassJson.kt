@@ -23,7 +23,12 @@ internal object PassJson {
      * [CardDraft.logo] is set, `logo.png`, and has it signed; the pass service stamps `passTypeIdentifier` and
      * `teamIdentifier`.
      */
-    fun apple(card: CardDraft, config: WalletConfig, serialNumber: String): String {
+    fun apple(
+        card: CardDraft,
+        config: WalletConfig,
+        serialNumber: String,
+        strings: PassStrings = PassStrings.English,
+    ): String {
         val symbology = WalletSymbology.resolve(WalletPlatform.APPLE_WALLET, card.code.format, card.code.value)
         val details = card.details.trimmed()
         val pass = buildJsonObject {
@@ -48,17 +53,17 @@ internal object PassJson {
             putJsonObject("storeCard") {
                 putJsonArray("primaryFields") {}
                 putJsonArray("secondaryFields") {
-                    if (details.memberName.isNotEmpty()) appleField("memberName", "MEMBER", details.memberName)
+                    if (details.memberName.isNotEmpty()) appleField("memberName", strings.member, details.memberName)
                     if (details.memberNumber.isNotEmpty()) {
-                        appleField("memberNumber", "NUMBER", details.memberNumber)
+                        appleField("memberNumber", strings.number, details.memberNumber)
                     } else if (card.code.format.isTwoDimensional && card.code.value.length <= 32) {
-                        appleField("code", card.code.format.displayName, card.code.value)
+                        appleField("code", strings.codeLabel(card.code.format), card.code.value)
                     }
                 }
                 putJsonArray("auxiliaryFields") {
-                    if (details.expiryDate.isNotEmpty()) appleDateField("expiry", "EXPIRES", details.expiryDate)
+                    if (details.expiryDate.isNotEmpty()) appleDateField("expiry", strings.expires, details.expiryDate)
                 }
-                putJsonArray("backFields") { appleBackFields(details) }
+                putJsonArray("backFields") { appleBackFields(details, strings) }
             }
         }
         return json.encodeToString(JsonObject.serializer(), pass)
@@ -74,6 +79,7 @@ internal object PassJson {
         objectId: String,
         heroImageUrl: String? = null,
         logoUrl: String? = null,
+        strings: PassStrings = PassStrings.English,
     ): String {
         val issuerId = requireNotNull(config.googleIssuerId)
         val symbology = WalletSymbology.resolve(WalletPlatform.GOOGLE_WALLET, card.code.format, card.code.value)
@@ -95,27 +101,27 @@ internal object PassJson {
                         put("genericType", "GENERIC_TYPE_UNSPECIFIED")
                         put("state", "ACTIVE")
                         put("hexBackgroundColor", card.backgroundColor.hex)
-                        putJsonObject("cardTitle") { localized(config.organizationName) }
-                        putJsonObject("header") { localized(card.name) }
+                        putJsonObject("cardTitle") { localized(config.organizationName, strings.languageCode) }
+                        putJsonObject("header") { localized(card.name, strings.languageCode) }
                         if (heroImageUrl != null) {
                             putJsonObject("heroImage") {
                                 putJsonObject("sourceUri") { put("uri", heroImageUrl) }
-                                putJsonObject("contentDescription") { localized(card.name) }
+                                putJsonObject("contentDescription") { localized(card.name, strings.languageCode) }
                             }
                         }
                         if (logoUrl != null) {
                             putJsonObject("logo") {
                                 putJsonObject("sourceUri") { put("uri", logoUrl) }
-                                putJsonObject("contentDescription") { localized(card.name) }
+                                putJsonObject("contentDescription") { localized(card.name, strings.languageCode) }
                             }
                         }
-                        if (details.memberName.isNotEmpty()) putJsonObject("subheader") { localized(details.memberName) }
+                        if (details.memberName.isNotEmpty()) putJsonObject("subheader") { localized(details.memberName, strings.languageCode) }
                         if (details.expiryDate.isNotEmpty()) {
                             putJsonObject("validTimeInterval") {
                                 putJsonObject("end") { put("date", "${details.expiryDate}T23:59:59Z") }
                             }
                         }
-                        val modules = googleTextModules(details)
+                        val modules = googleTextModules(details, strings)
                         if (modules.isNotEmpty()) {
                             putJsonArray("textModulesData") {
                                 modules.forEach { (id, header, body) ->
@@ -148,6 +154,7 @@ internal object PassJson {
         config: WalletConfig,
         heroImageUrl: String? = null,
         logoUrl: String? = null,
+        strings: PassStrings = PassStrings.English,
     ): JsonObject {
         val symbology = WalletSymbology.resolve(WalletPlatform.GOOGLE_WALLET, card.code.format, card.code.value)
         val details = card.details.trimmed()
@@ -162,7 +169,7 @@ internal object PassJson {
             if (logoUrl != null) put("logoUrl", logoUrl)
             if (details.memberName.isNotEmpty()) put("subheader", details.memberName)
             if (details.expiryDate.isNotEmpty()) put("expiryDate", details.expiryDate)
-            val modules = googleTextModules(details)
+            val modules = googleTextModules(details, strings)
             if (modules.isNotEmpty()) {
                 putJsonArray("textModules") {
                     modules.forEach { (id, header, body) ->
@@ -178,11 +185,11 @@ internal object PassJson {
     }
 
     /** Apple back fields: all details, so they can be read in full (front fields are truncated). */
-    private fun JsonArrayBuilder.appleBackFields(details: CardDetails) {
-        if (details.memberNumber.isNotEmpty()) appleField("memberNumberBack", "Card number", details.memberNumber)
-        if (details.memberName.isNotEmpty()) appleField("memberNameBack", "Member", details.memberName)
-        if (details.expiryDate.isNotEmpty()) appleDateField("expiryBack", "Expires", details.expiryDate)
-        if (details.notes.isNotEmpty()) appleField("notes", "Notes", details.notes)
+    private fun JsonArrayBuilder.appleBackFields(details: CardDetails, strings: PassStrings) {
+        if (details.memberNumber.isNotEmpty()) appleField("memberNumberBack", strings.cardNumber, details.memberNumber)
+        if (details.memberName.isNotEmpty()) appleField("memberNameBack", strings.memberBack, details.memberName)
+        if (details.expiryDate.isNotEmpty()) appleDateField("expiryBack", strings.expiresBack, details.expiryDate)
+        if (details.notes.isNotEmpty()) appleField("notes", strings.notes, details.notes)
     }
 
     private fun JsonArrayBuilder.appleField(key: String, label: String, value: String) {
@@ -206,16 +213,16 @@ internal object PassJson {
     }
 
     /** Google text modules (id, header, body) for the details; the member name is the pass subheader as well. */
-    private fun googleTextModules(details: CardDetails): List<Triple<String, String, String>> = buildList {
-        if (details.memberNumber.isNotEmpty()) add(Triple("member_number", "Card number", details.memberNumber))
-        if (details.memberName.isNotEmpty()) add(Triple("member_name", "Member", details.memberName))
-        if (details.expiryDate.isNotEmpty()) add(Triple("expiry", "Expires", details.expiryDate))
-        if (details.notes.isNotEmpty()) add(Triple("notes", "Notes", details.notes))
+    private fun googleTextModules(details: CardDetails, strings: PassStrings): List<Triple<String, String, String>> = buildList {
+        if (details.memberNumber.isNotEmpty()) add(Triple("member_number", strings.cardNumber, details.memberNumber))
+        if (details.memberName.isNotEmpty()) add(Triple("member_name", strings.memberBack, details.memberName))
+        if (details.expiryDate.isNotEmpty()) add(Triple("expiry", strings.expiresBack, details.expiryDate))
+        if (details.notes.isNotEmpty()) add(Triple("notes", strings.notes, details.notes))
     }
 
-    private fun JsonObjectBuilder.localized(value: String) {
+    private fun JsonObjectBuilder.localized(value: String, language: String) {
         putJsonObject("defaultValue") {
-            put("language", "en")
+            put("language", language)
             put("value", value)
         }
     }

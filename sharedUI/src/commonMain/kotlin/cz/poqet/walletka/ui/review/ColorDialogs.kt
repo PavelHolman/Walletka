@@ -41,8 +41,25 @@ import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.ui.rememberStoredImage
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
+import cz.poqet.walletka.ui.displayHex
+import cz.poqet.walletka.ui.spokenName
+import cz.poqet.walletka.ui.resources.*
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.semantics.stateDescription
 
 internal enum class ColorDialog { PHOTO, CUSTOM }
+
+/** Screen readers walk the pick point over a grid of this many columns and rows, row by row (see [PhotoColorPickerDialog]). */
+private const val PICK_GRID = 11
 
 /**
  * Tap the photo to preview the colour at that point (sampled in shared code); the card only changes on "Use colour".
@@ -62,9 +79,12 @@ internal fun PhotoColorPickerDialog(
         marker = point
         onPick(point.x, point.y)
     }
+    val pickedName = preview?.let { stringResource(Res.string.colour_swatch, it.spokenName(), it.displayHex) }
+    val photoDescription = stringResource(Res.string.colour_pick_photo) + ". " + stringResource(Res.string.colour_pick_a11y_hint)
+    val noColour = stringResource(Res.string.colour_pick_none)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Pick colour") },
+        title = { Text(stringResource(Res.string.colour_pick_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (photo != null) {
@@ -81,9 +101,31 @@ internal fun PhotoColorPickerDialog(
                                     change.consume()
                                     pick(change.position, size.width.toFloat(), size.height.toFloat())
                                 }
+                            }
+                            // An adjustable element for screen readers: swiping up/down (or the volume keys) moves the
+                            // pick point cell by cell over a grid across the photo, and the picked colour is announced.
+                            .semantics {
+                                contentDescription = photoDescription
+                                stateDescription = pickedName ?: noColour
+                                val cell = marker?.let { gridCell(it) } ?: -1
+                                progressBarRangeInfo = ProgressBarRangeInfo(
+                                    cell.coerceAtLeast(0).toFloat(),
+                                    0f..(PICK_GRID * PICK_GRID - 1).toFloat(),
+                                    steps = PICK_GRID * PICK_GRID - 2,
+                                )
+                                setProgress { target ->
+                                    val index = target.roundToInt().coerceIn(0, PICK_GRID * PICK_GRID - 1)
+                                    val point = Offset(
+                                        (index % PICK_GRID + 0.5f) / PICK_GRID,
+                                        (index / PICK_GRID + 0.5f) / PICK_GRID,
+                                    )
+                                    marker = point
+                                    onPick(point.x, point.y)
+                                    true
+                                }
                             },
                     ) {
-                        Image(photo, contentDescription = "Photo", contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
+                        Image(photo, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
                         val point = marker
                         if (point != null && preview != null) {
                             Canvas(Modifier.matchParentSize()) {
@@ -97,7 +139,11 @@ internal fun PhotoColorPickerDialog(
                 } else {
                     CircularProgressIndicator()
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     Box(
                         Modifier
                             .size(width = 48.dp, height = 32.dp)
@@ -105,15 +151,16 @@ internal fun PhotoColorPickerDialog(
                             .background(preview?.toColor() ?: MaterialTheme.colorScheme.surfaceVariant),
                     )
                     Text(
-                        preview?.hex?.uppercase() ?: "Tap or drag across the photo to pick the colour.",
+                        preview?.displayHex ?: stringResource(Res.string.colour_pick_hint),
+                        modifier = if (pickedName != null) Modifier.clearAndSetSemantics { contentDescription = pickedName } else Modifier,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onConfirm, enabled = preview != null) { Text("Use colour") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onConfirm, enabled = preview != null) { Text(stringResource(Res.string.colour_use)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) } },
     )
 }
 
@@ -128,32 +175,51 @@ internal fun CustomColorDialog(initial: CardColor, onPick: (CardColor) -> Unit, 
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Custom colour") },
+        title = { Text(stringResource(Res.string.colour_custom_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val picked = CardColor.fromArgb(color.toArgb())
+                val pickedName = stringResource(Res.string.colour_swatch, picked.spokenName(), picked.displayHex)
                 Box(
                     Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(color),
+                        .background(color)
+                        .semantics { contentDescription = pickedName },
                 )
-                Text("Hue", style = MaterialTheme.typography.labelLarge)
-                Slider(value = hue, onValueChange = { hue = it }, valueRange = 0f..359.9f)
-                Text("Saturation", style = MaterialTheme.typography.labelLarge)
-                Slider(value = saturation, onValueChange = { saturation = it })
-                Text("Brightness", style = MaterialTheme.typography.labelLarge)
-                Slider(value = value, onValueChange = { value = it })
+                LabelledSlider(stringResource(Res.string.colour_hue), hue, { hue = it }, 0f..359.9f)
+                LabelledSlider(stringResource(Res.string.colour_saturation), saturation, { saturation = it })
+                LabelledSlider(stringResource(Res.string.colour_brightness), value, { value = it })
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 onPick(CardColor.fromArgb(color.toArgb()))
                 onDismiss()
-            }) { Text("Use colour") }
+            }) { Text(stringResource(Res.string.colour_use)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) } },
     )
+}
+
+/** A slider announced with its label (the label above it is hidden from screen readers to avoid reading it twice). */
+@Composable
+private fun LabelledSlider(label: String, value: Float, onValueChange: (Float) -> Unit, range: ClosedFloatingPointRange<Float> = 0f..1f) {
+    Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics {})
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        valueRange = range,
+        modifier = Modifier.semantics { contentDescription = label },
+    )
+}
+
+/** The [PICK_GRID] cell (row by row) of a normalized point. */
+private fun gridCell(point: Offset): Int {
+    val column = (point.x * PICK_GRID).toInt().coerceIn(0, PICK_GRID - 1)
+    val row = (point.y * PICK_GRID).toInt().coerceIn(0, PICK_GRID - 1)
+    return row * PICK_GRID + column
 }
 
 private fun CardColor.toHsv(): FloatArray {

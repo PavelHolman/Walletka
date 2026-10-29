@@ -40,6 +40,13 @@ import androidx.compose.ui.unit.dp
 import cz.poqet.walletka.component.review.CardReviewComponent
 import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
 import cz.poqet.walletka.domain.CardDetails
+import cz.poqet.walletka.ui.resources.*
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 
 private const val MILLIS_PER_DAY = 86_400_000L
 
@@ -64,31 +71,38 @@ internal fun CardDetailsSection(form: CardForm, component: CardReviewComponent, 
                 TextButton(onClick = {
                     state.selectedDateMillis?.let { update(details.copy(expiryDate = CardDetails.formatDate(it.floorDiv(MILLIS_PER_DAY)))) }
                     isPickingExpiry = false
-                }) { Text("OK") }
+                }) { Text(stringResource(Res.string.action_ok)) }
             },
-            dismissButton = { TextButton(onClick = { isPickingExpiry = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { isPickingExpiry = false }) { Text(stringResource(Res.string.action_cancel)) } },
         ) { DatePicker(state) }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val rotation by animateFloatAsState(if (isExpanded) 180f else 0f, label = "chevron")
+        val expansion = stringResource(if (isExpanded) Res.string.details_expanded else Res.string.details_collapsed)
         Row(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .clickable { focusManager.clearFocus(); isExpanded = !isExpanded }
+                .clickable(role = Role.Button) { focusManager.clearFocus(); isExpanded = !isExpanded }
+                .semantics(mergeDescendants = true) {
+                    heading()
+                    stateDescription = expansion
+                }
+                .heightIn(min = 48.dp)
                 .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text("More details", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(Res.string.details_title), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Card number, member name, expiry and notes, shown on the pass.",
+                    stringResource(Res.string.details_explanation),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = if (isExpanded) "Collapse" else "Expand", Modifier.rotate(rotation))
+            // The row says whether it is expanded.
+            Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null, Modifier.rotate(rotation))
         }
         AnimatedVisibility(isExpanded) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -96,13 +110,19 @@ internal fun CardDetailsSection(form: CardForm, component: CardReviewComponent, 
                 OutlinedTextField(
                     value = details.memberNumber,
                     onValueChange = { update(details.copy(memberNumber = it)) },
-                    label = { Text("Card number") },
+                    label = { Text(stringResource(Res.string.details_card_number)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = enabled,
                     keyboardOptions = next.copy(autoCorrectEnabled = false),
                     supportingText = if (details.memberNumber.isEmpty() && form.selectedCode.value.isNotBlank()) {
-                        { Text("Use the code's content", Modifier.clickable { update(details.copy(memberNumber = form.selectedCode.value.trim())) }, color = MaterialTheme.colorScheme.primary) }
+                        {
+                            Text(
+                                stringResource(Res.string.details_use_code),
+                                Modifier.clickable(role = Role.Button) { update(details.copy(memberNumber = form.selectedCode.value.trim())) },
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     } else {
                         null
                     },
@@ -110,7 +130,7 @@ internal fun CardDetailsSection(form: CardForm, component: CardReviewComponent, 
                 OutlinedTextField(
                     value = details.memberName,
                     onValueChange = { update(details.copy(memberName = it)) },
-                    label = { Text("Member name") },
+                    label = { Text(stringResource(Res.string.details_member_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = enabled,
@@ -120,8 +140,8 @@ internal fun CardDetailsSection(form: CardForm, component: CardReviewComponent, 
                     value = details.expiryEpochDay?.let(CardDetails::formatDate).orEmpty(),
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Expiry date") },
-                    placeholder = { Text("None") },
+                    label = { Text(stringResource(Res.string.details_expiry)) },
+                    placeholder = { Text(stringResource(Res.string.details_expiry_none)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = enabled,
@@ -129,11 +149,11 @@ internal fun CardDetailsSection(form: CardForm, component: CardReviewComponent, 
                         Row {
                             if (details.expiryDate.isNotEmpty()) {
                                 IconButton(onClick = { update(details.copy(expiryDate = "")) }, enabled = enabled) {
-                                    Icon(Icons.Outlined.Cancel, "Remove expiry date")
+                                    Icon(Icons.Outlined.Cancel, stringResource(Res.string.details_expiry_remove))
                                 }
                             }
                             IconButton(onClick = { focusManager.clearFocus(); isPickingExpiry = true }, enabled = enabled) {
-                                Icon(Icons.Outlined.DateRange, "Pick expiry date")
+                                Icon(Icons.Outlined.DateRange, stringResource(Res.string.details_expiry_pick))
                             }
                         }
                     },
@@ -141,7 +161,7 @@ internal fun CardDetailsSection(form: CardForm, component: CardReviewComponent, 
                 OutlinedTextField(
                     value = details.notes,
                     onValueChange = { update(details.copy(notes = it)) },
-                    label = { Text("Notes") },
+                    label = { Text(stringResource(Res.string.details_notes)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     maxLines = 6,

@@ -1,0 +1,1707 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld cards added" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld card added"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cards added"
+                }
+              }
+            }
+          }
+        },
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidána %lld karta"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidány %lld karty"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidáno %lld karty"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Přidáno %lld karet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld cards already up to date" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld card already up to date"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cards already up to date"
+                }
+              }
+            }
+          }
+        },
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karta už byla aktuální"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karty už byly aktuální"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karty už bylo aktuálních"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld karet už bylo aktuálních"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld cards updated" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld card updated"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cards updated"
+                }
+              }
+            }
+          }
+        },
+        "cs" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizována %lld karta"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizovány %lld karty"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizováno %lld karty"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aktualizováno %lld karet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "A strip from your photo, shown at the top of the card in Wallet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pruh z vaší fotky zobrazený v horní části karty ve Wallet."
+          }
+        }
+      }
+    },
+    "Add Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidat kartu"
+          }
+        }
+      }
+    },
+    "Add imported cards to Apple Wallet from their editor." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importované karty přidáte do Apple Wallet z jejich editoru."
+          }
+        }
+      }
+    },
+    "Add to Apple Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidat do Apple Wallet"
+          }
+        }
+      }
+    },
+    "Added to Apple Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidáno do Apple Wallet"
+          }
+        }
+      }
+    },
+    "Adding to Apple Wallet…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přidávání do Apple Wallet…"
+          }
+        }
+      }
+    },
+    "Adjust Banner" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit banner"
+          }
+        }
+      }
+    },
+    "Adjust Banner…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit banner…"
+          }
+        }
+      }
+    },
+    "Adjust Logo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit logo"
+          }
+        }
+      }
+    },
+    "Adjust Logo…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit logo…"
+          }
+        }
+      }
+    },
+    "Apple Wallet doesn't support %@; it will be shown as %@ with the same content." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Wallet nepodporuje %1$@; zobrazí se jako %2$@ se stejným obsahem."
+          }
+        }
+      }
+    },
+    "Apple Wallet isn't available on this device." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Wallet není na tomto zařízení k dispozici."
+          }
+        }
+      }
+    },
+    "Apple Wallet passes are signed by the Walletka pass service. Set WALLETKA_SERVICE_URL (and WALLETKA_SERVICE_API_KEY) in Config.xcconfig." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karty pro Apple Wallet podepisuje služba Walletka. Nastavte WALLETKA_SERVICE_URL (a WALLETKA_SERVICE_API_KEY) v Config.xcconfig."
+          }
+        }
+      }
+    },
+    "Apple Wallet rejected the card." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Wallet kartu odmítla."
+          }
+        }
+      }
+    },
+    "Banner from Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banner z fotky"
+          }
+        }
+      }
+    },
+    "Black" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Černá"
+          }
+        }
+      }
+    },
+    "blue" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "modrá"
+          }
+        }
+      }
+    },
+    "brown" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hnědá"
+          }
+        }
+      }
+    },
+    "Can't Read Image" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obrázek nelze načíst"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zrušit"
+          }
+        }
+      }
+    },
+    "Cancelled." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zrušeno."
+          }
+        }
+      }
+    },
+    "Card Name" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Název karty"
+          }
+        }
+      }
+    },
+    "Card Number" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Číslo karty"
+          }
+        }
+      }
+    },
+    "Card preview" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Náhled karty"
+          }
+        }
+      }
+    },
+    "Changes will sync to Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Změny se synchronizují do Wallet"
+          }
+        }
+      }
+    },
+    "Choose Another Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrat jinou fotku"
+          }
+        }
+      }
+    },
+    "Choose Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrat fotku"
+          }
+        }
+      }
+    },
+    "Choose the part of the photo shown as the banner" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyberte část fotky, která se zobrazí jako banner"
+          }
+        }
+      }
+    },
+    "Choose the part of the photo shown as the logo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyberte část fotky, která se zobrazí jako logo"
+          }
+        }
+      }
+    },
+    "Clear Name" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat název"
+          }
+        }
+      }
+    },
+    "Code" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kód"
+          }
+        }
+      }
+    },
+    "Code content" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obsah kódu"
+          }
+        }
+      }
+    },
+    "Code content, %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obsah kódu, %@"
+          }
+        }
+      }
+    },
+    "Code Type" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typ kódu"
+          }
+        }
+      }
+    },
+    "Codes Found (%lld)" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nalezené kódy (%lld)"
+          }
+        }
+      }
+    },
+    "Colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barva"
+          }
+        }
+      }
+    },
+    "Couldn't Add the Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu se nepodařilo přidat"
+          }
+        }
+      }
+    },
+    "Couldn't Export the Library" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knihovnu se nepodařilo exportovat"
+          }
+        }
+      }
+    },
+    "Couldn't Import the Backup" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zálohu se nepodařilo importovat"
+          }
+        }
+      }
+    },
+    "Couldn't sync" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace se nezdařila"
+          }
+        }
+      }
+    },
+    "Couldn't Update the Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu se nepodařilo aktualizovat"
+          }
+        }
+      }
+    },
+    "Custom Colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vlastní barva"
+          }
+        }
+      }
+    },
+    "Custom colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vlastní barva"
+          }
+        }
+      }
+    },
+    "Dark %@" : {
+      "comment" : "A dark shade of a colour, e.g. Dark blue",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tmavě %@"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat"
+          }
+        }
+      }
+    },
+    "Delete Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat kartu"
+          }
+        }
+      }
+    },
+    "Delete from Walletka and Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat z Walletky i z Wallet"
+          }
+        }
+      }
+    },
+    "Delete “%@”?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smazat „%@“?"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hotovo"
+          }
+        }
+      }
+    },
+    "Drag and pinch the photo. The bright box becomes the logo." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotku posouvejte a přibližujte prsty. Světlý rámeček se stane logem."
+          }
+        }
+      }
+    },
+    "Drag and pinch the photo. The bright strip becomes the banner." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotku posouvejte a přibližujte prsty. Světlý pruh se stane bannerem."
+          }
+        }
+      }
+    },
+    "e.g. Coffee Club" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "např. Kavárna U Rohu"
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit"
+          }
+        }
+      }
+    },
+    "Edit Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravit kartu"
+          }
+        }
+      }
+    },
+    "Enter Manually" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadat ručně"
+          }
+        }
+      }
+    },
+    "Expires" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Platnost do"
+          }
+        }
+      }
+    },
+    "Expiry Date" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datum platnosti"
+          }
+        }
+      }
+    },
+    "Export Library…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportovat knihovnu…"
+          }
+        }
+      }
+    },
+    "Export, import and iCloud sync" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export, import a synchronizace přes iCloud"
+          }
+        }
+      }
+    },
+    "Fit Whole Width" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Celá šířka"
+          }
+        }
+      }
+    },
+    "green" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zelená"
+          }
+        }
+      }
+    },
+    "grey" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "šedá"
+          }
+        }
+      }
+    },
+    "iCloud Sync" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace přes iCloud"
+          }
+        }
+      }
+    },
+    "iCloud Sync: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace přes iCloud: %@"
+          }
+        }
+      }
+    },
+    "Import Library…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importovat knihovnu…"
+          }
+        }
+      }
+    },
+    "In Apple Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "V Apple Wallet"
+          }
+        }
+      }
+    },
+    "In Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ve Wallet"
+          }
+        }
+      }
+    },
+    "Library Imported" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knihovna importována"
+          }
+        }
+      }
+    },
+    "Light %@" : {
+      "comment" : "A light shade of a colour, e.g. Light blue",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Světle %@"
+          }
+        }
+      }
+    },
+    "Logo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo"
+          }
+        }
+      }
+    },
+    "Logo from Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo z fotky"
+          }
+        }
+      }
+    },
+    "Looking for codes…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hledání kódů…"
+          }
+        }
+      }
+    },
+    "Member Name" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jméno člena"
+          }
+        }
+      }
+    },
+    "More" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Další"
+          }
+        }
+      }
+    },
+    "More Details" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Další údaje"
+          }
+        }
+      }
+    },
+    "More Options" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Další volby"
+          }
+        }
+      }
+    },
+    "Move Down" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posunout dolů"
+          }
+        }
+      }
+    },
+    "Move Photo Down" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posunout fotku dolů"
+          }
+        }
+      }
+    },
+    "Move Photo Left" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posunout fotku doleva"
+          }
+        }
+      }
+    },
+    "Move Photo Right" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posunout fotku doprava"
+          }
+        }
+      }
+    },
+    "Move Photo Up" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posunout fotku nahoru"
+          }
+        }
+      }
+    },
+    "Move Up" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posunout nahoru"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Název"
+          }
+        }
+      }
+    },
+    "Name or code" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Název nebo kód"
+          }
+        }
+      }
+    },
+    "New Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nová karta"
+          }
+        }
+      }
+    },
+    "No Code Found" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kód nenalezen"
+          }
+        }
+      }
+    },
+    "No code found in the photo. Type the number printed on the card and pick the code type." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na fotce se nenašel žádný kód. Opište číslo vytištěné na kartě a vyberte typ kódu."
+          }
+        }
+      }
+    },
+    "No colour picked" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barva není vybraná"
+          }
+        }
+      }
+    },
+    "No name" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bez názvu"
+          }
+        }
+      }
+    },
+    "Not in Apple Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Není v Apple Wallet"
+          }
+        }
+      }
+    },
+    "Not in Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Není ve Wallet"
+          }
+        }
+      }
+    },
+    "Not in Wallet anymore. Add it again below." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta už ve Wallet není. Přidejte ji znovu níže."
+          }
+        }
+      }
+    },
+    "Notes" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poznámky"
+          }
+        }
+      }
+    },
+    "Off: cards stay on this iPhone" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vypnuto: karty zůstanou v tomto iPhonu"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Open Existing" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otevřít existující"
+          }
+        }
+      }
+    },
+    "Open in Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otevřít ve Wallet"
+          }
+        }
+      }
+    },
+    "Opens the card editor" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otevře editor karty"
+          }
+        }
+      }
+    },
+    "Opens “%@” instead of adding this card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otevře kartu „%@“ místo přidání této"
+          }
+        }
+      }
+    },
+    "orange" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "oranžová"
+          }
+        }
+      }
+    },
+    "Paste Image" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vložit obrázek"
+          }
+        }
+      }
+    },
+    "Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotka"
+          }
+        }
+      }
+    },
+    "Pick Colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrat barvu"
+          }
+        }
+      }
+    },
+    "Pick from Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybrat z fotky"
+          }
+        }
+      }
+    },
+    "Picked colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybraná barva"
+          }
+        }
+      }
+    },
+    "Picked colour: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vybraná barva: %@"
+          }
+        }
+      }
+    },
+    "pink" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "růžová"
+          }
+        }
+      }
+    },
+    "purple" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fialová"
+          }
+        }
+      }
+    },
+    "QR code" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR kód"
+          }
+        }
+      }
+    },
+    "Reading the image…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Načítání obrázku…"
+          }
+        }
+      }
+    },
+    "red" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "červená"
+          }
+        }
+      }
+    },
+    "Removes the card from Walletka and Apple Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odstraní kartu z Walletky i z Apple Wallet"
+          }
+        }
+      }
+    },
+    "Reset" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovit výchozí"
+          }
+        }
+      }
+    },
+    "Restore from Backup…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovit ze zálohy…"
+          }
+        }
+      }
+    },
+    "Retry" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkusit znovu"
+          }
+        }
+      }
+    },
+    "Scanning Failed" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skenování selhalo"
+          }
+        }
+      }
+    },
+    "Shown on the pass: the card number and member name on the front, everything on the back." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zobrazí se na kartě: číslo karty a jméno člena na přední straně, vše ostatní na zadní."
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to sync" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro synchronizaci se přihlaste k iCloudu"
+          }
+        }
+      }
+    },
+    "Snap or share a photo of any loyalty card, ticket or membership, and Walletka turns it into an Apple Wallet card." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyfoťte nebo nasdílejte fotku věrnostní karty, vstupenky či členské karty a Walletka z ní udělá kartu pro Apple Wallet."
+          }
+        }
+      }
+    },
+    "Something went wrong while scanning the photo." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Při skenování fotky se něco pokazilo."
+          }
+        }
+      }
+    },
+    "Suggested colour %lld of %lld" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navržená barva %1$lld z %2$lld"
+          }
+        }
+      }
+    },
+    "Swipe up or down to move across the photo and pick the colour under the point." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přejetím nahoru nebo dolů se posunete po fotce a vyberete barvu pod bodem."
+          }
+        }
+      }
+    },
+    "Swipe up or down to zoom. Use the actions to move the photo or reset it." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přejetím nahoru nebo dolů přiblížíte či oddálíte. Akcemi fotku posunete nebo vrátíte do výchozí polohy."
+          }
+        }
+      }
+    },
+    "Sync failed, retrying later" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace selhala, zkusí se znovu později"
+          }
+        }
+      }
+    },
+    "Syncing with Wallet…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace s Wallet…"
+          }
+        }
+      }
+    },
+    "Syncing…" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizace…"
+          }
+        }
+      }
+    },
+    "Take Photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vyfotit"
+          }
+        }
+      }
+    },
+    "Tap or drag across the photo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klepněte na fotku nebo po ní táhněte"
+          }
+        }
+      }
+    },
+    "teal" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tyrkysová"
+          }
+        }
+      }
+    },
+    "The brand logo cut out of your photo, shown at the top of the card instead of its name." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo značky vyříznuté z vaší fotky, zobrazené v horní části karty místo názvu."
+          }
+        }
+      }
+    },
+    "The card is no longer in Apple Wallet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta už v Apple Wallet není."
+          }
+        }
+      }
+    },
+    "The card is removed from Walletka and from Apple Wallet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta bude odstraněna z Walletky i z Apple Wallet."
+          }
+        }
+      }
+    },
+    "The file couldn't be read. Make sure it's a Walletka backup made by this or an older version of the app." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soubor nelze přečíst. Ujistěte se, že jde o zálohu Walletky vytvořenou touto nebo starší verzí aplikace."
+          }
+        }
+      }
+    },
+    "The library couldn't be saved to a backup file." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knihovnu se nepodařilo uložit do souboru se zálohou."
+          }
+        }
+      }
+    },
+    "This code type can't be stored in Apple Wallet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tento typ kódu nelze v Apple Wallet uložit."
+          }
+        }
+      }
+    },
+    "This doesn't look like an image Walletka can read." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tohle nevypadá jako obrázek, který Walletka umí přečíst."
+          }
+        }
+      }
+    },
+    "Tip: in Photos, tap Share → Add to Walletka" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tip: ve Fotkách klepněte na Sdílet → Přidat do Walletky"
+          }
+        }
+      }
+    },
+    "Try a sharper photo with the whole QR code or barcode in view." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkuste ostřejší fotku, na které je celý QR kód nebo čárový kód."
+          }
+        }
+      }
+    },
+    "Try Again" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zkusit znovu"
+          }
+        }
+      }
+    },
+    "Type the number printed on the card and pick the code type." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opište číslo vytištěné na kartě a vyberte typ kódu."
+          }
+        }
+      }
+    },
+    "Up to date" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuální"
+          }
+        }
+      }
+    },
+    "Up to date in Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ve Wallet je aktuální"
+          }
+        }
+      }
+    },
+    "Updated in Apple Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualizováno v Apple Wallet"
+          }
+        }
+      }
+    },
+    "Use Code" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Použít kód"
+          }
+        }
+      }
+    },
+    "Use Colour" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Použít barvu"
+          }
+        }
+      }
+    },
+    "Walletka" : {
+      "shouldTranslate" : false
+    },
+    "White" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bílá"
+          }
+        }
+      }
+    },
+    "with banner" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "s bannerem"
+          }
+        }
+      }
+    },
+    "with logo" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "s logem"
+          }
+        }
+      }
+    },
+    "yellow" : {
+      "comment" : "Colour name, combined with Dark/Light",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "žlutá"
+          }
+        }
+      }
+    },
+    "You already have “%@” with this code." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu „%@“ s tímto kódem už máte."
+          }
+        }
+      }
+    },
+    "Zoom: %@" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přiblížení: %@"
+          }
+        }
+      }
+    },
+    "“%@” is ready to scan from Wallet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta „%@“ je připravená ke skenování z Wallet."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

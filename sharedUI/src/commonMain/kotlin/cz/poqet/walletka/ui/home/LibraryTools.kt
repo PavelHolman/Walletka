@@ -31,21 +31,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cz.poqet.walletka.component.home.BackupState
 import cz.poqet.walletka.ui.BackupFileActions
+import cz.poqet.walletka.component.home.BackupOperation
+import cz.poqet.walletka.ui.resources.*
+import org.jetbrains.compose.resources.getPluralString
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 
 /** The overflow menu of the library: export and import. */
 @Composable
 internal fun LibraryMenu(onExport: () -> Unit, onImport: () -> Unit) {
     var isOpen by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { isOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More options") }
+        IconButton(onClick = { isOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(Res.string.action_more_options)) }
         DropdownMenu(expanded = isOpen, onDismissRequest = { isOpen = false }) {
             DropdownMenuItem(
-                text = { Text("Export library") },
+                text = { Text(stringResource(Res.string.library_export)) },
                 leadingIcon = { Icon(Icons.Outlined.Upload, null) },
                 onClick = { isOpen = false; onExport() },
             )
             DropdownMenuItem(
-                text = { Text("Import library") },
+                text = { Text(stringResource(Res.string.library_import)) },
                 leadingIcon = { Icon(Icons.Outlined.Download, null) },
                 onClick = { isOpen = false; onImport() },
             )
@@ -62,16 +67,21 @@ internal fun BackupEffects(backup: BackupState, files: BackupFileActions, snackb
             is BackupState.ExportReady -> files.export(backup.path, backup.fileName)
             is BackupState.Imported -> {
                 val details = buildList {
-                    add("${backup.added} added")
-                    if (backup.updated > 0) add("${backup.updated} updated")
-                    if (backup.skipped > 0) add("${backup.skipped} already up to date")
+                    add(getPluralString(Res.plurals.import_added, backup.added, backup.added))
+                    if (backup.updated > 0) add(getPluralString(Res.plurals.import_updated, backup.updated, backup.updated))
+                    if (backup.skipped > 0) add(getPluralString(Res.plurals.import_skipped, backup.skipped, backup.skipped))
                 }
                 // Dismissing restarts this effect, so only once the message is gone.
-                snackbar.showSnackbar("Library imported: ${details.joinToString()}")
+                snackbar.showSnackbar(getString(Res.string.library_imported, details.joinToString()))
                 currentOnDismiss()
             }
             is BackupState.Failed -> {
-                snackbar.showSnackbar(backup.message)
+                // The detail is a technical (English) reason, left out of the localized message.
+                val message = when (backup.operation) {
+                    BackupOperation.EXPORT -> Res.string.backup_export_failed
+                    BackupOperation.IMPORT -> Res.string.backup_import_failed
+                }
+                snackbar.showSnackbar(getString(message))
                 currentOnDismiss()
             }
             BackupState.Idle, BackupState.InProgress -> Unit
@@ -85,11 +95,11 @@ internal fun LibrarySearchField(query: String, onQueryChange: (String) -> Unit) 
         value = query,
         onValueChange = onQueryChange,
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Search by name or code") },
+        placeholder = { Text(stringResource(Res.string.search_placeholder)) },
         leadingIcon = { Icon(Icons.Outlined.Search, null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Outlined.Close, contentDescription = "Clear search") }
+                IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Outlined.Close, contentDescription = stringResource(Res.string.search_clear)) }
             }
         },
         singleLine = true,
@@ -101,7 +111,7 @@ internal fun LibrarySearchField(query: String, onQueryChange: (String) -> Unit) 
 @Composable
 internal fun NotInWalletBadge(color: Color) {
     Text(
-        "Not in Google Wallet",
+        stringResource(Res.string.not_in_wallet),
         style = MaterialTheme.typography.labelSmall,
         color = color,
         modifier = Modifier

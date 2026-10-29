@@ -62,13 +62,24 @@ struct HomeView: View {
 
     private var library: some View {
         List {
-            ForEach(model.value.visibleCards, id: \.id) { card in
+            ForEach(Array(model.value.visibleCards.enumerated()), id: \.element.id) { index, card in
                 Button {
                     component.onCardClicked(cardId: card.id)
                 } label: {
                     CardTile(card: card)
                 }
                 .buttonStyle(.plain)
+                // VoiceOver: the tile reads as one element; Edit and reordering are its actions (the swipe action
+                // already offers Delete).
+                .accessibilityAction(named: Text("Edit")) { component.onCardClicked(cardId: card.id) }
+                .accessibilityActions {
+                    if model.value.canReorder && index > 0 {
+                        Button("Move Up") { component.onCardMoved(fromIndex: Int32(index), toIndex: Int32(index - 1)) }
+                    }
+                    if model.value.canReorder && index < model.value.visibleCards.count - 1 {
+                        Button("Move Down") { component.onCardMoved(fromIndex: Int32(index), toIndex: Int32(index + 1)) }
+                    }
+                }
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .swipeActions {
@@ -147,8 +158,19 @@ struct HomeView: View {
     // MARK: - Empty state
 
     private var emptyState: some View {
+        // Centred while it fits; scrolls at large Dynamic Type sizes instead of clipping.
+        GeometryReader { proxy in
+            ScrollView {
+                emptyStateContent
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var emptyStateContent: some View {
         VStack(spacing: 28) {
-            Spacer()
             ZStack {
                 RoundedRectangle(cornerRadius: 30, style: .continuous)
                     .fill(LinearGradient(colors: [.indigo, .teal], startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -157,8 +179,10 @@ struct HomeView: View {
                     .font(.system(size: 54, weight: .medium))
                     .foregroundStyle(.white)
             }
+            .accessibilityHidden(true)
             VStack(spacing: 10) {
-                Text("Walletka").font(.largeTitle.bold())
+                Text(verbatim: "Walletka").font(.largeTitle.bold())
+                    .accessibilityAddTraits(.isHeader)
                 Text("Snap or share a photo of any loyalty card, ticket or membership, and Walletka turns it into an Apple Wallet card.")
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -204,12 +228,9 @@ struct HomeView: View {
                     .font(.footnote)
                     .foregroundStyle(.red)
             }
-            Spacer()
         }
         .padding(28)
         .frame(maxWidth: 520)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .toolbar(.hidden, for: .navigationBar)
     }
 
     private var pasteButton: some View {
@@ -229,22 +250,26 @@ struct HomeView: View {
 private struct CardTile: View {
     let card: CardSummary
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         let content = card.color.contentColor.swiftUIColor
+        let isLarge = dynamicTypeSize.isAccessibilitySize
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(card.name)
+                Text(verbatim: card.name)
                     .font(.headline)
-                    .lineLimit(1)
-                Text("\(card.codeFormat.displayName) · \(card.codeValue)")
+                    .lineLimit(isLarge ? 3 : 1)
+                Text(verbatim: "\(card.codeFormat.localizedName) · \(card.codeValue)")
                     .font(.caption.monospaced())
-                    .lineLimit(1)
+                    .lineLimit(isLarge ? 2 : 1)
                     .opacity(0.8)
                 WalletStatusBadge(isInWallet: card.isInWallet, color: content)
             }
             .foregroundStyle(content)
             Spacer(minLength: 0)
-            if let path = card.banner?.path, let banner = UIImage(contentsOfFile: path) {
+            // The banner thumbnail leaves the text no room at accessibility sizes.
+            if !isLarge, let path = card.banner?.path, let banner = UIImage(contentsOfFile: path) {
                 Image(uiImage: banner)
                     .resizable()
                     .scaledToFill()
@@ -259,8 +284,21 @@ private struct CardTile: View {
         .frame(maxWidth: .infinity, minHeight: 76)
         .background(card.color.swiftUIColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 16))
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Edit card")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: card.name))
+        .accessibilityValue(Text(verbatim: accessibilityValue))
+        .accessibilityHint(Text("Opens the card editor"))
+    }
+
+    /// Code type and value, and whether the card is in Apple Wallet.
+    private var accessibilityValue: String {
+        var parts = [card.codeFormat.localizedName, card.codeValue]
+        switch card.isInWallet {
+        case true?: parts.append(String(localized: "In Apple Wallet"))
+        case false?: parts.append(String(localized: "Not in Apple Wallet"))
+        case nil: break
+        }
+        return parts.joined(separator: ", ")
     }
 }
 
@@ -278,7 +316,7 @@ private struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
 private extension View {
     /// `.searchable` only when [condition] holds, so short libraries keep a plain title bar.
     @ViewBuilder
-    func searchable(if condition: Bool, text: Binding<String>, prompt: String) -> some View {
+    func searchable(if condition: Bool, text: Binding<String>, prompt: LocalizedStringKey) -> some View {
         if condition {
             searchable(text: text, prompt: Text(prompt))
         } else {

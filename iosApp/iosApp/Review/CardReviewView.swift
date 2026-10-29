@@ -53,8 +53,10 @@ struct CardReviewView: View {
     }
 
     private var title: String {
-        if case .editing(let editing) = model.value.sealedType(), editing.value.form.isLibraryCard { return "Edit Card" }
-        return "New Card"
+        if case .editing(let editing) = model.value.sealedType(), editing.value.form.isLibraryCard {
+            return String(localized: "Edit Card")
+        }
+        return String(localized: "New Card")
     }
 }
 
@@ -91,12 +93,14 @@ private struct LoadingView: View {
                         withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { scanOffset = 1 }
                     }
                     .transition(.opacity)
+                    .accessibilityHidden(true)
             }
             HStack(spacing: 10) {
                 ProgressView()
-                Text(stage == .IMPORTING ? "Reading the image…" : "Looking for codes…")
+                Text(stage == .IMPORTING ? String(localized: "Reading the image…") : String(localized: "Looking for codes…"))
                     .foregroundStyle(.secondary)
             }
+            .accessibilityElement(children: .combine)
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -130,17 +134,17 @@ private struct FailedView: View {
 
     private var title: String {
         switch failure {
-        case .IMAGE_UNREADABLE: "Can't Read Image"
-        case .NO_CODE_FOUND: "No Code Found"
-        case .DETECTION_FAILED: "Scanning Failed"
+        case .IMAGE_UNREADABLE: String(localized: "Can't Read Image")
+        case .NO_CODE_FOUND: String(localized: "No Code Found")
+        case .DETECTION_FAILED: String(localized: "Scanning Failed")
         }
     }
 
     private var message: String {
         switch failure {
-        case .IMAGE_UNREADABLE: "This doesn't look like an image Walletka can read."
-        case .NO_CODE_FOUND: "Try a sharper photo with the whole QR code or barcode in view."
-        case .DETECTION_FAILED: "Something went wrong while scanning the photo."
+        case .IMAGE_UNREADABLE: String(localized: "This doesn't look like an image Walletka can read.")
+        case .NO_CODE_FOUND: String(localized: "Try a sharper photo with the whole QR code or barcode in view.")
+        case .DETECTION_FAILED: String(localized: "Something went wrong while scanning the photo.")
         }
     }
 }
@@ -161,8 +165,12 @@ private struct CardAddedView: View {
                     .font(.system(size: 64))
                     .foregroundStyle(.green)
                     .symbolEffect(.bounce, value: true)
+                    .accessibilityHidden(true)
                 VStack(spacing: 6) {
-                    Text(wasUpdate ? "Updated in Apple Wallet" : "Added to Apple Wallet").font(.title2.bold())
+                    Text(wasUpdate ? String(localized: "Updated in Apple Wallet") : String(localized: "Added to Apple Wallet"))
+                        .font(.title2.bold())
+                        .multilineTextAlignment(.center)
+                        .accessibilityAddTraits(.isHeader)
                     Text("“\(form.name)” is ready to scan from Wallet.")
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -207,6 +215,7 @@ private struct CardFormView: View {
     let component: any CardReviewComponent
 
     @State private var isEditingBanner = false
+    @ScaledMetric private var swatchSize: CGFloat = 38
     @State private var isPickingColorFromPhoto = false
     @State private var isConfirmingDelete = false
     @FocusState private var isNameFocused: Bool
@@ -239,10 +248,13 @@ private struct CardFormView: View {
                         Button {
                             component.onNameChanged(name: "")
                         } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.tertiary)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Clear name")
+                        .accessibilityLabel(Text("Clear Name"))
                     }
                 }
             }
@@ -272,6 +284,7 @@ private struct CardFormView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Delete Card", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
                         .tint(.red)
+                        .accessibilityHint(Text("Removes the card from Walletka and Apple Wallet"))
                         // Attached to the button so the dialog points at it.
                         .confirmationDialog("Delete “\(form.name)”?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
                             Button("Delete from Walletka and Wallet", role: .destructive, action: component.onDeleteClicked)
@@ -300,7 +313,7 @@ private struct CardFormView: View {
                 editor
             }
         }
-        .alert(form.isLibraryCard ? "Couldn't Update the Card" : "Couldn't Add the Card", isPresented: Binding(
+        .alert(form.isLibraryCard ? String(localized: "Couldn't Update the Card") : String(localized: "Couldn't Add the Card"), isPresented: Binding(
             get: { failure != nil },
             set: { if !$0 { component.onSubmissionErrorDismissed() } }
         )) {
@@ -318,7 +331,7 @@ private struct CardFormView: View {
                     set: { component.onCodeSelected(index: Int32($0)) }
                 )) {
                     ForEach(Array(form.codes.enumerated()), id: \.offset) { index, code in
-                        Text(code.format.displayName).tag(index)
+                        Text(verbatim: code.format.localizedName).tag(index)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -327,13 +340,15 @@ private struct CardFormView: View {
                 TypedCodeFormatPicker(form: form) { component.onCodeFormatSelected(format: $0) }
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(form.selectedCode.format.displayName)
+                Text(verbatim: form.selectedCode.format.localizedName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 TextField("Code content", text: Binding(
                     get: { form.selectedCode.value },
                     set: { component.onCodeValueChanged(value: $0) }
                 ), axis: .vertical)
+                .accessibilityLabel(Text("Code content, \(form.selectedCode.format.localizedName)"))
                 .font(.body.monospaced())
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
@@ -341,10 +356,14 @@ private struct CardFormView: View {
             }
             .padding(.vertical, 2)
         } header: {
-            Text(form.codes.count > 1 ? "Codes Found (\(form.codes.count))" : "Code")
+            if form.codes.count > 1 {
+                Text("Codes Found (\(form.codes.count))")
+            } else {
+                Text("Code")
+            }
         } footer: {
             if form.walletCodeFormat != form.selectedCode.format {
-                Text("Apple Wallet doesn't support \(form.selectedCode.format.displayName); it will be shown as \(form.walletCodeFormat.displayName) with the same content.")
+                Text("Apple Wallet doesn't support \(form.selectedCode.format.localizedName); it will be shown as \(form.walletCodeFormat.localizedName) with the same content.")
             }
         }
     }
@@ -352,7 +371,7 @@ private struct CardFormView: View {
     private var colourSection: some View {
         Section("Colour") {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
+                HStack(spacing: 8) {
                     ForEach(Array(form.colors.enumerated()), id: \.offset) { index, color in
                         let selected = index == Int(form.selectedColorIndex)
                         Button {
@@ -360,20 +379,24 @@ private struct CardFormView: View {
                         } label: {
                             Circle()
                                 .fill(color.swiftUIColor)
-                                .frame(width: 38, height: 38)
+                                .frame(width: swatchSize, height: swatchSize)
                                 .overlay(Circle().strokeBorder(selected ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: selected ? 3 : 1))
                                 .overlay {
                                     if selected {
                                         Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(color.contentColor.swiftUIColor)
                                     }
                                 }
+                                // At least 44 points to tap.
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(index >= Int(form.suggestedColorCount) ? "Custom colour" : "Colour \(index + 1)")
+                        .accessibilityLabel(Text(verbatim: color.accessibilityName))
+                        .accessibilityValue(Text(verbatim: swatchValue(index: index, color: color)))
                         .accessibilityAddTraits(selected ? .isSelected : [])
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
             }
             ColorPicker("Custom Colour", selection: Binding(
                 get: { (form.customColor ?? form.selectedColor).swiftUIColor },
@@ -389,6 +412,15 @@ private struct CardFormView: View {
         }
     }
 
+    /// Which swatch it is and its hex value: "Suggested colour 2 of 5, 1 A 2 3 7 E".
+    private func swatchValue(index: Int, color: CardColor) -> String {
+        let suggested = Int(form.suggestedColorCount)
+        let kind = index >= suggested
+            ? String(localized: "Custom colour")
+            : String(localized: "Suggested colour \(index + 1) of \(suggested)")
+        return "\(kind), \(color.accessibilityHex)"
+    }
+
     @ViewBuilder
     private var bannerSection: some View {
         if form.banner != nil {
@@ -400,12 +432,15 @@ private struct CardFormView: View {
                     } label: {
                         HStack(spacing: 12) {
                             BannerThumbnail(path: form.banner?.path)
+                                .accessibilityHidden(true)
                             Text("Adjust Banner…")
                             Spacer()
                             Image(systemName: "chevron.right").font(.footnote.bold()).foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
                         }
                     }
                     .foregroundStyle(.primary)
+                    .accessibilityHint(Text("Choose the part of the photo shown as the banner"))
                 }
             } footer: {
                 Text("A strip from your photo, shown at the top of the card in Wallet.")
@@ -421,6 +456,7 @@ private struct CardFormView: View {
     private var walletButton: some View {
         AddToWalletButton(action: component.onAddToWalletClicked)
             .frame(height: 50)
+            .accessibilityLabel(isBusy ? String(localized: "Adding to Apple Wallet…") : String(localized: "Add to Apple Wallet"))
             .opacity(isBusy ? 0 : (form.isValid ? 1 : 0.4))
             .overlay {
                 if isBusy {
@@ -441,12 +477,12 @@ private struct CardFormView: View {
 
     private static func message(_ failure: (WalletFailure, String?)) -> String {
         let text = switch failure.0 {
-        case .UNAVAILABLE: "Apple Wallet isn't available on this device."
-        case .NOT_CONFIGURED: "Apple Wallet passes are signed by the Walletka pass service. Set WALLETKA_SERVICE_URL (and WALLETKA_SERVICE_API_KEY) in Config.xcconfig."
-        case .CANCELLED: "Cancelled."
-        case .UNSUPPORTED_CODE: "This code type can't be stored in Apple Wallet."
-        case .FAILED: "Apple Wallet rejected the card."
-        case .NOT_IN_WALLET: "The card is no longer in Apple Wallet."
+        case .UNAVAILABLE: String(localized: "Apple Wallet isn't available on this device.")
+        case .NOT_CONFIGURED: String(localized: "Apple Wallet passes are signed by the Walletka pass service. Set WALLETKA_SERVICE_URL (and WALLETKA_SERVICE_API_KEY) in Config.xcconfig.")
+        case .CANCELLED: String(localized: "Cancelled.")
+        case .UNSUPPORTED_CODE: String(localized: "This code type can't be stored in Apple Wallet.")
+        case .FAILED: String(localized: "Apple Wallet rejected the card.")
+        case .NOT_IN_WALLET: String(localized: "The card is no longer in Apple Wallet.")
         }
         return [text, failure.1].compactMap { $0 }.joined(separator: "\n\n")
     }
@@ -462,28 +498,34 @@ private struct SyncStatusView: View {
         HStack(spacing: 6) {
             switch status {
             case .SYNCED:
-                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityHidden(true)
                 Text("Up to date in Wallet")
             case .PENDING:
-                Image(systemName: "clock")
+                Image(systemName: "clock").accessibilityHidden(true)
                 Text("Changes will sync to Wallet")
             case .SYNCING:
                 ProgressView().controlSize(.mini)
                 Text("Syncing with Wallet…")
             case .FAILED:
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).accessibilityHidden(true)
                 Text("Couldn't sync")
                 Button("Retry", action: onRetry).font(.footnote.bold())
+                    .accessibilityHidden(true)
             case .NOT_IN_WALLET:
-                Image(systemName: "wallet.pass").foregroundStyle(.secondary)
+                Image(systemName: "wallet.pass").foregroundStyle(.secondary).accessibilityHidden(true)
                 Text("Not in Wallet anymore. Add it again below.")
+                    .multilineTextAlignment(.center)
             }
         }
         .font(.footnote)
         .foregroundStyle(.secondary)
         .animation(.default, value: status)
         .accessibilityElement(children: .combine)
-        .accessibilityHint(status == .FAILED ? (error ?? "") : "")
+        .accessibilityHint(status == .FAILED ? Text(verbatim: error ?? "") : Text(verbatim: ""))
+        // The retry button is part of the combined element, so offer it as an action.
+        .accessibilityActions {
+            if status == .FAILED { Button("Retry", action: onRetry) }
+        }
     }
 }
 
@@ -519,9 +561,11 @@ private struct CardPreview: View {
                 if let logo = form.logo.activeImage?.path {
                     PassLogoView(path: logo)
                 } else {
-                    Text(form.name.isEmpty ? "Card Name" : form.name)
-                        .font(.headline)
-                        .lineLimit(1)
+                    Group {
+                        if form.name.isEmpty { Text("Card Name") } else { Text(verbatim: form.name) }
+                    }
+                    .font(.headline)
+                    .lineLimit(1)
                 }
                 Spacer()
             }
@@ -562,6 +606,21 @@ private struct CardPreview: View {
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
         .padding(.vertical, 8)
         .animation(.default, value: form.selectedColor.hex)
+        // One element: what the card looks like, not its parts.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Card preview"))
+        .accessibilityValue(Text(verbatim: accessibilityValue))
+        .accessibilityAddTraits(.isImage)
+    }
+
+    /// Name, code type and value, colour, and which of banner and logo the card shows.
+    private var accessibilityValue: String {
+        var parts = [form.name.isEmpty ? String(localized: "No name") : form.name]
+        parts.append(String(localized: "\(form.walletCodeFormat.localizedName): \(form.selectedCode.value)"))
+        parts.append(form.selectedColor.accessibilityName)
+        if form.logo.activeImage != nil { parts.append(String(localized: "with logo")) }
+        if form.isBannerEnabled && form.banner != nil { parts.append(String(localized: "with banner")) }
+        return parts.joined(separator: ", ")
     }
 }
 

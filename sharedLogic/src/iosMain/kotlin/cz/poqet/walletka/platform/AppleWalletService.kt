@@ -5,6 +5,7 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
 import cz.poqet.walletka.data.PassJson
+import cz.poqet.walletka.data.PassStrings
 import cz.poqet.walletka.data.PassServiceClient
 import cz.poqet.walletka.data.WalletConfig
 import cz.poqet.walletka.domain.CardColor
@@ -119,7 +120,7 @@ internal class AppleWalletService(
 
     private suspend fun passFiles(card: CardDraft): Map<String, ByteArray> = withContext(Dispatchers.Default) {
         buildMap {
-            put("pass.json", PassJson.apple(card, config, serialNumber = card.walletId).encodeToByteArray())
+            put("pass.json", PassJson.apple(card, config, serialNumber = card.walletId, strings = PassStrings.forDevice()).encodeToByteArray())
             put("icon.png", solidPng(card.backgroundColor, size = 29.0, scale = 1.0))
             put("icon@2x.png", solidPng(card.backgroundColor, size = 29.0, scale = 2.0))
             put("icon@3x.png", solidPng(card.backgroundColor, size = 29.0, scale = 3.0))

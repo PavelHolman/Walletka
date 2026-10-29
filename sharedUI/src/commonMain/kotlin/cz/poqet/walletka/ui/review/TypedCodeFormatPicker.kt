@@ -23,6 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
 import cz.poqet.walletka.domain.CodeFormat
+import cz.poqet.walletka.ui.localizedName
+import cz.poqet.walletka.ui.resources.*
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 /** Explains why the code is typed in and lets the user pick its symbology ([CardForm.isCodeTyped]). */
 @Composable
@@ -30,20 +37,28 @@ internal fun TypedCodeFormatPicker(form: CardForm, enabled: Boolean, onSelect: (
     var isOpen by remember { mutableStateOf(false) }
     Column {
         Text(
-            if (form.hasPhoto) "No code found in the photo. Type the number printed on the card and pick the code type."
-            else "Type the number printed on the card and pick the code type.",
+            stringResource(if (form.hasPhoto) Res.string.typed_code_no_code else Res.string.typed_code_manual),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Box {
-            OutlinedButton(onClick = { isOpen = true }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
-                Text(form.selectedCode.format.displayName, Modifier.weight(1f))
-                Icon(Icons.Outlined.ArrowDropDown, contentDescription = "Code type")
+            val typeLabel = stringResource(Res.string.typed_code_type)
+            OutlinedButton(
+                onClick = { isOpen = true },
+                enabled = enabled,
+                // Announced as "Code type, QR code" rather than the format name alone.
+                modifier = Modifier.fillMaxWidth().semantics {
+                    contentDescription = typeLabel
+                    role = Role.DropdownList
+                },
+            ) {
+                Text(form.selectedCode.format.localizedName(), Modifier.weight(1f))
+                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
             }
             DropdownMenu(expanded = isOpen, onDismissRequest = { isOpen = false }) {
                 form.typedCodeFormats.forEach { format ->
                     DropdownMenuItem(
-                        text = { Text(format.displayName) },
+                        text = { Text(format.localizedName()) },
                         leadingIcon = {
                             if (format == form.selectedCode.format) Icon(Icons.Outlined.Check, null) else Spacer(Modifier.size(24.dp))
                         },

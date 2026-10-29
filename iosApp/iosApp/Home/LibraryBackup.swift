@@ -62,15 +62,18 @@ struct LibraryMenu: View {
         } label: {
             Label("More", systemImage: "ellipsis.circle")
         }
+        .accessibilityLabel(Text("More Options"))
+        .accessibilityValue(cloudSync.map { Text(verbatim: String(localized: "iCloud Sync: \(Self.describe($0))")) } ?? Text(verbatim: ""))
+        .accessibilityHint(Text("Export, import and iCloud sync"))
     }
 
     static func describe(_ status: CloudSyncStatus) -> String {
         switch status {
-        case .OFF: "Off: cards stay on this iPhone"
-        case .UNAVAILABLE: "Sign in to iCloud to sync"
-        case .SYNCING: "Syncing…"
-        case .UP_TO_DATE: "Up to date"
-        case .FAILED: "Sync failed, retrying later"
+        case .OFF: String(localized: "Off: cards stay on this iPhone")
+        case .UNAVAILABLE: String(localized: "Sign in to iCloud to sync")
+        case .SYNCING: String(localized: "Syncing…")
+        case .UP_TO_DATE: String(localized: "Up to date")
+        case .FAILED: String(localized: "Sync failed, retrying later")
         @unknown default: ""
         }
     }
@@ -99,12 +102,23 @@ private struct LibraryBackupModifier: ViewModifier {
         switch backup.sealedType() {
         case .imported(let imported):
             let value = imported.value
-            var parts = ["\(value.added) added"]
-            if value.updated > 0 { parts.append("\(value.updated) updated") }
-            if value.skipped > 0 { parts.append("\(value.skipped) already up to date") }
-            return ("Library Imported", parts.joined(separator: ", ") + ". Add imported cards to Apple Wallet from their editor.")
+            let added = Int(value.added), updated = Int(value.updated), skipped = Int(value.skipped)
+            var lines = [String(localized: "\(added) cards added")]
+            if updated > 0 { lines.append(String(localized: "\(updated) cards updated")) }
+            if skipped > 0 { lines.append(String(localized: "\(skipped) cards already up to date")) }
+            lines.append(String(localized: "Add imported cards to Apple Wallet from their editor."))
+            return (String(localized: "Library Imported"), lines.joined(separator: "\n"))
         case .failed(let failed):
-            return ("Backup Failed", failed.value.message)
+            let text = switch failed.value.operation {
+            case .EXPORT: String(localized: "The library couldn't be saved to a backup file.")
+            case .IMPORT: String(localized: "The file couldn't be read. Make sure it's a Walletka backup made by this or an older version of the app.")
+            @unknown default: ""
+            }
+            let title = failed.value.operation == .EXPORT
+                ? String(localized: "Couldn't Export the Library")
+                : String(localized: "Couldn't Import the Backup")
+            // The technical reason (in English) helps when reporting a problem.
+            return (title, [text, failed.value.detail].compactMap { $0 }.joined(separator: "\n\n"))
         default:
             return nil
         }

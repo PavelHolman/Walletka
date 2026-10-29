@@ -125,7 +125,7 @@ internal class DefaultHomeComponent(
                 it.copy(
                     backup = result.fold(
                         onSuccess = { count -> BackupState.ExportReady(target.toString(), fileName, count) },
-                        onFailure = { error -> BackupState.Failed("Couldn't export the library: ${error.message}") },
+                        onFailure = { error -> BackupState.Failed(BackupOperation.EXPORT, error.message) },
                     ),
                 )
             }
@@ -147,7 +147,7 @@ internal class DefaultHomeComponent(
                 it.copy(
                     backup = result.fold(
                         onSuccess = { summary -> BackupState.Imported(summary.added, summary.updated, summary.skipped) },
-                        onFailure = { error -> BackupState.Failed("Couldn't import the backup: ${error.message}") },
+                        onFailure = { error -> BackupState.Failed(BackupOperation.IMPORT, error.message) },
                     ),
                 )
             }

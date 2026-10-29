@@ -25,12 +25,15 @@ struct CardLogoSection: View {
                         }
                         .padding(4)
                         .background(form.selectedColor.swiftUIColor, in: RoundedRectangle(cornerRadius: 6))
+                        .accessibilityHidden(true)
                         Text("Adjust Logo…")
                         Spacer()
                         Image(systemName: "chevron.right").font(.footnote.bold()).foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
                     }
                 }
                 .foregroundStyle(.primary)
+                .accessibilityHint(Text("Choose the part of the photo shown as the logo"))
             }
         } footer: {
             Text("The brand logo cut out of your photo, shown at the top of the card instead of its name.")

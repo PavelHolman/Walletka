@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -101,6 +102,17 @@ import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.WalletFailure
 import cz.poqet.walletka.ui.rememberStoredImage
 import cz.poqet.walletka.ui.toColor
+import cz.poqet.walletka.ui.displayHex
+import cz.poqet.walletka.ui.localizedName
+import cz.poqet.walletka.ui.spokenName
+import cz.poqet.walletka.ui.resources.*
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,32 +122,32 @@ fun CardReviewContent(component: CardReviewComponent) {
     (model as? Model.Editing)?.form?.takeIf { isConfirmingDelete }?.let { form ->
         AlertDialog(
             onDismissRequest = { isConfirmingDelete = false },
-            title = { Text("Delete “${form.name}”?") },
-            text = { Text("The card is removed from Walletka. Google Wallet doesn't let apps remove passes, so remove it in Google Wallet too if you no longer need it.") },
+            title = { Text(stringResource(Res.string.delete_card_title, form.name)) },
+            text = { Text(stringResource(Res.string.review_delete_message)) },
             confirmButton = {
                 TextButton(
                     onClick = { isConfirmingDelete = false; component.onDeleteClicked() },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Delete") }
+                ) { Text(stringResource(Res.string.action_delete)) }
             },
-            dismissButton = { TextButton(onClick = { isConfirmingDelete = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { isConfirmingDelete = false }) { Text(stringResource(Res.string.action_cancel)) } },
         )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if ((model as? Model.Editing)?.form?.isLibraryCard == true) "Edit card" else "New card") },
+                title = { Text(stringResource(if ((model as? Model.Editing)?.form?.isLibraryCard == true) Res.string.review_title_edit else Res.string.review_title_new)) },
                 navigationIcon = {
                     IconButton(onClick = component::onCloseClicked) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 },
                 actions = {
                     val editing = model as? Model.Editing
                     if (editing?.form?.isLibraryCard == true && editing.submission !is Submission.Added) {
                         IconButton(onClick = { isConfirmingDelete = true }) {
-                            Icon(Icons.Outlined.Delete, contentDescription = "Delete card", tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Outlined.Delete, contentDescription = stringResource(Res.string.review_delete_card), tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 },
@@ -194,12 +206,16 @@ private fun Loading(stage: LoadingStage, photoPath: String?) {
             )
             Spacer(Modifier.height(24.dp))
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
             Text(
                 when (stage) {
-                    LoadingStage.IMPORTING -> "Reading the image…"
-                    LoadingStage.ANALYZING -> "Looking for codes…"
+                    LoadingStage.IMPORTING -> stringResource(Res.string.loading_importing)
+                    LoadingStage.ANALYZING -> stringResource(Res.string.loading_analyzing)
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -207,10 +223,11 @@ private fun Loading(stage: LoadingStage, photoPath: String?) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Failed(failure: AnalysisFailure, onRetry: () -> Unit, onClose: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().padding(32.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -218,17 +235,18 @@ private fun Failed(failure: AnalysisFailure, onRetry: () -> Unit, onClose: () ->
         Spacer(Modifier.height(16.dp))
         Text(
             when (failure) {
-                AnalysisFailure.IMAGE_UNREADABLE -> "This doesn't look like an image Walletka can read."
-                AnalysisFailure.NO_CODE_FOUND -> "No QR code or barcode found. Try a sharper photo with the whole code visible."
-                AnalysisFailure.DETECTION_FAILED -> "Something went wrong while scanning the photo."
+                AnalysisFailure.IMAGE_UNREADABLE -> stringResource(Res.string.failure_image_unreadable)
+                AnalysisFailure.NO_CODE_FOUND -> stringResource(Res.string.failure_no_code)
+                AnalysisFailure.DETECTION_FAILED -> stringResource(Res.string.failure_detection)
             },
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(Modifier.height(24.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onClose) { Text("Choose another") }
-            if (failure == AnalysisFailure.DETECTION_FAILED) Button(onClick = onRetry) { Text("Try again") }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
+            OutlinedButton(onClick = onClose) { Text(stringResource(Res.string.failure_choose_another)) }
+            if (failure == AnalysisFailure.DETECTION_FAILED) Button(onClick = onRetry) { Text(stringResource(Res.string.action_try_again)) }
         }
     }
 }
@@ -294,7 +312,7 @@ private fun Editing(
     ) {
         CardPreview(form, compact = true)
 
-        Section("Name") {
+        Section(stringResource(Res.string.section_name)) {
             OutlinedTextField(
                 value = form.name,
                 onValueChange = component::onNameChanged,
@@ -303,17 +321,17 @@ private fun Editing(
                 enabled = !busy,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                placeholder = { Text("e.g. Coffee Club") },
+                placeholder = { Text(stringResource(Res.string.name_placeholder)) },
                 trailingIcon = {
                     if (isNameFocused && form.name.isNotEmpty()) {
-                        IconButton(onClick = { component.onNameChanged("") }) { Icon(Icons.Outlined.Cancel, contentDescription = "Clear name") }
+                        IconButton(onClick = { component.onNameChanged("") }) { Icon(Icons.Outlined.Cancel, contentDescription = stringResource(Res.string.name_clear)) }
                     }
                 },
                 isError = !form.isValid,
             )
         }
 
-        Section(if (form.codes.size > 1) "Codes found (${form.codes.size})" else "Code") {
+        Section(if (form.codes.size > 1) stringResource(Res.string.section_codes_found, form.codes.size) else stringResource(Res.string.section_code)) {
             if (form.codes.size > 1) form.codes.forEachIndexed { index, code ->
                 Row(
                     Modifier
@@ -327,7 +345,7 @@ private fun Editing(
                 ) {
                     if (form.codes.size > 1) RadioButton(selected = index == form.selectedCodeIndex, onClick = null)
                     Column(Modifier.padding(start = 8.dp)) {
-                        Text(code.format.displayName, style = MaterialTheme.typography.labelLarge)
+                        Text(code.format.localizedName(), style = MaterialTheme.typography.labelLarge)
                         Text(
                             code.value,
                             style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
@@ -341,7 +359,7 @@ private fun Editing(
             OutlinedTextField(
                 value = form.selectedCode.value,
                 onValueChange = component::onCodeValueChanged,
-                label = { Text(form.selectedCode.format.displayName) },
+                label = { Text(form.selectedCode.format.localizedName()) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !busy,
                 maxLines = 3,
@@ -352,63 +370,78 @@ private fun Editing(
             )
             if (form.walletCodeFormat != form.selectedCode.format) {
                 Text(
-                    "Google Wallet doesn't support ${form.selectedCode.format.displayName}; " +
-                        "it will be shown as ${form.walletCodeFormat.displayName} with the same content.",
+                    stringResource(Res.string.code_wallet_fallback, form.selectedCode.format.localizedName(), form.walletCodeFormat.localizedName()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
-        Section("Colour") {
+        Section(stringResource(Res.string.section_colour)) {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 form.colors.forEachIndexed { index, color ->
                     val selected = index == form.selectedColorIndex
+                    val description = stringResource(Res.string.colour_swatch, color.spokenName(), color.displayHex)
+                    // A 48 dp touch target around the 40 dp swatch; announced as a radio button with its colour.
                     Box(
                         Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
-                            .background(color.toColor())
-                            .border(
-                                BorderStroke(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
-                                CircleShape,
-                            )
-                            .clickable(enabled = !busy) {
+                            .selectable(selected, enabled = !busy, role = Role.RadioButton) {
                                 focusManager.clearFocus()
                                 component.onColorSelected(index)
-                            },
+                            }
+                            .semantics { contentDescription = description },
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (selected) Icon(Icons.Outlined.Check, null, tint = color.contentColor.toColor())
+                        Box(
+                            Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(color.toColor())
+                                .border(
+                                    BorderStroke(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                                    CircleShape,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (selected) Icon(Icons.Outlined.Check, null, tint = color.contentColor.toColor())
+                        }
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (form.hasPhoto) OutlinedButton(onClick = { focusManager.clearFocus(); colorDialog = ColorDialog.PHOTO }, enabled = !busy) {
                     Icon(Icons.Outlined.Colorize, null, Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text("Pick from photo")
+                    Text(stringResource(Res.string.colour_pick_from_photo))
                 }
                 OutlinedButton(onClick = { focusManager.clearFocus(); colorDialog = ColorDialog.CUSTOM }, enabled = !busy) {
                     Icon(Icons.Outlined.Palette, null, Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text("Custom")
+                    Text(stringResource(Res.string.colour_custom_button))
                 }
             }
         }
 
         if (form.banner != null) {
-            Section("Banner") {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Section(stringResource(Res.string.section_banner)) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(form.isBannerEnabled, enabled = !busy, role = Role.Switch, onValueChange = component::onBannerToggled),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Banner from photo", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(Res.string.banner_from_photo), style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            "A strip from your photo, shown as the card's header image.",
+                            stringResource(Res.string.banner_explanation),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(checked = form.isBannerEnabled, onCheckedChange = component::onBannerToggled, enabled = !busy)
+                    // The whole row toggles, so the switch is part of it rather than a second target.
+                    Switch(checked = form.isBannerEnabled, onCheckedChange = null, enabled = !busy)
                 }
                 if (form.isBannerEnabled) {
                     val thumbnail = rememberStoredImage(form.banner?.path, maxSize = 600)
@@ -416,7 +449,8 @@ private fun Editing(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable(enabled = !busy) { focusManager.clearFocus(); isEditingBanner = true }
+                            .clickable(enabled = !busy, role = Role.Button) { focusManager.clearFocus(); isEditingBanner = true }
+                            .heightIn(min = 48.dp)
                             .padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -424,7 +458,7 @@ private fun Editing(
                         Box(Modifier.size(width = 96.dp, height = 32.dp).clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
                             if (thumbnail != null) Image(thumbnail, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                         }
-                        Text("Adjust banner", Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(Res.string.banner_adjust), Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
                         Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -455,20 +489,25 @@ private fun Editing(
                         component.onAddToWalletClicked()
                     },
                     enabled = form.isValid && !busy && hasChanges,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                     shape = RoundedCornerShape(26.dp),
                 ) {
                     if (busy) {
-                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        val adding = stringResource(Res.string.wallet_adding)
+                        CircularProgressIndicator(
+                            Modifier.size(20.dp).semantics { contentDescription = adding },
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
                     } else {
                         Icon(Icons.Outlined.Wallet, null)
                         Spacer(Modifier.size(8.dp))
-                        Text(if (form.isLibraryCard) "Save to Google Wallet" else "Add to Google Wallet")
+                        Text(stringResource(if (form.isLibraryCard) Res.string.wallet_save else Res.string.wallet_add))
                     }
                 }
                 if (form.isLibraryCard && !hasChanges && sync == null) {
                     Text(
-                        "Edit the card to save it to Google Wallet again.",
+                        stringResource(Res.string.wallet_edit_to_save),
                         modifier = Modifier.padding(top = 8.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -484,9 +523,9 @@ private fun Editing(
             AlertDialog(
                 onDismissRequest = component::onSubmissionErrorDismissed,
                 icon = { Icon(Icons.Outlined.ErrorOutline, null) },
-                title = { Text(if (form.isLibraryCard) "Couldn't save the card" else "Couldn't add the card") },
+                title = { Text(stringResource(if (form.isLibraryCard) Res.string.submission_failed_save else Res.string.submission_failed_add)) },
                 text = { Text(submission.failure.message() + (submission.detail?.let { "\n\n$it" } ?: "")) },
-                confirmButton = { TextButton(onClick = component::onSubmissionErrorDismissed) { Text("OK") } },
+                confirmButton = { TextButton(onClick = component::onSubmissionErrorDismissed) { Text(stringResource(Res.string.action_ok)) } },
             )
         }
 
@@ -503,16 +542,21 @@ private fun CardAdded(form: CardForm, replacedExisting: Boolean, onDone: () -> U
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Icon(Icons.Outlined.CheckCircle, null, Modifier.size(64.dp), tint = Color(0xFF2E7D32))
-        Text(if (replacedExisting) "Updated in Google Wallet" else "Saved to Google Wallet", style = MaterialTheme.typography.headlineSmall)
         Text(
-            "“${form.name}” is ready to scan from Google Wallet.",
+            stringResource(if (replacedExisting) Res.string.added_updated else Res.string.added_saved),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading(); liveRegion = LiveRegionMode.Polite },
+        )
+        Text(
+            stringResource(Res.string.added_ready, form.name),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         CardPreview(form)
-        Button(onClick = onDone, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(26.dp)) {
-            Text("Done")
+        Button(onClick = onDone, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(26.dp)) {
+            Text(stringResource(Res.string.action_done))
         }
     }
 }
@@ -522,21 +566,30 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
     val background = form.selectedColor.toColor()
     val content = form.selectedColor.contentColor.toColor()
     val banner = rememberStoredImage(form.banner?.path?.takeIf { form.isBannerEnabled })
+    val name = form.name.ifBlank { stringResource(Res.string.preview_name_placeholder) }
+    val description = listOfNotNull(
+        stringResource(Res.string.preview_description, name, form.walletCodeFormat.localizedName()),
+        form.selectedColor.spokenName(),
+        stringResource(Res.string.preview_with_logo).takeIf { form.logo.isEnabled },
+        stringResource(Res.string.preview_with_banner).takeIf { banner != null },
+    ).joinToString()
     Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(background),
+            .background(background)
+            // One element for screen readers, instead of the logo, name and code pieces.
+            .clearAndSetSemantics { contentDescription = description },
     ) {
         Row(Modifier.padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             CardLogoImage(form, size = 32.dp)
             Text(
-                form.name.ifBlank { "Card name" },
+                name,
                 modifier = Modifier.padding(start = if (form.logo.isEnabled) 10.dp else 4.dp, end = 20.dp, top = if (compact) 14.dp else 20.dp, bottom = if (compact) 14.dp else 20.dp),
                 color = content,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -557,7 +610,7 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
                 .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(form.walletCodeFormat.displayName, color = Color.Black, style = MaterialTheme.typography.labelMedium)
+                Text(form.walletCodeFormat.localizedName(), color = Color.Black, style = MaterialTheme.typography.labelMedium)
                 Text(
                     form.selectedCode.value,
                     color = Color.Black,
@@ -573,16 +626,19 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleSmall)
+        Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
         content()
     }
 }
 
-private fun WalletFailure.message(): String = when (this) {
-    WalletFailure.UNAVAILABLE -> "Google Wallet isn't available on this device."
-    WalletFailure.NOT_CONFIGURED -> "No Google Wallet issuer is configured. Set one up on the pass service (see README), or set walletka.googleIssuerId and walletka.googleIssuerEmail in local.properties."
-    WalletFailure.CANCELLED -> "Cancelled."
-    WalletFailure.UNSUPPORTED_CODE -> "This code type can't be stored in the wallet."
-    WalletFailure.FAILED -> "The wallet rejected the card."
-    WalletFailure.NOT_IN_WALLET -> "The card is no longer in Google Wallet."
-}
+@Composable
+private fun WalletFailure.message(): String = stringResource(
+    when (this) {
+        WalletFailure.UNAVAILABLE -> Res.string.wallet_failure_unavailable
+        WalletFailure.NOT_CONFIGURED -> Res.string.wallet_failure_not_configured
+        WalletFailure.CANCELLED -> Res.string.wallet_failure_cancelled
+        WalletFailure.UNSUPPORTED_CODE -> Res.string.wallet_failure_unsupported_code
+        WalletFailure.FAILED -> Res.string.wallet_failure_failed
+        WalletFailure.NOT_IN_WALLET -> Res.string.wallet_failure_not_in_wallet
+    },
+)

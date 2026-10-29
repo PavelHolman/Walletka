@@ -17,6 +17,25 @@ struct PhotoColorPickerView: View {
     @State private var marker: CGPoint?
     @State private var isDragging = false
 
+    /// The picked colour, or what to do before the first pick.
+    private var accessibilityValue: String {
+        guard let preview else { return String(localized: "No colour picked") }
+        return String(localized: "Picked colour: \(preview.accessibilityDescription)")
+    }
+
+    /// Moves the pick point a tenth of the photo across, row by row (like reading), and samples there.
+    private func step(by delta: Int) {
+        let steps = 10
+        let current = marker ?? CGPoint(x: 0.5, y: 0.5)
+        let column = Int((current.x * CGFloat(steps)).rounded())
+        let row = Int((current.y * CGFloat(steps)).rounded())
+        var index = row * (steps + 1) + column + delta
+        index = min(max(index, 0), (steps + 1) * (steps + 1) - 1)
+        let point = CGPoint(x: CGFloat(index % (steps + 1)) / CGFloat(steps), y: CGFloat(index / (steps + 1)) / CGFloat(steps))
+        marker = point
+        onPick(Float(point.x), Float(point.y))
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
@@ -61,6 +80,18 @@ struct PhotoColorPickerView: View {
                             }
                         }
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        // VoiceOver can't drag across the photo: swiping up/down walks a point across it instead.
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text("Photo"))
+                        .accessibilityValue(Text(verbatim: accessibilityValue))
+                        .accessibilityHint(Text("Swipe up or down to move across the photo and pick the colour under the point."))
+                        .accessibilityAdjustableAction { direction in
+                            switch direction {
+                            case .increment: step(by: 1)
+                            case .decrement: step(by: -1)
+                            @unknown default: break
+                            }
+                        }
                 } else {
                     ProgressView().frame(maxHeight: .infinity)
                 }
@@ -70,20 +101,28 @@ struct PhotoColorPickerView: View {
                         .fill(preview?.swiftUIColor ?? Color.secondary.opacity(0.15))
                         .frame(width: 56, height: 40)
                         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.secondary.opacity(0.3)))
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(preview == nil ? "Tap or drag across the photo" : "Picked colour")
+                        Text(preview == nil ? String(localized: "Tap or drag across the photo") : String(localized: "Picked colour"))
                             .font(.subheadline.weight(.semibold))
                         if let preview {
-                            Text(preview.hex.uppercased()).font(.caption.monospaced()).foregroundStyle(.secondary)
+                            Text(verbatim: preview.hex.uppercased()).font(.caption.monospaced()).foregroundStyle(.secondary)
+                                .accessibilityLabel(Text(verbatim: preview.accessibilityDescription))
                         }
                     }
                     Spacer()
                 }
                 .padding(12)
+                .accessibilityElement(children: .combine)
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
             }
             .padding()
             .animation(.default, value: preview?.hex)
+            // The sampled colour arrives after the pick; tell VoiceOver users what it is.
+            .onChange(of: preview?.hex) { _, _ in
+                guard UIAccessibility.isVoiceOverRunning, let preview else { return }
+                AccessibilityNotification.Announcement(preview.accessibilityDescription).post()
+            }
             .navigationTitle("Pick Colour")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
