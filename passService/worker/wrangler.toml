@@ -13,7 +13,7 @@ PASS_TYPE_IDENTIFIER = "pass.cz.poqet.walletka"
 TEAM_IDENTIFIER = "8744SN33B3"
 # Google Wallet issuer ID (Google Pay & Wallet Console). Empty = Google Wallet sync off; the app then saves passes
 # on the device and edits need a manual "Save to Google Wallet".
-GOOGLE_ISSUER_ID = ""
+GOOGLE_ISSUER_ID = "3388000000023215503"
 
 # Secrets (wrangler secret put <NAME>):
 #   PASS_CERTIFICATE  PEM of the Pass Type ID certificate
