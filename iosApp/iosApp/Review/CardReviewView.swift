@@ -448,7 +448,8 @@ private struct CardFormView: View {
                             Circle()
                                 .fill(color.swiftUIColor)
                                 .frame(width: swatchSize, height: swatchSize)
-                                .overlay(Circle().strokeBorder(selected ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: selected ? 3 : 1))
+                                // The border follows the theme, so black (dark mode) and white (light mode) swatches keep their outline.
+                                .overlay(Circle().strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.25), lineWidth: selected ? 3 : 1))
                                 .overlay {
                                     if selected {
                                         Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(color.contentColor.swiftUIColor)
