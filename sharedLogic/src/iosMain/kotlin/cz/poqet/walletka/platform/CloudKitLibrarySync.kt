@@ -37,6 +37,7 @@ import platform.CloudKit.CKSyncEngineEventType.CKSyncEngineEventTypeStateUpdate
 import platform.CloudKit.CKSyncEngineEventType.CKSyncEngineEventTypeWillFetchChanges
 import platform.CloudKit.CKSyncEngineEventType.CKSyncEngineEventTypeWillSendChanges
 import platform.CloudKit.CKSyncEngineFailedRecordSave
+import platform.CloudKit.CKSyncEngineFailedZoneSave
 import platform.CloudKit.CKSyncEngineFetchedRecordDeletion
 import platform.CloudKit.CKSyncEngineFetchedZoneDeletion
 import platform.CloudKit.CKSyncEnginePendingRecordZoneChange
@@ -50,6 +51,9 @@ import platform.CloudKit.CKSyncEngineZoneDeletionReason.CKSyncEngineZoneDeletion
 import platform.CloudKit.accountStatusWithCompletionHandler
 import platform.CloudKit.privateCloudDatabase
 import platform.Foundation.NSData
+import platform.Foundation.NSError
+import platform.Foundation.NSNotificationCenter
+import platform.Foundation.NSLog
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSKeyedArchiver
 import platform.Foundation.NSKeyedUnarchiver
@@ -60,6 +64,7 @@ import platform.Foundation.NSURL
 import platform.Foundation.NSUserDefaults
 import platform.Foundation.dataWithContentsOfFile
 import platform.Foundation.writeToFile
+import platform.UIKit.UIApplicationDidBecomeActiveNotification
 import platform.darwin.NSObject
 
 /**
@@ -85,6 +90,9 @@ internal class CloudKitLibrarySync(
     private val _status = MutableStateFlow(if (isEnabled) CloudSyncStatus.SYNCING else CloudSyncStatus.OFF)
     override val status: StateFlow<CloudSyncStatus> = _status.asStateFlow()
 
+    private val _lastError = MutableStateFlow<String?>(null)
+    override val lastError: StateFlow<String?> = _lastError.asStateFlow()
+
     private var library: CardLibrary? = null
     private var engine: CKSyncEngine? = null
 
@@ -101,6 +109,27 @@ internal class CloudKitLibrarySync(
         this.library = library
         library.changeListener = { ids, orderChanged -> queue(ids, orderChanged) }
         if (isEnabled) connect()
+        // Pushes don't always arrive (e.g. while the app was not running): catch up whenever the app comes back.
+        NSNotificationCenter.defaultCenter.addObserverForName(
+            UIApplicationDidBecomeActiveNotification,
+            `object` = null,
+            queue = null,
+        ) { _ -> syncNow() }
+    }
+
+    override fun syncNow() {
+        val engine = engine ?: return if (isEnabled) connect() else Unit
+        engine.fetchChangesWithCompletionHandler { error ->
+            if (error != null) fail("fetch", error) else engine.sendChangesWithCompletionHandler { sendError ->
+                if (sendError != null) fail("send", sendError)
+            }
+        }
+    }
+
+    private fun fail(operation: String, error: NSError) {
+        log("$operation failed: ${error.code} ${error.localizedDescription}")
+        _lastError.value = error.localizedDescription
+        _status.value = CloudSyncStatus.FAILED
     }
 
     override fun setEnabled(enabled: Boolean) {
@@ -119,9 +148,11 @@ internal class CloudKitLibrarySync(
     private fun connect(uploadAll: Boolean = false) {
         _status.value = CloudSyncStatus.SYNCING
         val container = CKContainer.containerWithIdentifier(containerIdentifier)
-        container.accountStatusWithCompletionHandler { accountStatus, _ ->
+        container.accountStatusWithCompletionHandler { accountStatus, error ->
+            log("account status $accountStatus ${error?.localizedDescription.orEmpty()}")
             if (!isEnabled) return@accountStatusWithCompletionHandler
             if (accountStatus != CKAccountStatusAvailable) {
+                _lastError.value = error?.localizedDescription
                 _status.value = CloudSyncStatus.UNAVAILABLE
                 return@accountStatusWithCompletionHandler
             }
@@ -136,7 +167,7 @@ internal class CloudKitLibrarySync(
             val engine = CKSyncEngine(configuration)
             this.engine = engine
             if (state == null || uploadAll) queueEverything(engine)
-            engine.fetchChangesWithCompletionHandler(null)
+            engine.fetchChangesWithCompletionHandler { fetchError -> fetchError?.let { fail("fetch", it) } }
         }
     }
 
@@ -161,6 +192,7 @@ internal class CloudKitLibrarySync(
     // MARK: Engine events (called serially on the engine's queue)
 
     private fun handle(engine: CKSyncEngine, event: CKSyncEngineEvent) {
+        log("event ${event.type}: ${event.description}")
         when (event.type) {
             CKSyncEngineEventTypeStateUpdate -> saveState(event.stateUpdateEvent.stateSerialization)
 
@@ -203,7 +235,10 @@ internal class CloudKitLibrarySync(
                 persistServerFields()
             }
 
-            CKSyncEngineEventTypeSentDatabaseChanges -> Unit
+            CKSyncEngineEventTypeSentDatabaseChanges -> {
+                val failure = event.sentDatabaseChangesEvent.failedZoneSaves.filterIsInstance<CKSyncEngineFailedZoneSave>().firstOrNull()
+                if (failure != null) fail("zone save", failure.error)
+            }
 
             CKSyncEngineEventTypeSentRecordZoneChanges -> {
                 val sent = event.sentRecordZoneChangesEvent
@@ -213,6 +248,7 @@ internal class CloudKitLibrarySync(
                 var failed = false
                 for (failure in sent.failedRecordSaves.filterIsInstance<CKSyncEngineFailedRecordSave>()) {
                     val id = failure.record.recordID
+                    log("save failed ${id.recordName}: ${failure.error.code} ${failure.error.localizedDescription}")
                     when (failure.error.code) {
                         CKErrorServerRecordChanged -> {
                             (failure.error.userInfo[CKRecordChangedErrorServerRecordKey] as? CKRecord)?.let(conflicts::add)
@@ -229,7 +265,10 @@ internal class CloudKitLibrarySync(
                             retry += save(id)
                         }
 
-                        else -> failed = true
+                        else -> {
+                            failed = true
+                            _lastError.value = failure.error.localizedDescription
+                        }
                     }
                 }
                 conflicts.forEach(::rememberServerFields)
@@ -240,10 +279,17 @@ internal class CloudKitLibrarySync(
                 if (failed) _status.value = CloudSyncStatus.FAILED
             }
 
-            CKSyncEngineEventTypeWillFetchChanges, CKSyncEngineEventTypeWillSendChanges -> _status.value = CloudSyncStatus.SYNCING
+            CKSyncEngineEventTypeWillFetchChanges, CKSyncEngineEventTypeWillSendChanges -> {
+                // A new attempt: the previous failure no longer stands.
+                _lastError.value = null
+                _status.value = CloudSyncStatus.SYNCING
+            }
 
             CKSyncEngineEventTypeDidFetchChanges, CKSyncEngineEventTypeDidSendChanges ->
-                if (_status.value != CloudSyncStatus.FAILED) _status.value = CloudSyncStatus.UP_TO_DATE
+                if (_status.value != CloudSyncStatus.FAILED || _lastError.value == null) {
+                    _lastError.value = null
+                    _status.value = CloudSyncStatus.UP_TO_DATE
+                }
 
             else -> Unit
         }
@@ -404,6 +450,8 @@ internal class CloudKitLibrarySync(
             nextRecordZoneChangeBatchForContext: CKSyncEngineSendChangesContext,
         ): CKSyncEngineRecordZoneChangeBatch? = nextBatch(syncEngine, nextRecordZoneChangeBatchForContext)
     }
+
+    private fun log(message: String) = NSLog("[CloudSync] %@", message)
 
     private companion object {
         const val ZONE = "Library"

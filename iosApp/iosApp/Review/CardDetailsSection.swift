@@ -1,8 +1,8 @@
 import SharedLogic
 import SwiftUI
 
-/// Optional pass details (card number, member name, expiry, notes), collapsed under "More Details" unless the card
-/// already has some. Apple Wallet shows them on the back of the pass, number and name also on the front.
+/// Optional pass details (card number, member name, expiry, notes), behind "Add Details" unless the card already has
+/// some. Apple Wallet shows them on the back of the pass, number and name also on the front.
 struct CardDetailsSection: View {
     let form: CardForm
     let component: any CardReviewComponent
@@ -19,16 +19,17 @@ struct CardDetailsSection: View {
 
     var body: some View {
         Section {
-            DisclosureGroup("More Details", isExpanded: $isExpanded) {
+            if isExpanded {
                 HStack {
                     TextField("Card Number", text: binding(\.memberNumber) { $0.with(memberNumber: $1) })
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
                     if details.memberNumber.isEmpty && !form.selectedCode.value.isEmpty {
                         Button("Use Code") {
                             update(details.with(memberNumber: form.selectedCode.value.trimmingCharacters(in: .whitespacesAndNewlines)))
                         }
-                        .font(.footnote)
+                        .font(.subheadline)
                         .buttonStyle(.borderless)
                     }
                 }
@@ -40,16 +41,27 @@ struct CardDetailsSection: View {
                     set: { update(details.with(expiryDate: $0 ? Self.isoDate.string(from: Self.defaultExpiry) : "")) }
                 ))
                 if let expiry {
-                    DatePicker("Expires", selection: Binding(
+                    DatePicker("Expires On", selection: Binding(
                         get: { expiry },
                         set: { update(details.with(expiryDate: Self.isoDate.string(from: $0))) }
                     ), displayedComponents: .date)
                 }
                 TextField("Notes", text: binding(\.notes) { $0.with(notes: $1) }, axis: .vertical)
                     .lineLimit(2...6)
+            } else {
+                Button {
+                    withAnimation { isExpanded = true }
+                } label: {
+                    Label("Add Details", systemImage: "plus.circle.fill")
+                }
+                .accessibilityHint(Text("Card number, member name, expiry date and notes"))
             }
+        } header: {
+            if isExpanded { Text("Details") }
         } footer: {
-            Text("Shown on the pass: the card number and member name on the front, everything on the back.")
+            Text(isExpanded
+                 ? String(localized: "Shown on the pass: the card number and member name on the front, everything on the back.")
+                 : String(localized: "Card number, member name, expiry date and notes, shown on the pass."))
         }
     }
 

@@ -27,6 +27,13 @@ struct iOSApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { importPendingShare() }
                 }
+                #if DEBUG
+                .task {
+                    // The library loads asynchronously.
+                    try? await Task.sleep(for: .seconds(1))
+                    openDebugScreen()
+                }
+                #endif
         }
     }
 
@@ -61,4 +68,18 @@ struct iOSApp: App {
         pending.dropFirst().forEach { try? FileManager.default.removeItem(at: $0) }
         ImageInbox.cleanUp()
     }
+
+    #if DEBUG
+    /// `-WalletkaDebugScreen card|manual`: opens a screen at launch, for screenshots on simulators.
+    private func openDebugScreen() {
+        guard let screen = UserDefaults.standard.string(forKey: "WalletkaDebugScreen"),
+              case .home(let home) = root.children.value.first?.sealedType() else { return }
+        let component = home.value.component
+        switch screen {
+        case "card": component.model.value.cards.first.map { component.onCardClicked(cardId: $0.id) }
+        case "manual": component.onEnterManuallyClicked()
+        default: break
+        }
+    }
+    #endif
 }

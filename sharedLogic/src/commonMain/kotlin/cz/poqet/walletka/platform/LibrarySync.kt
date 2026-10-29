@@ -24,9 +24,15 @@ enum class CloudSyncStatus {
 internal interface LibrarySync {
     val status: StateFlow<CloudSyncStatus>
 
+    /** Why the last sync failed, as the platform describes it; `null` while syncing works. */
+    val lastError: StateFlow<String?>
+
     /** Starts syncing [library] (when enabled); call once. */
     fun start(library: CardLibrary)
 
     /** Turns sync on or off; remembered across launches. Turning it off keeps the cards on this device. */
     fun setEnabled(enabled: Boolean)
+
+    /** Fetches and sends changes now, e.g. when the user asks for it. */
+    fun syncNow()
 }

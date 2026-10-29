@@ -10,14 +10,16 @@ import platform.Foundation.NSUserDomainMask
 /** [cloudContainer] is the iCloud container for syncing the library; `null` keeps it on this device. */
 internal fun iosPlatformServices(config: WalletConfig, cloudContainer: String? = null): PlatformServices {
     val dataDirectory = applicationSupportDirectory()
+    val imageStore = IosImageStore()
     return PlatformServices(
-        imageStore = IosImageStore(),
+        imageStore = imageStore,
         barcodeDetector = VisionBarcodeDetector(),
         textRecognizer = VisionTextRecognizer(),
         imageProcessor = IosImageProcessor(),
         walletService = AppleWalletService(config),
         dataDirectory = dataDirectory,
         librarySync = cloudContainer?.let { CloudKitLibrarySync(it, stateDirectory = "$dataDirectory/cloudkit") },
+        cardDetector = IosCardDetector(imageStore),
     )
 }
 

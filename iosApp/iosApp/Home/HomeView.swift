@@ -3,9 +3,18 @@ import SharedLogic
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// How Home is shown: the whole screen (iPhone), or split on iPad into the library sidebar and a welcome screen in
+/// the detail column while no card is open.
+enum HomePresentation: Equatable {
+    case full
+    case sidebar(selectedCardId: String?)
+    case welcome
+}
+
 /// The card library, plus the ways to add a card (camera, photo library, paste, drop).
 struct HomeView: View {
     private let component: any HomeComponent
+    private let presentation: HomePresentation
     @State private var model: ObservedFlow<HomeModel>
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var isDropTargeted = false
@@ -13,19 +22,42 @@ struct HomeView: View {
     @State private var isPhotoPickerPresented = false
     @State private var cardPendingDeletion: CardSummary?
     @State private var isImportingBackup = false
+    /// A picked photo is being read from the library; that can take a moment for large or iCloud photos.
+    @State private var isLoadingPhoto = false
+    /// Checked without reading the clipboard, so no paste prompt appears.
+    @State private var hasPasteboardImage = UIPasteboard.general.hasImages
 
-    init(component: any HomeComponent) {
+    init(component: any HomeComponent, presentation: HomePresentation = .full) {
         self.component = component
+        self.presentation = presentation
         _model = State(initialValue: ObservedFlow(component.model))
     }
 
     var body: some View {
         Group {
-            if model.value.cards.isEmpty {
-                emptyState
-            } else {
+            switch presentation {
+            case .full:
+                if model.value.cards.isEmpty { emptyState } else { library }
+            case .sidebar:
                 library
+            case .welcome:
+                emptyState
             }
+        }
+        .overlay {
+            if isLoadingPhoto {
+                ProgressView("Opening Photo…")
+                    .padding(20)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .transition(.opacity)
+            }
+        }
+        .animation(.default, value: isLoadingPhoto)
+        .onReceive(NotificationCenter.default.publisher(for: UIPasteboard.changedNotification)) { _ in
+            hasPasteboardImage = UIPasteboard.general.hasImages
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            hasPasteboardImage = UIPasteboard.general.hasImages
         }
         .libraryBackup(component: component, backup: model.value.backup, isImporting: $isImportingBackup)
         .background(isDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
@@ -40,11 +72,13 @@ struct HomeView: View {
         }
         .onChange(of: pickedPhoto) { _, item in
             guard let item else { return }
+            isLoadingPhoto = true
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self), let path = ImageInbox.store(data) {
                     component.onImagePicked(source: path)
                 }
                 pickedPhoto = nil
+                isLoadingPhoto = false
             }
         }
         .photosPicker(isPresented: $isPhotoPickerPresented, selection: $pickedPhoto, matching: .images, photoLibrary: .shared())
@@ -66,7 +100,7 @@ struct HomeView: View {
                 Button {
                     component.onCardClicked(cardId: card.id)
                 } label: {
-                    CardTile(card: card)
+                    CardTile(card: card, isSelected: selectedCardId == card.id)
                 }
                 .buttonStyle(.plain)
                 // VoiceOver: the tile reads as one element; Edit and reordering are its actions (the swipe action
@@ -93,6 +127,13 @@ struct HomeView: View {
             .onMove(perform: model.value.canReorder ? moveCards : nil)
         }
         .listStyle(.plain)
+        .overlay {
+            if model.value.cards.isEmpty {
+                ContentUnavailableView("No Cards Yet", systemImage: "wallet.pass", description: Text("Cards you add appear here."))
+            } else if model.value.visibleCards.isEmpty {
+                ContentUnavailableView.search(text: model.value.searchQuery)
+            }
+        }
         .navigationTitle("Walletka")
         .searchable(if: model.value.isSearchAvailable, text: Binding(
             get: { model.value.searchQuery },
@@ -100,7 +141,7 @@ struct HomeView: View {
         ), prompt: "Name or code")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                LibraryMenu(component: component, cloudSync: model.value.cloudSync, isImporting: $isImportingBackup)
+                LibraryMenu(component: component, cloudSync: model.value.cloudSync, cloudSyncError: model.value.cloudSyncError, isImporting: $isImportingBackup)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -143,6 +184,11 @@ struct HomeView: View {
         .controlSize(.large)
     }
 
+    private var selectedCardId: String? {
+        if case .sidebar(let id) = presentation { return id }
+        return nil
+    }
+
     /// SwiftUI reports the destination before the source is removed; the shared code wants the final index.
     private func moveCards(from source: IndexSet, to destination: Int) {
         guard let from = source.first else { return }
@@ -170,23 +216,25 @@ struct HomeView: View {
     }
 
     private var emptyStateContent: some View {
-        VStack(spacing: 28) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 30, style: .continuous)
-                    .fill(LinearGradient(colors: [.indigo, .teal], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 116, height: 116)
-                Image(systemName: "qrcode.viewfinder")
-                    .font(.system(size: 54, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .accessibilityHidden(true)
-            VStack(spacing: 10) {
-                Text(verbatim: "Walletka").font(.largeTitle.bold())
-                    .accessibilityAddTraits(.isHeader)
-                Text("Snap or share a photo of any loyalty card, ticket or membership, and Walletka turns it into an Apple Wallet card.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+        VStack(spacing: 32) {
+            VStack(spacing: 16) {
+                Image("BrandMark")
+                    .resizable()
+                    .frame(width: 112, height: 112)
+                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .shadow(color: .indigo.opacity(0.25), radius: 16, y: 8)
+                    .accessibilityHidden(true)
+                VStack(spacing: 8) {
+                    Text(isWelcomeWithCards ? String(localized: "Pick a Card") : String(localized: "Walletka"))
+                        .font(.largeTitle.bold())
+                        .accessibilityAddTraits(.isHeader)
+                    Text(isWelcomeWithCards
+                         ? String(localized: "Choose a card in the library to edit it, or add a new one.")
+                         : String(localized: "Snap or share a photo of any loyalty card, ticket or membership, and Walletka turns it into an Apple Wallet card."))
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
             VStack(spacing: 12) {
                 if CameraCapture.isAvailable {
@@ -197,7 +245,6 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
                 }
 
                 PhotosPicker(selection: $pickedPhoto, matching: .images, photoLibrary: .shared()) {
@@ -205,33 +252,43 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(CameraCapture.isAvailable ? AnyPrimitiveButtonStyle(.bordered) : AnyPrimitiveButtonStyle(.borderedProminent))
-                .controlSize(.large)
 
-                pasteButton
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.large)
-
-                Button {
-                    component.onEnterManuallyClicked()
-                } label: {
-                    Label("Enter Manually", systemImage: "keyboard")
+                HStack(spacing: 12) {
+                    if hasPasteboardImage { pasteButton }
+                    Button {
+                        component.onEnterManuallyClicked()
+                    } label: {
+                        Label("Enter Manually", systemImage: "keyboard")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .controlSize(.large)
+                .buttonBorderShape(.capsule)
             }
-            Label("Tip: in Photos, tap Share → Add to Walletka", systemImage: "square.and.arrow.up")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Button("Restore from Backup…") { isImportingBackup = true }
-                .font(.footnote)
-            if model.value.isWalletAvailable == false {
-                Text("Apple Wallet isn't available on this device.")
+            .controlSize(.large)
+            .buttonBorderShape(.capsule)
+
+            VStack(spacing: 14) {
+                Label("Tip: in Photos, tap Share → Add to Walletka", systemImage: "square.and.arrow.up")
                     .font(.footnote)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                if !isWelcomeWithCards {
+                    Button("Restore from Backup…") { isImportingBackup = true }
+                        .font(.footnote.weight(.medium))
+                }
+                if model.value.isWalletAvailable == false {
+                    Label("Apple Wallet isn't available on this device.", systemImage: "exclamationmark.circle")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .padding(28)
-        .frame(maxWidth: 520)
+        .frame(maxWidth: 460)
     }
+
+    /// The iPad detail column while the library has cards but none is open.
+    private var isWelcomeWithCards: Bool { presentation == .welcome && !model.value.cards.isEmpty }
 
     private var pasteButton: some View {
         PasteButton(supportedContentTypes: [.image]) { providers in
@@ -249,12 +306,45 @@ struct HomeView: View {
 /// A library card drawn like a small wallet pass.
 private struct CardTile: View {
     let card: CardSummary
+    var isSelected = false
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var width: CGFloat = 0
 
     var body: some View {
         let content = card.color.contentColor.swiftUIColor
         let isLarge = dynamicTypeSize.isAccessibilitySize
+        // With the banner thumbnail while the text keeps room next to it (not in a narrow sidebar or at large sizes).
+        row(content: content, isLarge: isLarge, showsBanner: !isLarge && card.banner != nil && width >= 320)
+        .padding(16)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .frame(maxWidth: .infinity, minHeight: 76)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(card.color.swiftUIColor)
+                // A soft sheen, like a printed card.
+                .overlay(
+                    LinearGradient(colors: [.white.opacity(0.14), .clear], startPoint: .top, endPoint: .center),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+        }
+        .overlay {
+            // The card open next to the library (iPad).
+            if isSelected {
+                RoundedRectangle(cornerRadius: 19, style: .continuous)
+                    .strokeBorder(Color.accentColor, lineWidth: 3)
+                    .padding(-4)
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: card.name))
+        .accessibilityValue(Text(verbatim: accessibilityValue))
+        .accessibilityHint(Text("Opens the card editor"))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func row(content: Color, isLarge: Bool, showsBanner: Bool) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(verbatim: card.name)
@@ -263,13 +353,13 @@ private struct CardTile: View {
                 Text(verbatim: "\(card.codeFormat.localizedName) · \(card.codeValue)")
                     .font(.caption.monospaced())
                     .lineLimit(isLarge ? 2 : 1)
+                    .truncationMode(.middle)
                     .opacity(0.8)
                 WalletStatusBadge(isInWallet: card.isInWallet, color: content)
             }
             .foregroundStyle(content)
             Spacer(minLength: 0)
-            // The banner thumbnail leaves the text no room at accessibility sizes.
-            if !isLarge, let path = card.banner?.path, let banner = UIImage(contentsOfFile: path) {
+            if showsBanner, let path = card.banner?.path, let banner = UIImage(contentsOfFile: path) {
                 Image(uiImage: banner)
                     .resizable()
                     .scaledToFill()
@@ -280,14 +370,6 @@ private struct CardTile: View {
                 .font(.footnote.bold())
                 .foregroundStyle(content.opacity(0.7))
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 76)
-        .background(card.color.swiftUIColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 16))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: card.name))
-        .accessibilityValue(Text(verbatim: accessibilityValue))
-        .accessibilityHint(Text("Opens the card editor"))
     }
 
     /// Code type and value, and whether the card is in Apple Wallet.

@@ -4,6 +4,7 @@ import arrow.core.Either
 import cz.poqet.walletka.domain.AnalysisError
 import cz.poqet.walletka.domain.CardDraft
 import cz.poqet.walletka.domain.ImagePixels
+import cz.poqet.walletka.domain.NormalizedQuad
 import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScanVariant
 import cz.poqet.walletka.domain.ScannedCode
@@ -34,6 +35,25 @@ internal fun interface BarcodeDetector {
 /** On-device OCR (ML Kit on Android, Vision on iOS). */
 internal fun interface TextRecognizer {
     suspend fun recognize(image: StoredImage): Either<AnalysisError, List<TextLine>>
+}
+
+/**
+ * Finds the card in a photo (an outline of the card lying on a table, held in a hand…) and cuts it out
+ * perspective-corrected, like a document scanner. [CardFraming] decides which outlines are the card.
+ */
+internal interface CardDetector {
+    /** Card-like outlines in the photo, the most likely first; empty when the platform can't tell. */
+    suspend fun outlines(image: StoredImage): List<NormalizedQuad>
+
+    /** [quad] of the photo, straightened to a rectangle and stored as a new image. */
+    suspend fun straighten(image: StoredImage, quad: NormalizedQuad): StoredImage?
+
+    /** Leaves photos as they are. */
+    object None : CardDetector {
+        override suspend fun outlines(image: StoredImage) = emptyList<NormalizedQuad>()
+
+        override suspend fun straighten(image: StoredImage, quad: NormalizedQuad): StoredImage? = null
+    }
 }
 
 /** Pixel level operations that need the platform's image codecs. */
@@ -96,4 +116,6 @@ internal class PlatformServices(
     val ioContext: CoroutineContext = Dispatchers.Default,
     /** Syncs the card library across devices, where the platform offers it (iCloud). */
     val librarySync: LibrarySync? = null,
+    /** Cuts the card out of photos; platforms without a detector keep photos as they are. */
+    val cardDetector: CardDetector = CardDetector.None,
 )

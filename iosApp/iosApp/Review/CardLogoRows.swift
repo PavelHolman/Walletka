@@ -1,16 +1,16 @@
 import SharedLogic
 import SwiftUI
 
-/// Turns the logo cut out of the photo on and off and opens its crop editor.
-struct CardLogoSection: View {
+/// Rows that turn the logo cut out of the photo on and off and open its crop editor.
+struct CardLogoRows: View {
     let form: CardForm
     let component: any CardReviewComponent
 
     @State private var isEditing = false
 
     var body: some View {
-        Section {
-            Toggle("Logo from Photo", isOn: Binding(get: { form.logo.isEnabled }, set: { component.onLogoToggled(enabled: $0) }))
+        Group {
+            Toggle("Logo", isOn: Binding(get: { form.logo.isEnabled }, set: { component.onLogoToggled(enabled: $0) }))
             if form.logo.isEnabled {
                 Button {
                     isEditing = true
@@ -35,8 +35,6 @@ struct CardLogoSection: View {
                 .foregroundStyle(.primary)
                 .accessibilityHint(Text("Choose the part of the photo shown as the logo"))
             }
-        } footer: {
-            Text("The brand logo cut out of your photo, shown at the top of the card instead of its name.")
         }
         .sheet(isPresented: $isEditing) {
             if let photo = form.photo {

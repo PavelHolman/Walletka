@@ -51,6 +51,7 @@ internal class DefaultHomeComponent(
         val query: String = "",
         val backup: BackupState = BackupState.Idle,
         val cloudSync: CloudSyncStatus? = null,
+        val cloudSyncError: String? = null,
     )
 
     private val state = MutableStateFlow(State(library.cards.value, cloudSync = librarySync?.status?.value))
@@ -71,7 +72,10 @@ internal class DefaultHomeComponent(
                 refreshWalletStatus()
             }
         }
-        librarySync?.let { sync -> scope.launch { sync.status.collect { status -> update { it.copy(cloudSync = status) } } } }
+        librarySync?.let { sync ->
+            scope.launch { sync.status.collect { status -> update { it.copy(cloudSync = status) } } }
+            scope.launch { sync.lastError.collect { error -> update { it.copy(cloudSyncError = error) } } }
+        }
         // A pass may have been removed in the Wallet app meanwhile.
         lifecycle.doOnResume { refreshWalletStatus() }
     }
@@ -162,6 +166,10 @@ internal class DefaultHomeComponent(
         librarySync?.setEnabled(enabled)
     }
 
+    override fun onSyncNowClicked() {
+        librarySync?.syncNow()
+    }
+
     private fun update(transform: (State) -> State) {
         state.update(transform)
         _model.value = state.value.toModel()
@@ -199,6 +207,7 @@ internal class DefaultHomeComponent(
             canReorder = query.isEmpty(),
             backup = backup,
             cloudSync = cloudSync,
+            cloudSyncError = cloudSyncError,
         )
     }
 

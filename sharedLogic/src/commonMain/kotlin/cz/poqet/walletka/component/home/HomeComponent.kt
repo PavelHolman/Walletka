@@ -45,6 +45,9 @@ interface HomeComponent {
     /** Turns syncing the library across devices on or off; see [Model.cloudSync]. */
     fun onCloudSyncToggled(enabled: Boolean)
 
+    /** Syncs the library with the user's other devices now. */
+    fun onSyncNowClicked()
+
     data class Model(
         val walletPlatform: WalletPlatform,
         /** `null` while the availability check is running. */
@@ -61,6 +64,8 @@ interface HomeComponent {
         val backup: BackupState = BackupState.Idle,
         /** `null` where the platform has no library sync (Android relies on its system backup). */
         val cloudSync: CloudSyncStatus? = null,
+        /** Why the last sync failed, as the platform describes it. */
+        val cloudSyncError: String? = null,
     )
 
     data class CardSummary(

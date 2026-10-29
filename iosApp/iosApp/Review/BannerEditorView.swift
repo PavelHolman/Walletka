@@ -103,7 +103,7 @@ struct CropEditorView: View {
                 }.value
             }
         }
-        .presentationDetents([.medium, .large])
+        .interactiveDismissDisabled()
     }
 
     /// "Zoom: 150 %", for VoiceOver.
@@ -159,7 +159,8 @@ struct CropEditorView: View {
         .frame(width: size.width, height: size.height, alignment: .topLeading)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .contentShape(Rectangle())
-        .gesture(
+        // High priority, so dragging the photo never drags the sheet.
+        .highPriorityGesture(
             DragGesture(minimumDistance: 0)
                 .simultaneously(with: MagnifyGesture())
                 .onChanged { value in

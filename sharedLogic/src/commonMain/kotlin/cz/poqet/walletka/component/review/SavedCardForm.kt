@@ -70,7 +70,8 @@ internal data class SavedCardForm(
         cardId = cardId,
         isCodeTyped = isCodeTyped,
         logo = logo?.let { CardLogo(it.image?.let(::StoredImage), it.isEnabled, it.region.let { (l, t, r, b) -> NormalizedRect(l, t, r, b) }) }
-            ?: CardLogo(image = null, isEnabled = false, region = LogoRegion.viewport(photoAspectRatio, walletPlatform).clamp(NormalizedRect.Full)),
+            // Cards saved before logos existed: the brand is usually at the top of the card.
+            ?: CardLogo(image = null, isEnabled = false, region = LogoRegion.viewport(photoAspectRatio, walletPlatform).clamp(NormalizedRect(0f, 0f, 1f, 0f))),
         details = details?.run { CardDetails(memberNumber, memberName, expiryDate, notes) } ?: CardDetails.Empty,
     )
 

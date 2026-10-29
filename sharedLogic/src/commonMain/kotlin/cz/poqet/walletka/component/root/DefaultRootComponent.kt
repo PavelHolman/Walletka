@@ -6,7 +6,6 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.navigate
 import com.arkivanov.decompose.router.stack.pop
-import com.arkivanov.decompose.router.stack.pushToFront
 import com.arkivanov.decompose.router.stack.popTo
 import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.arkivanov.decompose.value.Value
@@ -40,6 +39,8 @@ internal class DefaultRootComponent(
         imageProcessor = services.imageProcessor,
         bannerCropper = bannerCropper,
         scanFallbacks = ScanFallbacks(services.barcodeDetector, services.imageProcessor, services.imageStore),
+        cardDetector = services.cardDetector,
+        imageStore = services.imageStore,
     )
     private val library = CardLibrary(services.dataDirectory, services.ioContext)
         .also { library -> services.librarySync?.start(library) }
@@ -72,7 +73,9 @@ internal class DefaultRootComponent(
                 library = library,
                 imageStore = services.imageStore,
                 onImagePicked = ::onImageReceived,
-                onCardClicked = { cardId -> navigation.pushToFront(Config.Card(cardId)) },
+                // Replaces whatever is open above Home: on a phone Home is on top anyway; in an iPad split view the
+                // library stays visible next to the open card.
+                onCardClicked = { cardId -> navigation.navigate { listOf(Config.Home, Config.Card(cardId)) } },
                 onEnterManually = ::onEnterManually,
                 backup = backup,
                 exportDirectory = "${services.dataDirectory}/exports",

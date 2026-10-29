@@ -5,6 +5,7 @@ import SwiftUI
 struct CardReviewView: View {
     private let component: any CardReviewComponent
     @State private var model: ObservedFlow<any ReviewModel>
+    @Environment(\.isSplitViewDetail) private var isSplitViewDetail
 
     init(component: any CardReviewComponent) {
         self.component = component
@@ -38,18 +39,32 @@ struct CardReviewView: View {
                         sync: editing.value.sync,
                         syncError: editing.value.syncError,
                         colorPreview: editing.value.colorPreview,
+                        duplicate: editing.value.duplicateOf,
                         component: component
                     )
-                    .safeAreaInset(edge: .top) {
-                        if let duplicate = editing.value.duplicateOf {
-                            DuplicateCardBanner(duplicate: duplicate, onOpen: component.onOpenDuplicateClicked)
-                        }
-                    }
                 }
             }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // In the iPad split view a new card is the root of its column, without a back button.
+            if isSplitViewDetail && !isLibraryCard && !isAdded {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: component.onCloseClicked)
+                }
+            }
+        }
+    }
+
+    private var isLibraryCard: Bool {
+        if case .editing(let editing) = model.value.sealedType() { return editing.value.form.isLibraryCard }
+        return false
+    }
+
+    private var isAdded: Bool {
+        if case .editing(let editing) = model.value.sealedType(), case .added = editing.value.submission.sealedType() { return true }
+        return false
     }
 
     private var title: String {
@@ -212,6 +227,7 @@ private struct CardFormView: View {
     let sync: SyncStatus?
     let syncError: String?
     let colorPreview: CardColor?
+    let duplicate: DuplicateCard?
     let component: any CardReviewComponent
 
     @State private var isEditingBanner = false
@@ -227,8 +243,18 @@ private struct CardFormView: View {
 
     var body: some View {
         Form {
+            if let duplicate {
+                Section {
+                    DuplicateCardBanner(duplicate: duplicate, onOpen: component.onOpenDuplicateClicked)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+            }
             Section {
                 CardPreview(form: form, compact: true)
+                    // Wallet passes have a fixed width; a stretched preview on iPad would look nothing like one.
+                    .frame(maxWidth: 420)
+                    .frame(maxWidth: .infinity)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             } footer: {
@@ -261,10 +287,7 @@ private struct CardFormView: View {
 
             codeSection
             colourSection
-            bannerSection
-            if form.hasPhoto {
-                CardLogoSection(form: form, component: component)
-            }
+            photoSection
             CardDetailsSection(form: form, component: component)
 
             if showsWalletButton {
@@ -275,6 +298,7 @@ private struct CardFormView: View {
                 }
             }
         }
+        .listSectionSpacing(.compact)
         // While the pass is being issued, block input without greying the form out.
         .allowsHitTesting(!isBusy)
         .scrollDismissesKeyboard(.immediately)
@@ -421,29 +445,35 @@ private struct CardFormView: View {
         return "\(kind), \(color.accessibilityHex)"
     }
 
+    /// The banner and the logo, both cut out of the photo (cards entered by hand have neither).
     @ViewBuilder
-    private var bannerSection: some View {
-        if form.banner != nil {
+    private var photoSection: some View {
+        if form.hasPhoto {
             Section {
-                Toggle("Banner from Photo", isOn: Binding(get: { form.isBannerEnabled }, set: { component.onBannerToggled(enabled: $0) }))
-                if form.isBannerEnabled {
-                    Button {
-                        isEditingBanner = true
-                    } label: {
-                        HStack(spacing: 12) {
-                            BannerThumbnail(path: form.banner?.path)
-                                .accessibilityHidden(true)
-                            Text("Adjust Banner…")
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.footnote.bold()).foregroundStyle(.tertiary)
-                                .accessibilityHidden(true)
+                if form.banner != nil {
+                    Toggle("Banner", isOn: Binding(get: { form.isBannerEnabled }, set: { component.onBannerToggled(enabled: $0) }))
+                    if form.isBannerEnabled {
+                        Button {
+                            isEditingBanner = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                BannerThumbnail(path: form.banner?.path)
+                                    .accessibilityHidden(true)
+                                Text("Adjust Banner…")
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.footnote.bold()).foregroundStyle(.tertiary)
+                                    .accessibilityHidden(true)
+                            }
                         }
+                        .foregroundStyle(.primary)
+                        .accessibilityHint(Text("Choose the part of the photo shown as the banner"))
                     }
-                    .foregroundStyle(.primary)
-                    .accessibilityHint(Text("Choose the part of the photo shown as the banner"))
                 }
+                CardLogoRows(form: form, component: component)
+            } header: {
+                Text("From the Photo")
             } footer: {
-                Text("A strip from your photo, shown at the top of the card in Wallet.")
+                Text("The banner is a strip shown across the card; the logo replaces the name at the top.")
             }
         }
     }

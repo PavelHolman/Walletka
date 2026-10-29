@@ -42,6 +42,7 @@ private struct BackupDocument: FileDocument {
 struct LibraryMenu: View {
     let component: any HomeComponent
     let cloudSync: CloudSyncStatus?
+    var cloudSyncError: String? = nil
     @Binding var isImporting: Bool
 
     var body: some View {
@@ -55,7 +56,11 @@ struct LibraryMenu: View {
                         set: { component.onCloudSyncToggled(enabled: $0) }
                     )) {
                         Label("iCloud Sync", systemImage: "icloud")
-                        Text(Self.describe(cloudSync))
+                        Text(Self.describe(cloudSync, error: cloudSyncError))
+                    }
+                    if cloudSync != .OFF && cloudSync != .UNAVAILABLE {
+                        Button("Sync Now", systemImage: "arrow.triangle.2.circlepath", action: component.onSyncNowClicked)
+                            .disabled(cloudSync == .SYNCING)
                     }
                 }
             }
@@ -67,13 +72,15 @@ struct LibraryMenu: View {
         .accessibilityHint(Text("Export, import and iCloud sync"))
     }
 
-    static func describe(_ status: CloudSyncStatus) -> String {
+    static func describe(_ status: CloudSyncStatus, error: String? = nil) -> String {
         switch status {
-        case .OFF: String(localized: "Off: cards stay on this iPhone")
+        case .OFF: UIDevice.current.userInterfaceIdiom == .pad
+            ? String(localized: "Off: cards stay on this iPad")
+            : String(localized: "Off: cards stay on this iPhone")
         case .UNAVAILABLE: String(localized: "Sign in to iCloud to sync")
         case .SYNCING: String(localized: "Syncing…")
         case .UP_TO_DATE: String(localized: "Up to date")
-        case .FAILED: String(localized: "Sync failed, retrying later")
+        case .FAILED: error.map { String(localized: "Sync failed: \($0)") } ?? String(localized: "Sync failed, retrying later")
         @unknown default: ""
         }
     }

@@ -29,10 +29,7 @@ struct DuplicateCardBanner: View {
                 .accessibilityHint(Text("Opens “\(duplicate.name)” instead of adding this card"))
         }
         .accessibilityElement(children: .contain)
-        .padding(12)
-        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-        .background(.bar)
+        .padding(14)
+        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
