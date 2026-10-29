@@ -5,6 +5,8 @@ APP_BUNDLE_IDENTIFIER=cz.poqet.walletka.Walletka$(TEAM_ID)
 PRODUCT_BUNDLE_IDENTIFIER=$(APP_BUNDLE_IDENTIFIER)
 // Shared container between the app and the share extension.
 APP_GROUP_IDENTIFIER=group.$(APP_BUNDLE_IDENTIFIER)
+// iCloud (CloudKit) container the card library syncs through; automatic signing registers it.
+ICLOUD_CONTAINER_IDENTIFIER=iCloud.$(APP_BUNDLE_IDENTIFIER)
 
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0

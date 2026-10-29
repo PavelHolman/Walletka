@@ -7,14 +7,23 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
 
-internal fun iosPlatformServices(config: WalletConfig): PlatformServices = PlatformServices(
-    imageStore = IosImageStore(),
-    barcodeDetector = VisionBarcodeDetector(),
-    textRecognizer = VisionTextRecognizer(),
-    imageProcessor = IosImageProcessor(),
-    walletService = AppleWalletService(config),
-    dataDirectory = applicationSupportDirectory(),
-)
+/** [cloudContainer] is the iCloud container for syncing the library; `null` keeps it on this device. */
+internal fun iosPlatformServices(config: WalletConfig, cloudContainer: String? = null): PlatformServices {
+    val dataDirectory = applicationSupportDirectory()
+    return PlatformServices(
+        imageStore = IosImageStore(),
+        barcodeDetector = VisionBarcodeDetector(),
+        textRecognizer = VisionTextRecognizer(),
+        imageProcessor = IosImageProcessor(),
+        walletService = AppleWalletService(config),
+        dataDirectory = dataDirectory,
+        librarySync = cloudContainer?.let { CloudKitLibrarySync(it, stateDirectory = "$dataDirectory/cloudkit") },
+    )
+}
+
+/** The app's iCloud container (`WalletkaCloudContainer` in Info.plist), if it has one. */
+internal fun cloudContainerFromInfoPlist(bundle: NSBundle = NSBundle.mainBundle): String? =
+    (bundle.objectForInfoDictionaryKey("WalletkaCloudContainer") as? String)?.takeIf { it.startsWith("iCloud.") }
 
 private fun applicationSupportDirectory(): String {
     val base = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, true).first() as String

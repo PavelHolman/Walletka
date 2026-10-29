@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup (Android 11 and lower): the card library (cards.json, sync.json, images) restores on a new phone. -->
+<full-backup-content>
+    <include domain="file" path="library/" />
+</full-backup-content>

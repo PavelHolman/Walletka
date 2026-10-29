@@ -79,6 +79,9 @@ interface CardReviewComponent {
     /** Deletes a library card (and its pass, where the wallet allows it); see [CardForm.isLibraryCard]. */
     fun onDeleteClicked()
 
+    /** Leaves this new card for the library card it duplicates ([Model.Editing.duplicateOf]), opening its editor. */
+    fun onOpenDuplicateClicked()
+
     sealed interface Model {
         /** [photo] is set once the image has been imported, so the UI can show what is being scanned. */
         data class Loading(val stage: LoadingStage, val photo: StoredImage?) : Model
@@ -101,6 +104,8 @@ interface CardReviewComponent {
             val syncError: String? = null,
             /** Colour sampled in the photo colour picker, not yet applied to the card. */
             val colorPreview: CardColor? = null,
+            /** A library card with the same code, for a new card; the user can still add this one. */
+            val duplicateOf: DuplicateCard? = null,
         ) : Model
     }
 

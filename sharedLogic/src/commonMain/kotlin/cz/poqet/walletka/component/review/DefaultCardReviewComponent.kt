@@ -9,6 +9,7 @@ import cz.poqet.walletka.component.review.CardReviewComponent.LoadingStage
 import cz.poqet.walletka.component.review.CardReviewComponent.Model
 import cz.poqet.walletka.component.review.CardReviewComponent.Submission
 import cz.poqet.walletka.component.review.CardReviewComponent.SyncStatus
+import cz.poqet.walletka.component.derivedStateOf
 import cz.poqet.walletka.data.BannerCropper
 import cz.poqet.walletka.data.CardLibrary
 import cz.poqet.walletka.data.CardSuggestion
@@ -71,6 +72,8 @@ internal class DefaultCardReviewComponent(
     source: ReviewSource,
     dependencies: ReviewDependencies,
     private val onFinished: () -> Unit,
+    /** Replaces this review with the editor of the library card with the given id. */
+    private val onOpenCard: (cardId: String) -> Unit = {},
 ) : CardReviewComponent, ComponentContext by componentContext {
 
     // Survives configuration changes; the saved form additionally survives process death.
@@ -133,6 +136,10 @@ internal class DefaultCardReviewComponent(
 
     override fun onDeleteClicked() = store.delete()
 
+    override fun onOpenDuplicateClicked() {
+        (model.value as? Model.Editing)?.duplicateOf?.let { onOpenCard(it.cardId) }
+    }
+
     private companion object {
         const val STATE_KEY = "card_form"
     }
@@ -152,7 +159,7 @@ private class ReviewStore(
     private val _model = MutableStateFlow<Model>(
         savedForm?.let { Model.Editing(it, Submission.Idle, hasChanges = true) } ?: Model.Loading(LoadingStage.IMPORTING, photo = null),
     )
-    val model: StateFlow<Model> = _model.asStateFlow()
+    val model: StateFlow<Model> = derivedStateOf(_model, library.cards) { model, cards -> model.withDuplicateOf(cards) }
     private var job: Job? = null
     private var bannerJob: Job? = null
     private var logoJob: Job? = null
@@ -192,10 +199,14 @@ private class ReviewStore(
                 )
 
                 is ReviewSource.LibraryCard -> {
-                    val form = library.get(source.cardId)?.form?.toForm()
-                    issuedForm = form
+                    val card = library.get(source.cardId)
+                    val form = card?.form?.toForm()
+                    // Restored (backup, iCloud) cards may not be in this device's wallet yet: they need adding.
+                    val inWallet = card?.let { dependencies.walletService.isInWallet(it.walletId) ?: it.addedToWallet } ?: true
+                    issuedForm = form?.takeIf { inWallet }
                     _model.value = form?.let {
-                        Model.Editing(it, Submission.Idle, hasChanges = false, sync = SyncStatus.SYNCED.takeIf { _ -> autoSyncs(it) })
+                        val sync = if (inWallet) SyncStatus.SYNCED else SyncStatus.NOT_IN_WALLET
+                        Model.Editing(it, Submission.Idle, hasChanges = !inWallet, sync = sync.takeIf { _ -> autoSyncs(it) })
                     }
                         ?: Model.Failed(AnalysisFailure.IMAGE_UNREADABLE)
                 }

@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var isCameraPresented = false
     @State private var isPhotoPickerPresented = false
     @State private var cardPendingDeletion: CardSummary?
+    @State private var isImportingBackup = false
 
     init(component: any HomeComponent) {
         self.component = component
@@ -26,6 +27,7 @@ struct HomeView: View {
                 library
             }
         }
+        .libraryBackup(component: component, backup: model.value.backup, isImporting: $isImportingBackup)
         .background(isDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
         .onDrop(of: [.image], isTargeted: $isDropTargeted) { providers in
             guard let provider = providers.first else { return false }
@@ -60,7 +62,7 @@ struct HomeView: View {
 
     private var library: some View {
         List {
-            ForEach(model.value.cards, id: \.id) { card in
+            ForEach(model.value.visibleCards, id: \.id) { card in
                 Button {
                     component.onCardClicked(cardId: card.id)
                 } label: {
@@ -77,9 +79,19 @@ struct HomeView: View {
                     Button("Delete", systemImage: "trash", role: .destructive) { cardPendingDeletion = card }
                 }
             }
+            .onMove(perform: model.value.canReorder ? moveCards : nil)
         }
         .listStyle(.plain)
         .navigationTitle("Walletka")
+        .searchable(if: model.value.isSearchAvailable, text: Binding(
+            get: { model.value.searchQuery },
+            set: { component.onSearchQueryChanged(query: $0) }
+        ), prompt: "Name or code")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                LibraryMenu(component: component, cloudSync: model.value.cloudSync, isImporting: $isImportingBackup)
+            }
+        }
         .safeAreaInset(edge: .bottom) {
             addMenu
                 .padding(.horizontal, 20)
@@ -118,6 +130,12 @@ struct HomeView: View {
         .menuStyle(.button)
         .addCardButtonStyle()
         .controlSize(.large)
+    }
+
+    /// SwiftUI reports the destination before the source is removed; the shared code wants the final index.
+    private func moveCards(from source: IndexSet, to destination: Int) {
+        guard let from = source.first else { return }
+        component.onCardMoved(fromIndex: Int32(from), toIndex: Int32(destination > from ? destination - 1 : destination))
     }
 
     private func pasteImage() {
@@ -179,6 +197,8 @@ struct HomeView: View {
             Label("Tip: in Photos, tap Share → Add to Walletka", systemImage: "square.and.arrow.up")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+            Button("Restore from Backup…") { isImportingBackup = true }
+                .font(.footnote)
             if model.value.isWalletAvailable == false {
                 Text("Apple Wallet isn't available on this device.")
                     .font(.footnote)
@@ -220,6 +240,7 @@ private struct CardTile: View {
                     .font(.caption.monospaced())
                     .lineLimit(1)
                     .opacity(0.8)
+                WalletStatusBadge(isInWallet: card.isInWallet, color: content)
             }
             .foregroundStyle(content)
             Spacer(minLength: 0)
@@ -255,6 +276,16 @@ private struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
 }
 
 private extension View {
+    /// `.searchable` only when [condition] holds, so short libraries keep a plain title bar.
+    @ViewBuilder
+    func searchable(if condition: Bool, text: Binding<String>, prompt: String) -> some View {
+        if condition {
+            searchable(text: text, prompt: Text(prompt))
+        } else {
+            self
+        }
+    }
+
     /// Liquid Glass on iOS 26, the same material as the menu it opens; a prominent capsule before.
     @ViewBuilder
     func addCardButtonStyle() -> some View {

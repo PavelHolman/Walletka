@@ -148,7 +148,10 @@ fun CardReviewContent(component: CardReviewComponent) {
                 is Model.Failed -> Failed(state.failure, onRetry = component::onRetryClicked, onClose = component::onCloseClicked)
                 is Model.Editing -> when (val submission = state.submission) {
                     is Submission.Added -> CardAdded(state.form, submission.replacedExisting, onDone = component::onCloseClicked)
-                    else -> Editing(state.form, submission, state.hasChanges, state.colorPreview, component, state.sync, state.syncError)
+                    else -> Column {
+                        state.duplicateOf?.let { DuplicateCardBanner(it, onOpen = component::onOpenDuplicateClicked) }
+                        Editing(state.form, submission, state.hasChanges, state.colorPreview, component, state.sync, state.syncError)
+                    }
                 }
             }
         }

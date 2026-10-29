@@ -39,6 +39,44 @@
 				<string>public.image</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Walletka Backup</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>cz.poqet.walletka.backup</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>cz.poqet.walletka.backup</string>
+			<key>UTTypeDescription</key>
+			<string>Walletka Backup</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>walletka</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>WalletkaCloudContainer</key>
+	<string>$(ICLOUD_CONTAINER_IDENTIFIER)</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>

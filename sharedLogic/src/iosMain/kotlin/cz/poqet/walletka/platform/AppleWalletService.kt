@@ -96,6 +96,11 @@ internal class AppleWalletService(
         true
     }
 
+    override suspend fun isInWallet(walletId: String): Boolean? = withContext(Dispatchers.Main) {
+        if (!PKPassLibrary.isPassLibraryAvailable()) return@withContext null
+        PKPassLibrary().passes().filterIsInstance<PKPass>().any { it.serialNumber == walletId }
+    }
+
     /** Signs the pass through the pass service and parses it with PassKit. */
     private suspend fun signedPass(card: CardDraft): Either<WalletError, PKPass> = either {
         val signed = passService.signApplePass(passFiles(card)).bind().toNSData()

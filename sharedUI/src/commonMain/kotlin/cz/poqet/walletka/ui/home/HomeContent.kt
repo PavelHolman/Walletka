@@ -71,6 +71,9 @@ import cz.poqet.walletka.ui.rememberStoredImage
 import cz.poqet.walletka.ui.toColor
 import cz.poqet.walletka.ui.rememberImageSourceActions
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.outlined.DragHandle
+import cz.poqet.walletka.ui.rememberBackupFileActions
 
 @Composable
 fun HomeContent(component: HomeComponent) {
@@ -80,16 +83,21 @@ fun HomeContent(component: HomeComponent) {
     val scope = rememberCoroutineScope()
 
     val paste = { if (!actions.pasteImage()) scope.launch { snackbar.showSnackbar("There's no image in the clipboard") } }
+    val backupFiles = rememberBackupFileActions(onExported = component::onExportFinished, onImportFile = component::onImportFileSelected)
+    BackupEffects(model.backup, backupFiles, snackbar, onDismiss = component::onBackupMessageDismissed)
 
     if (model.cards.isNotEmpty()) {
         CardLibrary(
-            model.cards,
+            model.visibleCards,
             actions,
             onPaste = { paste() },
             onCardClick = component::onCardClicked,
             onCardDelete = component::onCardDeleteClicked,
             snackbar = snackbar,
             onEnterManually = component::onEnterManuallyClicked,
+            menu = { LibraryMenu(onExport = component::onExportClicked, onImport = backupFiles.pickImport) },
+            search = if (model.isSearchAvailable) ({ LibrarySearchField(model.searchQuery, component::onSearchQueryChanged) }) else null,
+            onMove = component::onCardMoved.takeIf { model.canReorder },
         )
         return
     }
@@ -149,6 +157,7 @@ fun HomeContent(component: HomeComponent) {
             }
             Spacer(Modifier.height(20.dp))
             Hint(Icons.Outlined.Share, "Tip: use Share → Add to Walletka from Photos or any app")
+            TextButton(onClick = backupFiles.pickImport) { Text("Restore from backup") }
             if (model.isWalletAvailable == false) {
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -180,12 +189,20 @@ private fun CardLibrary(
     onCardDelete: (String) -> Unit,
     snackbar: SnackbarHostState,
     onEnterManually: () -> Unit,
+    menu: @Composable () -> Unit = {},
+    search: (@Composable () -> Unit)? = null,
+    /** Reorders [cards] (from, to); `null` while they can't be reordered. */
+    onMove: ((Int, Int) -> Unit)? = null,
 ) {
     var isAddMenuOpen by remember { mutableStateOf(false) }
     var pendingDeletion by remember { mutableStateOf<HomeComponent.CardSummary?>(null) }
+    val listState = rememberLazyListState()
+    val reorder = rememberReorderState(listState, cards.map { it.id }) { from, to -> onMove?.invoke(from, to) }
+    // While dragging, the list shows the order under the finger.
+    val shown = reorder.draggedKey?.let { reorder.order.mapNotNull { id -> cards.firstOrNull { it.id == id } } } ?: cards
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Walletka") }) },
+        topBar = { TopAppBar(title = { Text("Walletka") }, actions = { menu() }) },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             Box {
@@ -220,6 +237,7 @@ private fun CardLibrary(
         },
     ) { padding ->
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
@@ -229,8 +247,15 @@ private fun CardLibrary(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(cards, key = { it.id }) { card ->
-                CardTile(card, onClick = { onCardClick(card.id) }, onDelete = { pendingDeletion = card })
+            if (search != null) item(key = "search") { search() }
+            items(shown, key = { it.id }) { card ->
+                CardTile(
+                    card,
+                    onClick = { onCardClick(card.id) },
+                    onDelete = { pendingDeletion = card },
+                    modifier = Modifier.reorderableItem(this, reorder, card.id),
+                    dragHandle = if (onMove != null && cards.size > 1) Modifier.reorderHandle(reorder, card.id) else null,
+                )
             }
         }
     }
@@ -253,11 +278,18 @@ private fun CardLibrary(
 
 /** A library card drawn like a small wallet pass. */
 @Composable
-private fun CardTile(card: HomeComponent.CardSummary, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun CardTile(
+    card: HomeComponent.CardSummary,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** Shown instead of the chevron when the card can be dragged; the modifier detects the drag. */
+    dragHandle: Modifier? = null,
+) {
     val content = card.color.contentColor.toColor()
     val banner = rememberStoredImage(card.banner?.path, maxSize = 600)
     var isMenuOpen by remember { mutableStateOf(false) }
-    Box {
+    Box(modifier) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -277,6 +309,7 @@ private fun CardTile(card: HomeComponent.CardSummary, onClick: () -> Unit, onDel
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (card.isInWallet == false) NotInWalletBadge(content)
             }
             if (banner != null) {
                 Image(
@@ -286,7 +319,11 @@ private fun CardTile(card: HomeComponent.CardSummary, onClick: () -> Unit, onDel
                     modifier = Modifier.size(width = 96.dp, height = 32.dp).clip(RoundedCornerShape(6.dp)),
                 )
             }
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = content.copy(alpha = 0.7f))
+            if (dragHandle != null) {
+                Icon(Icons.Outlined.DragHandle, contentDescription = "Reorder", tint = content.copy(alpha = 0.7f), modifier = dragHandle)
+            } else {
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = content.copy(alpha = 0.7f))
+            }
         }
         // Long-press for more actions, as elsewhere on Android.
         DropdownMenu(expanded = isMenuOpen, onDismissRequest = { isMenuOpen = false }) {
