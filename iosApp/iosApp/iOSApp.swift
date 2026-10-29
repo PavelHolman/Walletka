@@ -93,7 +93,12 @@ struct iOSApp: App {
 
     #if DEBUG
     /// `-WalletkaDebugScreen card|manual`: opens a screen at launch, for screenshots on simulators.
+    /// `.task` runs again whenever the view reappears (e.g. after the Add to Wallet sheet); the screen opens once.
+    @MainActor private static var hasOpenedDebugScreen = false
+
     private func openDebugScreen() {
+        guard !Self.hasOpenedDebugScreen else { return }
+        Self.hasOpenedDebugScreen = true
         guard let screen = UserDefaults.standard.string(forKey: "WalletkaDebugScreen"),
               case .home(let home) = root.children.value.first?.sealedType() else { return }
         let component = home.value.component

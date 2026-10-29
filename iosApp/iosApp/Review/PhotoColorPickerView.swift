@@ -68,6 +68,7 @@ struct PhotoColorPickerView: View {
                                             .fill(preview.swiftUIColor)
                                             .frame(width: isDragging ? 56 : 36, height: isDragging ? 56 : 36)
                                             .overlay(Circle().strokeBorder(.white, lineWidth: 3))
+                                            .compositingGroup()
                                             .shadow(radius: 4)
                                             .position(
                                                 x: marker.x * geometry.size.width,

@@ -105,6 +105,7 @@ private struct LoadingView: View {
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .compositingGroup()
                     .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
                     .onAppear {
                         withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { scanOffset = 1 }
@@ -783,6 +784,8 @@ private struct CardPreview: View {
         .background(background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         // It pictures the pass, whose text Wallet doesn't scale; VoiceOver reads it as a whole anyway.
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        // One shadow for the card as a whole, not one under each code, text and image on it.
+        .compositingGroup()
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
         .padding(.vertical, 8)
         .animation(.default, value: form.selectedColor.hex)
