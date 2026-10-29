@@ -98,6 +98,23 @@ internal object PassJson {
         return json.encodeToString(JsonObject.serializer(), payload)
     }
 
+    /**
+     * `GooglePassInput` for the pass service, which builds and signs the Google Wallet object itself. [CardDraft.walletId]
+     * becomes the object ID, so later edits update the same pass.
+     */
+    fun googleServiceInput(card: CardDraft, config: WalletConfig, heroImageUrl: String? = null): JsonObject {
+        val symbology = WalletSymbology.resolve(WalletPlatform.GOOGLE_WALLET, card.code.format, card.code.value)
+        return buildJsonObject {
+            put("id", card.walletId)
+            put("cardTitle", config.organizationName)
+            put("header", card.name)
+            put("hexBackgroundColor", card.backgroundColor.hex)
+            put("barcodeType", symbology.id)
+            put("barcodeValue", card.code.value)
+            if (heroImageUrl != null) put("heroImageUrl", heroImageUrl)
+        }
+    }
+
     private fun kotlinx.serialization.json.JsonObjectBuilder.localized(value: String) {
         putJsonObject("defaultValue") {
             put("language", "en")

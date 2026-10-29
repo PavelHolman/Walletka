@@ -22,6 +22,10 @@ internal external interface WorkerEnv {
     val PASS_PRIVATE_KEY: String?
     val WWDR_CERTIFICATE: String?
     val API_KEY: String?
+    /** Key file (JSON) of the Google Cloud service account that is a user of the Google Wallet issuer. */
+    val GOOGLE_SERVICE_ACCOUNT_JSON: String?
+    /** Issuer ID from the Google Pay & Wallet Console. */
+    val GOOGLE_ISSUER_ID: String?
 }
 
 internal fun jsObject(build: dynamic.() -> Unit): dynamic {
@@ -63,6 +67,22 @@ internal class WebPassCrypto(private val privateKeyPkcs8: ByteArray) : PassCrypt
 
     private suspend fun digest(algorithm: String, data: ByteArray): ByteArray =
         subtle.digest(algorithm, data).unsafeCast<Promise<ArrayBufferLike>>().await().toByteArray()
+}
+
+/** Outgoing requests through the Workers `fetch` API. */
+internal object FetchTransport : HttpTransport {
+    override suspend fun send(request: HttpRequest): HttpResponse {
+        val headers = jsObject { request.headers.forEach { (name, value) -> this[name] = value } }
+        val init = jsObject {
+            method = request.method
+            this.headers = headers
+            if (request.body != null) body = request.body
+        }
+        val response = globalFetch(request.url, init).await()
+        return HttpResponse(response.status as Int, response.text().unsafeCast<Promise<String>>().await())
+    }
+
+    private fun globalFetch(url: String, init: dynamic): Promise<dynamic> = js("fetch(url, init)").unsafeCast<Promise<dynamic>>()
 }
 
 /**

@@ -19,6 +19,7 @@ import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -58,6 +59,38 @@ internal class PassServiceClient(
         }
     }
 
+    /** What the deployed service is set up for. */
+    suspend fun capabilities(): Either<WalletError, ServiceCapabilities> = either {
+        val data = execute(WalletkaApi.CAPABILITIES) {}
+        val capabilities = ensureNotNull(data["capabilities"] as? JsonObject) { failed("Malformed capabilities response") }
+        ServiceCapabilities(
+            appleWallet = capabilities["appleWallet"]?.jsonPrimitive?.booleanOrNull == true,
+            googleWallet = capabilities["googleWallet"]?.jsonPrimitive?.booleanOrNull == true,
+        )
+    }
+
+    /** Creates (or replaces) the Google Wallet object for [pass] and returns a signed "Save to Google Wallet" JWT. */
+    suspend fun saveGooglePass(pass: JsonObject): Either<WalletError, String> = either {
+        val data = execute(WalletkaApi.SAVE_GOOGLE_PASS) { put("pass", pass) }
+        ensureNotNull(data["saveGooglePass"]?.jsonObject?.get("jwt")?.jsonPrimitive?.content) {
+            failed("Malformed saveGooglePass response")
+        }
+    }
+
+    /** Replaces the Google Wallet object; `NOT_IN_WALLET` when the service has no object with that ID. */
+    suspend fun updateGooglePass(pass: JsonObject): Either<WalletError, Unit> = either {
+        val data = execute(WalletkaApi.UPDATE_GOOGLE_PASS) { put("pass", pass) }
+        val found = data["updateGooglePass"]?.jsonObject?.get("found")?.jsonPrimitive?.booleanOrNull
+        ensureNotNull(found) { failed("Malformed updateGooglePass response") }
+        ensure(found) { WalletError(WalletFailure.NOT_IN_WALLET) }
+    }
+
+    /** Expires the Google Wallet object; `false` when there was none. */
+    suspend fun deleteGooglePass(id: String): Either<WalletError, Boolean> = either {
+        val data = execute(WalletkaApi.DELETE_GOOGLE_PASS) { put("id", id) }
+        ensureNotNull(data["deleteGooglePass"]?.jsonPrimitive?.booleanOrNull) { failed("Malformed deleteGooglePass response") }
+    }
+
     private suspend fun Raise<WalletError>.execute(
         query: String,
         variables: kotlinx.serialization.json.JsonObjectBuilder.() -> Unit,
@@ -88,3 +121,6 @@ internal class PassServiceClient(
 
     private fun failed(detail: String) = WalletError(WalletFailure.FAILED, detail)
 }
+
+/** What a pass service deployment supports (`capabilities` query). */
+internal data class ServiceCapabilities(val appleWallet: Boolean, val googleWallet: Boolean)

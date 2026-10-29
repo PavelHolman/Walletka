@@ -95,6 +95,7 @@ import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
 import cz.poqet.walletka.component.review.CardReviewComponent.LoadingStage
 import cz.poqet.walletka.component.review.CardReviewComponent.Model
 import cz.poqet.walletka.component.review.CardReviewComponent.Submission
+import cz.poqet.walletka.component.review.CardReviewComponent.SyncStatus
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.WalletFailure
@@ -147,7 +148,7 @@ fun CardReviewContent(component: CardReviewComponent) {
                 is Model.Failed -> Failed(state.failure, onRetry = component::onRetryClicked, onClose = component::onCloseClicked)
                 is Model.Editing -> when (val submission = state.submission) {
                     is Submission.Added -> CardAdded(state.form, submission.replacedExisting, onDone = component::onCloseClicked)
-                    else -> Editing(state.form, submission, state.hasChanges, state.colorPreview, component)
+                    else -> Editing(state.form, submission, state.hasChanges, state.colorPreview, component, state.sync, state.syncError)
                 }
             }
         }
@@ -237,6 +238,8 @@ private fun Editing(
     hasChanges: Boolean,
     colorPreview: CardColor?,
     component: CardReviewComponent,
+    sync: SyncStatus? = null,
+    syncError: String? = null,
 ) {
     val busy = submission == Submission.InProgress
     val focusManager = LocalFocusManager.current
@@ -431,30 +434,36 @@ private fun Editing(
             Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Button(
-                onClick = {
-                    focusManager.clearFocus()
-                    component.onAddToWalletClicked()
-                },
-                enabled = form.isValid && !busy && hasChanges,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(26.dp),
-            ) {
-                if (busy) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Icon(Icons.Outlined.Wallet, null)
-                    Spacer(Modifier.size(8.dp))
-                    Text(if (form.isLibraryCard) "Save to Google Wallet" else "Add to Google Wallet")
+            // Library cards sync by themselves where the wallet allows it, unless the pass is gone.
+            if (form.isLibraryCard && sync != null && sync != SyncStatus.NOT_IN_WALLET) {
+                SyncStatusRow(sync, syncError, onRetry = component::onRetrySyncClicked)
+            } else {
+                if (sync == SyncStatus.NOT_IN_WALLET) SyncStatusRow(sync, syncError, onRetry = component::onRetrySyncClicked)
+                Button(
+                    onClick = {
+                        focusManager.clearFocus()
+                        component.onAddToWalletClicked()
+                    },
+                    enabled = form.isValid && !busy && hasChanges,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                ) {
+                    if (busy) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Icon(Icons.Outlined.Wallet, null)
+                        Spacer(Modifier.size(8.dp))
+                        Text(if (form.isLibraryCard) "Save to Google Wallet" else "Add to Google Wallet")
+                    }
                 }
-            }
-            if (form.isLibraryCard && !hasChanges) {
-                Text(
-                    "Edit the card to save it to Google Wallet again.",
-                    modifier = Modifier.padding(top = 8.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (form.isLibraryCard && !hasChanges && sync == null) {
+                    Text(
+                        "Edit the card to save it to Google Wallet again.",
+                        modifier = Modifier.padding(top = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -558,7 +567,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 
 private fun WalletFailure.message(): String = when (this) {
     WalletFailure.UNAVAILABLE -> "Google Wallet isn't available on this device."
-    WalletFailure.NOT_CONFIGURED -> "This build has no Google Wallet issuer configured. Set walletka.googleIssuerId and walletka.googleIssuerEmail in local.properties."
+    WalletFailure.NOT_CONFIGURED -> "No Google Wallet issuer is configured. Set one up on the pass service (see README), or set walletka.googleIssuerId and walletka.googleIssuerEmail in local.properties."
     WalletFailure.CANCELLED -> "Cancelled."
     WalletFailure.UNSUPPORTED_CODE -> "This code type can't be stored in the wallet."
     WalletFailure.FAILED -> "The wallet rejected the card."

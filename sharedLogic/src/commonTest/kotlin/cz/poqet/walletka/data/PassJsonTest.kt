@@ -40,4 +40,16 @@ class PassJsonTest {
         assertEquals("EAN_13", obj["barcode"]!!.jsonObject["type"]!!.jsonPrimitive.content)
         assertEquals("#1a237e", obj["hexBackgroundColor"]!!.jsonPrimitive.content)
     }
+
+    @Test
+    fun googleServiceInputUsesWalletIdAsObjectId() {
+        val input = PassJson.googleServiceInput(card, WalletConfig(), heroImageUrl = "https://passes.example.com/banners/a.png")
+        assertEquals("serial-1", input["id"]!!.jsonPrimitive.content)
+        assertEquals("Walletka", input["cardTitle"]!!.jsonPrimitive.content)
+        assertEquals("Coffee Club", input["header"]!!.jsonPrimitive.content)
+        assertEquals("#1a237e", input["hexBackgroundColor"]!!.jsonPrimitive.content)
+        assertEquals("EAN_13", input["barcodeType"]!!.jsonPrimitive.content)
+        assertEquals("https://passes.example.com/banners/a.png", input["heroImageUrl"]!!.jsonPrimitive.content)
+        assertEquals(null, PassJson.googleServiceInput(card, WalletConfig())["heroImageUrl"])
+    }
 }
