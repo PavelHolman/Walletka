@@ -36,7 +36,7 @@
     <string name="review_title_edit">Upravit kartu</string>
     <string name="review_title_new">Nová karta</string>
     <string name="review_delete_card">Smazat kartu</string>
-    <string name="review_delete_message">Karta se odstraní z Walletky. Google Wallet aplikacím nedovoluje karty mazat, takže pokud ji už nepotřebujete, odstraňte ji i v Peněžence Google.</string>
+    <string name="review_delete_message">Karta se odstraní z Walletky a v Peněžence Google se označí jako prošlá. Pokud ji tam už nechcete vidět, odstraňte ji i tam.</string>
     <string name="loading_importing">Načítám obrázek…</string>
     <string name="loading_analyzing">Hledám kódy…</string>
     <string name="failure_image_unreadable">Tohle nevypadá jako obrázek, který Walletka dokáže přečíst.</string>

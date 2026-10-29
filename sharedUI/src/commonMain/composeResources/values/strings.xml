@@ -36,7 +36,7 @@
     <string name="review_title_edit">Edit card</string>
     <string name="review_title_new">New card</string>
     <string name="review_delete_card">Delete card</string>
-    <string name="review_delete_message">The card is removed from Walletka. Google Wallet doesn’t let apps remove passes, so remove it in Google Wallet too if you no longer need it.</string>
+    <string name="review_delete_message">The card is removed from Walletka, and its pass in Google Wallet is marked as expired. Remove it there too if you don’t want to see it.</string>
     <string name="loading_importing">Reading the image…</string>
     <string name="loading_analyzing">Looking for codes…</string>
     <string name="failure_image_unreadable">This doesn’t look like an image Walletka can read.</string>
