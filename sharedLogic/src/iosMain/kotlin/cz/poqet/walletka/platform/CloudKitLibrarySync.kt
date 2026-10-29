@@ -12,7 +12,12 @@ import platform.CloudKit.CKAccountStatusAvailable
 import platform.CloudKit.CKAsset
 import platform.CloudKit.CKContainer
 import platform.CloudKit.CKCurrentUserDefaultName
+import platform.CloudKit.CKErrorNetworkFailure
+import platform.CloudKit.CKErrorNetworkUnavailable
+import platform.CloudKit.CKErrorRequestRateLimited
 import platform.CloudKit.CKErrorServerRecordChanged
+import platform.CloudKit.CKErrorServiceUnavailable
+import platform.CloudKit.CKErrorZoneBusy
 import platform.CloudKit.CKErrorUnknownItem
 import platform.CloudKit.CKErrorZoneNotFound
 import platform.CloudKit.CKRecord
@@ -269,6 +274,14 @@ internal class CloudKitLibrarySync(
                         CKErrorUnknownItem -> {
                             serverFields.remove(id.recordName)
                             retry += save(id)
+                        }
+
+                        // Temporary: send it again later (the engine waits before its next send).
+                        CKErrorNetworkFailure, CKErrorNetworkUnavailable, CKErrorServiceUnavailable,
+                        CKErrorRequestRateLimited, CKErrorZoneBusy -> {
+                            retry += save(id)
+                            failed = true
+                            _lastError.value = failure.error.localizedDescription
                         }
 
                         else -> {

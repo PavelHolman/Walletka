@@ -698,6 +698,8 @@ private struct CardPreview: View {
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
         .padding(.vertical, 8)
         .animation(.default, value: form.selectedColor.hex)
+        .animation(.default, value: form.isBannerEnabled)
+        .animation(.default, value: form.logo.activeImage?.path)
         // One element: what the card looks like, not its parts.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Card preview"))
