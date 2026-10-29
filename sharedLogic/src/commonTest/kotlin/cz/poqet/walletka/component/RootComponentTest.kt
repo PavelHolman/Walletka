@@ -382,6 +382,27 @@ class RootComponentTest {
     }
 
     @Test
+    fun reopeningACardWhileItsEditsAreStillSyncingShowsThem() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val (root, home) = libraryCardWithAutoSync(wallet)
+        val slowWallet = kotlinx.coroutines.CompletableDeferred<Unit>()
+        wallet.updateGate = slowWallet
+        root.review().onNameChanged("Renamed")
+        root.onBackClicked()
+        testScheduler.advanceUntilIdle()
+
+        // The pass is still being signed when the card is opened again.
+        home.onCardClicked(home.model.value.cards.single().id)
+        testScheduler.advanceUntilIdle()
+        assertEquals("Renamed", assertIs<Model.Editing>(root.review().model.value).form.name)
+
+        slowWallet.complete(Unit)
+        testScheduler.advanceUntilIdle()
+        assertEquals("Renamed", wallet.updated.last().name)
+        assertEquals("Renamed", home.model.value.cards.single().name)
+    }
+
+    @Test
     fun deletingTheOpenCardElsewhereClosesItsEditor() = kotlinx.coroutines.test.runTest {
         val wallet = FakeWalletService()
         val (root, home) = libraryCardWithAutoSync(wallet)

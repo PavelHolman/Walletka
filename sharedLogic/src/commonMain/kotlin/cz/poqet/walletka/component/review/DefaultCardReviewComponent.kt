@@ -356,9 +356,10 @@ private class ReviewStore(
                 withContext(NonCancellable) {
                     bannerJob?.join()
                     logoJob?.join()
+                    // The library first: it's quick, and the card may be opened again while the pass is signed.
+                    // It keeps the edits even if the wallet then can't take them (not in it, offline, …).
+                    saveLibraryOnly()
                     if (editing.sync != SyncStatus.NOT_IN_WALLET) sync()
-                    // The wallet couldn't take them (not in it, offline, …): the library keeps the edits anyway.
-                    saveLibraryOnly() // only if edits are still unsaved
                     // The working copies were moved into the library by the sync, or are no longer needed.
                     val form = (_model.value as? Model.Editing)?.form ?: editing.form
                     form.photo?.let { deleteUnlessInLibrary(it) }
