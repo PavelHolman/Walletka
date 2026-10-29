@@ -84,6 +84,8 @@ private struct CardFormView: View {
     let submission: any Submission
     let component: any CardReviewComponent
 
+    @State private var isEditingBanner = false
+
     private var isBusy: Bool {
         if case .inProgress = submission.sealedType() { return true }
         return false
@@ -167,6 +169,7 @@ private struct CardFormView: View {
             if form.banner != nil {
                 Section {
                     Toggle("Banner from Photo", isOn: Binding(get: { form.isBannerEnabled }, set: { component.onBannerToggled(enabled: $0) }))
+                    Button("Adjust Banner…") { isEditingBanner = true }
                 }
             }
 
@@ -181,6 +184,12 @@ private struct CardFormView: View {
             }
         }
         .disabled(isBusy)
+        .sheet(isPresented: $isEditingBanner) {
+            BannerEditorView(form: form) { region in
+                component.onBannerRegionChanged(region: region)
+                if !form.isBannerEnabled { component.onBannerToggled(enabled: true) }
+            }
+        }
         .alert("Card Added", isPresented: .constant(isAdded)) {
             Button("Done", action: component.onCloseClicked)
         } message: {

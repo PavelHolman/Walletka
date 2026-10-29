@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -76,7 +78,13 @@ fun HomeContent(component: HomeComponent) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(32.dp))
-            Button(onClick = actions.pickPhoto, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = actions.takePhoto, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Outlined.PhotoCamera, null)
+                Spacer(Modifier.size(8.dp))
+                Text("Take photo")
+            }
+            Spacer(Modifier.height(12.dp))
+            FilledTonalButton(onClick = actions.pickPhoto, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Outlined.PhotoLibrary, null)
                 Spacer(Modifier.size(8.dp))
                 Text("Choose photo")
@@ -93,7 +101,7 @@ fun HomeContent(component: HomeComponent) {
                 Text("Paste image")
             }
             Spacer(Modifier.height(24.dp))
-            Hint(Icons.Outlined.Share, "Tip: use Share → Walletka from Photos or any app")
+            Hint(Icons.Outlined.Share, "Tip: use Share → Add to Walletka from Photos or any app")
             if (model.isWalletAvailable == false) {
                 Spacer(Modifier.height(8.dp))
                 Text(

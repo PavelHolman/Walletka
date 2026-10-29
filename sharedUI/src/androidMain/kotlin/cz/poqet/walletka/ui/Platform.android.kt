@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import android.graphics.ImageDecoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,9 +29,21 @@ actual fun rememberImageSourceActions(onImage: (source: String) -> Unit): ImageS
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let { currentOnImage(it.toString()) }
     }
-    return remember(context, picker) {
+    // The system camera writes the photo straight into our cache through the app's FileProvider.
+    var pendingCapture by remember { mutableStateOf<File?>(null) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val file = pendingCapture
+        pendingCapture = null
+        if (saved && file != null && file.length() > 0) currentOnImage(file.path) else file?.delete()
+    }
+    return remember(context, picker, camera) {
         ImageSourceActions(
             pickPhoto = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            takePhoto = {
+                val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "${System.currentTimeMillis()}.jpg")
+                pendingCapture = file
+                camera.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+            },
             pasteImage = {
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val clip = clipboard.primaryClip
@@ -46,7 +59,7 @@ actual fun rememberImageSourceActions(onImage: (source: String) -> Unit): ImageS
 }
 
 @Composable
-actual fun rememberStoredImage(path: String?): ImageBitmap? {
+actual fun rememberStoredImage(path: String?, maxSize: Int): ImageBitmap? {
     var bitmap by remember(path) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(path) {
         if (path == null) return@LaunchedEffect
@@ -54,8 +67,8 @@ actual fun rememberStoredImage(path: String?): ImageBitmap? {
             runCatching {
                 ImageDecoder.decodeBitmap(ImageDecoder.createSource(File(path))) { decoder, info, _ ->
                     val longer = max(info.size.width, info.size.height)
-                    if (longer > MAX_DISPLAY_SIZE) {
-                        val scale = MAX_DISPLAY_SIZE.toFloat() / longer
+                    if (longer > maxSize) {
+                        val scale = maxSize.toFloat() / longer
                         decoder.setTargetSize((info.size.width * scale).toInt().coerceAtLeast(1), (info.size.height * scale).toInt().coerceAtLeast(1))
                     }
                 }.asImageBitmap()
@@ -64,5 +77,3 @@ actual fun rememberStoredImage(path: String?): ImageBitmap? {
     }
     return bitmap
 }
-
-private const val MAX_DISPLAY_SIZE = 1600

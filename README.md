@@ -1,8 +1,9 @@
 # Walletka
 
 Turn a photo of any loyalty card, ticket or membership card into an **Apple Wallet** / **Google Wallet** card.
-Share a photo to Walletka (or paste / pick / drop one), and it finds the QR code or barcode, suggests a name
-(from the text on the card), a background colour and a banner cut out of the photo, and adds the card to the wallet.
+Take a photo, or share one with **Add to Walletka** (or paste / pick / drop one), and it finds the QR code or barcode,
+suggests a name (from the text on the card), a background colour and a banner cut out of the photo, which you can
+pan and zoom, and adds the card to the wallet.
 
 Generated from the [Kotlin Multiplatform wizard](https://kmp.jetbrains.com) (Android + iOS with SwiftUI).
 
@@ -32,7 +33,8 @@ sharedLogic/   KMP (Android + iOS): everything except UI
   iosMain/       Vision + Core Image, CoreGraphics, PassKit, URLSession, WalletkaApp (Swift entry point)
 sharedUI/      Compose Multiplatform screens (used by Android)
 androidApp/    Activity: Decompose context, share/view intents, Google Wallet result bridge
-iosApp/        SwiftUI app + ShareExtension target
+iosApp/        SwiftUI app + ShareExtension (app row) + ActionExtension ("Add to Walletka" action)
+               sharing ExtensionSupport/, which hands the image to the app via the App Group
 serviceApi/    GraphQL schema + operations shared by the app and the service (the API contract)
 passService/   Cloudflare Worker (Kotlin/JS): Apple pass signing + banner hosting
   commonMain/    pass packaging, CMS/PKCS#7 signing (own DER encoder), zip writer, validation

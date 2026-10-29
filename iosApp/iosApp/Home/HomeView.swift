@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var model: ObservedFlow<HomeModel>
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var isDropTargeted = false
+    @State private var isCameraPresented = false
 
     init(component: any HomeComponent) {
         self.component = component
@@ -33,11 +34,22 @@ struct HomeView: View {
                     .multilineTextAlignment(.center)
             }
             VStack(spacing: 12) {
+                if CameraCapture.isAvailable {
+                    Button {
+                        isCameraPresented = true
+                    } label: {
+                        Label("Take Photo", systemImage: "camera")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                }
+
                 PhotosPicker(selection: $pickedPhoto, matching: .images, photoLibrary: .shared()) {
                     Label("Choose Photo", systemImage: "photo.on.rectangle")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(CameraCapture.isAvailable ? AnyPrimitiveButtonStyle(.bordered) : AnyPrimitiveButtonStyle(.borderedProminent))
                 .controlSize(.large)
 
                 PasteButton(supportedContentTypes: [.image]) { providers in
@@ -52,7 +64,7 @@ struct HomeView: View {
                 .buttonBorderShape(.capsule)
                 .controlSize(.large)
             }
-            Label("Tip: in Photos, tap Share → Walletka", systemImage: "square.and.arrow.up")
+            Label("Tip: in Photos, tap Share → Add to Walletka", systemImage: "square.and.arrow.up")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             if model.value.isWalletAvailable == false {
@@ -84,6 +96,25 @@ struct HomeView: View {
                 pickedPhoto = nil
             }
         }
+        .fullScreenCover(isPresented: $isCameraPresented) {
+            CameraCapture { jpeg in
+                if let path = ImageInbox.store(jpeg, fileExtension: "jpg") {
+                    component.onImagePicked(source: path)
+                }
+            }
+            .ignoresSafeArea()
+        }
         .toolbar(.hidden, for: .navigationBar)
     }
+}
+
+/// Type-erases a `PrimitiveButtonStyle` so the style can be chosen at runtime.
+private struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
+    private let make: (Configuration) -> AnyView
+
+    init<S: PrimitiveButtonStyle>(_ style: S) {
+        make = { AnyView(style.makeBody(configuration: $0)) }
+    }
+
+    func makeBody(configuration: Configuration) -> some View { make(configuration) }
 }

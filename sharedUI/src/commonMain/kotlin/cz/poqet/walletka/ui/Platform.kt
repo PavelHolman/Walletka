@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 /** Platform ways of getting an image into the app (photo picker, clipboard). */
 class ImageSourceActions(
     val pickPhoto: () -> Unit,
+    val takePhoto: () -> Unit,
     /** Returns `false` when the clipboard holds no image. */
     val pasteImage: () -> Boolean,
 )
@@ -15,4 +16,4 @@ expect fun rememberImageSourceActions(onImage: (source: String) -> Unit): ImageS
 
 /** Decodes an image stored by [cz.poqet.walletka.platform.ImageStore], downscaled for display. */
 @Composable
-expect fun rememberStoredImage(path: String?): ImageBitmap?
+expect fun rememberStoredImage(path: String?, maxSize: Int = 1600): ImageBitmap?

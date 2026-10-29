@@ -9,6 +9,7 @@ import arrow.fx.coroutines.parZip
 import cz.poqet.walletka.domain.AnalysisError
 import cz.poqet.walletka.domain.AnalysisFailure
 import cz.poqet.walletka.domain.CardColor
+import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.platform.BarcodeDetector
@@ -23,16 +24,34 @@ internal data class CardSuggestion(
     val codes: NonEmptyList<ScannedCode>,
     val names: List<String>,
     val colors: List<CardColor>,
+    val photoAspectRatio: Float,
+    val bannerRegion: NormalizedRect,
     /** PNG cut out of the photo for the card banner, `null` when it could not be produced. */
     val banner: StoredImage?,
 )
+
+/** Cuts the banner out of the photo and stores it as a PNG. */
+internal class BannerCropper(
+    private val imageProcessor: ImageProcessor,
+    private val imageStore: ImageStore,
+) {
+    suspend fun crop(image: StoredImage, region: NormalizedRect): Either<AnalysisError, StoredImage> = either {
+        val png = imageProcessor.cropToPng(image, region, targetWidth = BANNER_WIDTH).bind()
+        imageStore.save(png).bind()
+    }
+
+    private companion object {
+        /** Apple's strip image @3x. */
+        const val BANNER_WIDTH = 1125
+    }
+}
 
 /** Runs code detection, OCR and colour extraction on a photo in parallel and merges the results. */
 internal class ImageAnalyzer(
     private val barcodeDetector: BarcodeDetector,
     private val textRecognizer: TextRecognizer,
     private val imageProcessor: ImageProcessor,
-    private val imageStore: ImageStore,
+    private val bannerCropper: BannerCropper,
 ) {
 
     suspend fun analyze(image: StoredImage): Either<AnalysisError, CardSuggestion> = either {
@@ -48,22 +67,17 @@ internal class ImageAnalyzer(
         val nonEmptyCodes = ensureNotNull(codes.distinctBy { it.format to it.value }.toNonEmptyListOrNull()) {
             AnalysisError(AnalysisFailure.NO_CODE_FOUND)
         }
-        val bannerRegion = BannerRegion.pick(pixels.width.toFloat() / pixels.height, nonEmptyCodes)
+        val photoAspectRatio = pixels.width.toFloat() / pixels.height
+        val bannerRegion = BannerRegion.pick(photoAspectRatio, nonEmptyCodes, lines)
         CardSuggestion(
             image = image,
             codes = nonEmptyCodes,
             names = CardNameSuggester.suggest(lines, nonEmptyCodes),
             colors = ColorPalette.extract(pixels).ifEmpty { listOf(CardColor.Default) },
+            photoAspectRatio = photoAspectRatio,
+            bannerRegion = bannerRegion,
             // The banner is decoration; a card without one is still a good card.
-            banner = either {
-                val png = imageProcessor.cropToPng(image, bannerRegion, targetWidth = BANNER_WIDTH).bind()
-                imageStore.save(png).bind()
-            }.getOrNull(),
+            banner = bannerCropper.crop(image, bannerRegion).getOrNull(),
         )
-    }
-
-    private companion object {
-        /** Apple's strip image @3x. */
-        const val BANNER_WIDTH = 1125
     }
 }

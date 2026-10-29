@@ -8,9 +8,11 @@ import cz.poqet.walletka.component.review.CardReviewComponent.CardForm
 import cz.poqet.walletka.component.review.CardReviewComponent.LoadingStage
 import cz.poqet.walletka.component.review.CardReviewComponent.Model
 import cz.poqet.walletka.component.review.CardReviewComponent.Submission
+import cz.poqet.walletka.data.BannerCropper
 import cz.poqet.walletka.data.CardSuggestion
 import cz.poqet.walletka.data.ImageAnalyzer
 import cz.poqet.walletka.domain.CardDraft
+import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.platform.ImageStore
 import cz.poqet.walletka.platform.WalletService
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +21,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +34,7 @@ internal class DefaultCardReviewComponent(
     source: String,
     imageStore: ImageStore,
     analyzer: ImageAnalyzer,
+    bannerCropper: BannerCropper,
     walletService: WalletService,
     private val onFinished: () -> Unit,
 ) : CardReviewComponent, ComponentContext by componentContext {
@@ -42,6 +46,7 @@ internal class DefaultCardReviewComponent(
             savedForm = stateKeeper.consume(key = STATE_KEY, strategy = SavedCardForm.serializer())?.toForm(),
             imageStore = imageStore,
             analyzer = analyzer,
+            bannerCropper = bannerCropper,
             walletService = walletService,
         )
     }
@@ -62,6 +67,8 @@ internal class DefaultCardReviewComponent(
 
     override fun onBannerToggled(enabled: Boolean) = store.updateForm { copy(isBannerEnabled = enabled && banner != null) }
 
+    override fun onBannerRegionChanged(region: NormalizedRect) = store.updateBannerRegion(region)
+
     override fun onAddToWalletClicked() = store.addToWallet()
 
     override fun onRetryClicked() = store.analyze()
@@ -80,6 +87,7 @@ private class ReviewStore(
     savedForm: CardForm?,
     private val imageStore: ImageStore,
     private val analyzer: ImageAnalyzer,
+    private val bannerCropper: BannerCropper,
     private val walletService: WalletService,
 ) : InstanceKeeper.Instance {
 
@@ -89,6 +97,7 @@ private class ReviewStore(
     )
     val model: StateFlow<Model> = _model.asStateFlow()
     private var job: Job? = null
+    private var bannerJob: Job? = null
 
     init {
         if (savedForm == null) analyze()
@@ -119,9 +128,37 @@ private class ReviewStore(
         }
     }
 
+    /** Moves the crop immediately and re-cuts the banner in the background, keeping only the latest result. */
+    fun updateBannerRegion(region: NormalizedRect) {
+        val editing = _model.value as? Model.Editing ?: return
+        val clamped = editing.form.bannerViewport.clamp(region)
+        if (clamped == editing.form.bannerRegion) return
+        updateForm { copy(bannerRegion = clamped) }
+        bannerJob?.cancel()
+        bannerJob = scope.launch {
+            delay(BANNER_RECROP_DEBOUNCE)
+            val banner = bannerCropper.crop(editing.form.photo, clamped).getOrNull() ?: return@launch
+            val current = _model.value as? Model.Editing
+            if (current == null || current.form.bannerRegion != clamped) {
+                imageStore.delete(banner) // superseded by a newer crop
+                return@launch
+            }
+            _model.value = current.copy(form = current.form.copy(banner = banner, isBannerEnabled = true))
+            current.form.banner?.let { imageStore.delete(it) }
+        }
+    }
+
     fun addToWallet() {
         val editing = _model.value as? Model.Editing ?: return
         if (!editing.form.isValid || editing.submission == Submission.InProgress) return
+        // Use the banner for the final crop, even if a re-crop is still pending.
+        if (bannerJob?.isActive == true) {
+            scope.launch {
+                bannerJob?.join()
+                addToWallet()
+            }
+            return
+        }
         _model.value = editing.copy(submission = Submission.InProgress)
         job = scope.launch {
             val submission = walletService.addCard(editing.form.toDraft()).fold(
@@ -148,6 +185,8 @@ private class ReviewStore(
         selectedColorIndex = 0,
         banner = banner,
         isBannerEnabled = banner != null,
+        bannerRegion = bannerRegion,
+        photoAspectRatio = photoAspectRatio,
         walletPlatform = walletService.platform,
     )
 
@@ -157,6 +196,10 @@ private class ReviewStore(
         backgroundColor = selectedColor,
         banner = banner.takeIf { isBannerEnabled },
     )
+
+    private companion object {
+        const val BANNER_RECROP_DEBOUNCE = 250L
+    }
 
     override fun onDestroy() {
         scope.cancel()

@@ -12,6 +12,7 @@ import cz.poqet.walletka.component.home.DefaultHomeComponent
 import cz.poqet.walletka.component.review.DefaultCardReviewComponent
 import cz.poqet.walletka.component.root.RootComponent.Child
 import cz.poqet.walletka.component.toStateFlow
+import cz.poqet.walletka.data.BannerCropper
 import cz.poqet.walletka.data.ImageAnalyzer
 import cz.poqet.walletka.platform.PlatformServices
 import kotlinx.coroutines.flow.StateFlow
@@ -25,11 +26,12 @@ internal class DefaultRootComponent(
 ) : RootComponent, ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
+    private val bannerCropper = BannerCropper(services.imageProcessor, services.imageStore)
     private val analyzer = ImageAnalyzer(
         barcodeDetector = services.barcodeDetector,
         textRecognizer = services.textRecognizer,
         imageProcessor = services.imageProcessor,
-        imageStore = services.imageStore,
+        bannerCropper = bannerCropper,
     )
 
     override val stack: Value<ChildStack<*, Child>> = childStack(
@@ -58,6 +60,7 @@ internal class DefaultRootComponent(
                 source = config.source,
                 imageStore = services.imageStore,
                 analyzer = analyzer,
+                bannerCropper = bannerCropper,
                 walletService = services.walletService,
                 onFinished = navigation::pop,
             ),

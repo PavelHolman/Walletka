@@ -102,4 +102,24 @@ class RootComponentTest {
         assertEquals(2, root.children.value.size)
         assertEquals("/stored/second.jpg", assertIs<Model.Editing>(root.review().model.value).form.photo.path)
     }
+
+    @Test
+    fun movingTheBannerRecropsIt() = kotlinx.coroutines.test.runTest {
+        Dispatchers.setMain(kotlinx.coroutines.test.StandardTestDispatcher(testScheduler))
+        val store = FakeImageStore()
+        val root = root(fakeServices(listOf(code), imageStore = store))
+        root.onImageReceived("photo.jpg")
+        testScheduler.advanceUntilIdle()
+        val review = root.review()
+        val before = assertIs<Model.Editing>(review.model.value).form
+
+        review.onBannerRegionChanged(cz.poqet.walletka.domain.NormalizedRect(0f, 0.5f, 0.5f, 0.6f))
+        val moved = assertIs<Model.Editing>(review.model.value).form
+        kotlin.test.assertNotEquals(before.bannerRegion, moved.bannerRegion)
+
+        testScheduler.advanceUntilIdle()
+        val recropped = assertIs<Model.Editing>(review.model.value).form
+        assertEquals(listOf(before.banner!!.path), store.deleted.map { it.path })
+        assertEquals(moved.bannerRegion, recropped.bannerRegion)
+    }
 }

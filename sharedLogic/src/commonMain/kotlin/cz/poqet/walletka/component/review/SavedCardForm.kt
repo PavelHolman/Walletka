@@ -24,6 +24,8 @@ internal data class SavedCardForm(
     val selectedColorIndex: Int,
     val banner: String?,
     val isBannerEnabled: Boolean,
+    val bannerRegion: List<Float>,
+    val photoAspectRatio: Float,
     val walletPlatform: WalletPlatform,
 ) {
     @Serializable
@@ -41,6 +43,8 @@ internal data class SavedCardForm(
         selectedColorIndex = selectedColorIndex,
         banner = banner?.let(::StoredImage),
         isBannerEnabled = isBannerEnabled,
+        bannerRegion = bannerRegion.let { (l, t, r, b) -> NormalizedRect(l, t, r, b) },
+        photoAspectRatio = photoAspectRatio,
         walletPlatform = walletPlatform,
     )
 
@@ -57,6 +61,8 @@ internal data class SavedCardForm(
             selectedColorIndex = form.selectedColorIndex,
             banner = form.banner?.path,
             isBannerEnabled = form.isBannerEnabled,
+            bannerRegion = form.bannerRegion.run { listOf(left, top, right, bottom) },
+            photoAspectRatio = form.photoAspectRatio,
             walletPlatform = form.walletPlatform,
         )
     }

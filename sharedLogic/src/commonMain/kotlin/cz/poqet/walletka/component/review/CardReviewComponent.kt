@@ -2,8 +2,10 @@ package cz.poqet.walletka.component.review
 
 import cz.poqet.walletka.data.WalletSymbology
 import cz.poqet.walletka.domain.AnalysisFailure
+import cz.poqet.walletka.domain.BannerViewport
 import cz.poqet.walletka.domain.CardColor
 import cz.poqet.walletka.domain.CodeFormat
+import cz.poqet.walletka.domain.NormalizedRect
 import cz.poqet.walletka.domain.ScannedCode
 import cz.poqet.walletka.domain.StoredImage
 import cz.poqet.walletka.domain.WalletFailure
@@ -22,6 +24,9 @@ interface CardReviewComponent {
     fun onColorSelected(index: Int)
 
     fun onBannerToggled(enabled: Boolean)
+
+    /** The user moved/zoomed the banner crop; see [CardForm.bannerViewport] for the editor geometry. */
+    fun onBannerRegionChanged(region: NormalizedRect)
 
     fun onAddToWalletClicked()
 
@@ -53,8 +58,14 @@ interface CardReviewComponent {
         val selectedColorIndex: Int,
         val banner: StoredImage?,
         val isBannerEnabled: Boolean,
+        /** Part of [photo] the banner is cut from. */
+        val bannerRegion: NormalizedRect,
+        /** Width / height of [photo], for laying out the banner editor. */
+        val photoAspectRatio: Float,
         val walletPlatform: WalletPlatform,
     ) {
+        val bannerViewport: BannerViewport get() = BannerViewport(photoAspectRatio)
+
         val selectedCode: ScannedCode get() = codes[selectedCodeIndex]
 
         val selectedColor: CardColor get() = colors[selectedColorIndex]

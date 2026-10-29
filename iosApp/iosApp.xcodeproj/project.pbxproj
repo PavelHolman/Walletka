@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		5A1E00000000000000000008 /* WalletkaShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5A1E00000000000000000001 /* WalletkaShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5A1E00000000000000000027 /* WalletkaAction.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5A1E00000000000000000020 /* WalletkaAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -17,6 +18,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 5A1E0000000000000000000A;
 			remoteInfo = ShareExtension;
+		};
+		5A1E00000000000000000021 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46344E736112E7FDE61F68E5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A1E00000000000000000029;
+			remoteInfo = ActionExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -28,6 +36,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				5A1E00000000000000000008 /* WalletkaShare.appex in Embed Foundation Extensions */,
+				5A1E00000000000000000027 /* WalletkaAction.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -37,6 +46,7 @@
 /* Begin PBXFileReference section */
 		D457412F8586FA4C10272666 /* Walletka.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Walletka.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A1E00000000000000000001 /* WalletkaShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WalletkaShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A1E00000000000000000020 /* WalletkaAction.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WalletkaAction.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -56,9 +66,30 @@
 			);
 			target = 5A1E0000000000000000000A /* ShareExtension */;
 		};
+		5A1E00000000000000000028 /* Exceptions for "ActionExtension" folder in "ActionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ActionExtension.entitlements,
+				Info.plist,
+			);
+			target = 5A1E00000000000000000029 /* ActionExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		5A1E00000000000000000022 /* ActionExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5A1E00000000000000000028 /* Exceptions for "ActionExtension" folder in "ActionExtension" target */,
+			);
+			path = ActionExtension;
+			sourceTree = "<group>";
+		};
+		5A1E00000000000000000023 /* ExtensionSupport */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ExtensionSupport;
+			sourceTree = "<group>";
+		};
 		5A1E00000000000000000004 /* ShareExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -83,6 +114,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5A1E00000000000000000024 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5A1E00000000000000000005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -106,6 +144,8 @@
 				829111E652679B884980E067 /* Configuration */,
 				FB83F4AB409639FCCF2DB538 /* iosApp */,
 				5A1E00000000000000000004 /* ShareExtension */,
+				5A1E00000000000000000022 /* ActionExtension */,
+				5A1E00000000000000000023 /* ExtensionSupport */,
 				7CE085183EECC19C58FE0FCA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,6 +155,7 @@
 			children = (
 				D457412F8586FA4C10272666 /* Walletka.app */,
 				5A1E00000000000000000001 /* WalletkaShare.appex */,
+				5A1E00000000000000000020 /* WalletkaAction.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -122,6 +163,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5A1E00000000000000000029 /* ActionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A1E0000000000000000002A /* Build configuration list for PBXNativeTarget "ActionExtension" */;
+			buildPhases = (
+				5A1E00000000000000000026 /* Sources */,
+				5A1E00000000000000000024 /* Frameworks */,
+				5A1E00000000000000000025 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5A1E00000000000000000022 /* ActionExtension */,
+				5A1E00000000000000000023 /* ExtensionSupport */,
+			);
+			name = ActionExtension;
+			packageProductDependencies = (
+			);
+			productName = ActionExtension;
+			productReference = 5A1E00000000000000000020 /* WalletkaAction.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		8F8BBB61CFA7A2E73DB8D14B /* iosApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E85514D019DE60B083EED7AE /* Build configuration list for PBXNativeTarget "iosApp" */;
@@ -136,6 +200,7 @@
 			);
 			dependencies = (
 				5A1E0000000000000000000E /* PBXTargetDependency */,
+				5A1E0000000000000000002D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FB83F4AB409639FCCF2DB538 /* iosApp */,
@@ -161,6 +226,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				5A1E00000000000000000004 /* ShareExtension */,
+				5A1E00000000000000000023 /* ExtensionSupport */,
 			);
 			name = ShareExtension;
 			packageProductDependencies = (
@@ -185,6 +251,9 @@
 					5A1E0000000000000000000A = {
 						CreatedOnToolsVersion = 16.2;
 					};
+					5A1E00000000000000000029 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 				};
 			};
 			buildConfigurationList = 2DC60B396429E4D202558ABF /* Build configuration list for PBXProject "iosApp" */;
@@ -203,11 +272,19 @@
 			targets = (
 				8F8BBB61CFA7A2E73DB8D14B /* iosApp */,
 				5A1E0000000000000000000A /* ShareExtension */,
+				5A1E00000000000000000029 /* ActionExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5A1E00000000000000000025 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5A1E00000000000000000006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -247,6 +324,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		5A1E00000000000000000026 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5A1E00000000000000000007 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -264,6 +348,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5A1E0000000000000000002D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A1E00000000000000000029 /* ActionExtension */;
+			targetProxy = 5A1E00000000000000000021 /* PBXContainerItemProxy */;
+		};
 		5A1E0000000000000000000E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5A1E0000000000000000000A /* ShareExtension */;
@@ -505,6 +594,60 @@
 			};
 			name = Release;
 		};
+		5A1E0000000000000000002B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ActionExtension/ActionExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "${TEAM_ID}";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ActionExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Add to Walletka";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).ActionExtension";
+				PRODUCT_NAME = WalletkaAction;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5A1E0000000000000000002C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ActionExtension/ActionExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "${TEAM_ID}";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ActionExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Add to Walletka";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).ActionExtension";
+				PRODUCT_NAME = WalletkaAction;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -531,6 +674,15 @@
 			buildConfigurations = (
 				5A1E0000000000000000000C /* Debug */,
 				5A1E0000000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A1E0000000000000000002A /* Build configuration list for PBXNativeTarget "ActionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A1E0000000000000000002B /* Debug */,
+				5A1E0000000000000000002C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

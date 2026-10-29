@@ -48,6 +48,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -140,6 +143,18 @@ private fun Failed(failure: AnalysisFailure, onRetry: () -> Unit, onClose: () ->
 @Composable
 private fun Editing(form: CardForm, submission: Submission, component: CardReviewComponent) {
     val busy = submission == Submission.InProgress
+    var isEditingBanner by remember { mutableStateOf(false) }
+    if (isEditingBanner) {
+        BannerEditorDialog(
+            form = form,
+            onDone = { region ->
+                component.onBannerRegionChanged(region)
+                if (!form.isBannerEnabled) component.onBannerToggled(true)
+                isEditingBanner = false
+            },
+            onDismiss = { isEditingBanner = false },
+        )
+    }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -231,6 +246,7 @@ private fun Editing(form: CardForm, submission: Submission, component: CardRevie
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                AdjustBannerButton(enabled = !busy, onClick = { isEditingBanner = true })
                 Switch(checked = form.isBannerEnabled, onCheckedChange = component::onBannerToggled, enabled = !busy)
             }
         }
