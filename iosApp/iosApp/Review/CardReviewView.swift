@@ -188,27 +188,31 @@ private struct CardAddedView: View {
     @State private var hasAppeared = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.green)
-                    .symbolEffect(.bounce, value: true)
-                    .accessibilityHidden(true)
-                VStack(spacing: 6) {
-                    Text(wasUpdate ? String(localized: "Updated in Apple Wallet") : String(localized: "Added to Apple Wallet"))
-                        .font(.title2.bold())
-                        .multilineTextAlignment(.center)
-                        .accessibilityAddTraits(.isHeader)
-                    Text("“\(form.name)” is ready to scan from Wallet.")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+        // Centred in the space above the buttons; scrolls only when large text makes it taller than that.
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 24) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.green)
+                        .symbolEffect(.bounce, value: true)
+                        .accessibilityHidden(true)
+                    VStack(spacing: 6) {
+                        Text(wasUpdate ? String(localized: "Updated in Apple Wallet") : String(localized: "Added to Apple Wallet"))
+                            .font(.title2.bold())
+                            .multilineTextAlignment(.center)
+                            .accessibilityAddTraits(.isHeader)
+                        Text("“\(form.name)” is ready to scan from Wallet.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    CardPreview(form: form)
                 }
-                CardPreview(form: form)
+                .padding(24)
+                .frame(maxWidth: 460)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height)
             }
-            .padding(24)
-            .frame(maxWidth: 460)
-            .frame(maxWidth: .infinity)
+            .scrollBounceBehavior(.basedOnSize)
         }
         .onAppear { hasAppeared = true }
         // The pass made it into Wallet.
