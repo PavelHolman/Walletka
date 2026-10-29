@@ -385,6 +385,25 @@ class RootComponentTest {
     }
 
     @Test
+    fun editsOfACardNotInWalletAreKept() = kotlinx.coroutines.test.runTest {
+        val wallet = FakeWalletService()
+        val (root, home) = libraryCardWithAutoSync(wallet)
+        wallet.inWallet = false
+        root.review().onNameChanged("First")
+        testScheduler.advanceUntilIdle()
+        assertEquals(CardReviewComponent.SyncStatus.NOT_IN_WALLET, assertIs<Model.Editing>(root.review().model.value).sync)
+        val updatesBefore = wallet.updated.size
+
+        // Further edits go to the library without asking the wallet, also when leaving straight away.
+        root.review().onNameChanged("Second")
+        root.onBackClicked()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(updatesBefore, wallet.updated.size)
+        assertEquals("Second", home.model.value.cards.single().name)
+    }
+
+    @Test
     fun removedPassIsReportedAsNotInWallet() = kotlinx.coroutines.test.runTest {
         val wallet = FakeWalletService()
         val (root, _) = libraryCardWithAutoSync(wallet)

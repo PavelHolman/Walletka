@@ -180,7 +180,7 @@ private class ReviewStore(
         scope.launch {
             library.cards.collect { cards ->
                 val id = (_model.value as? Model.Editing)?.form?.cardId ?: return@collect
-                if (cards.none { it.id == id } && library.get(id) == null) onFinished()
+                if (cards.none { it.id == id } && library.get(id) == null) finish()
             }
         }
         if (savedForm == null) {
@@ -224,10 +224,14 @@ private class ReviewStore(
         }
     }
 
+    /** The user edited the form since it was last written to the library (the wallet may still be behind). */
+    private var hasUnsavedEdits = false
+
     fun updateForm(update: CardForm.() -> CardForm) {
         _model.update { model ->
             if (model is Model.Editing && model.submission !is Submission.InProgress) {
                 val form = model.form.update()
+                if (form != model.form) hasUnsavedEdits = true
                 model.copy(form = form, hasChanges = hasChanges(form))
             } else {
                 model
@@ -249,12 +253,44 @@ private class ReviewStore(
             _model.value = editing.copy(sync = SyncStatus.PENDING)
             return
         }
+        if (editing.sync == SyncStatus.NOT_IN_WALLET) {
+            // Not in this device's wallet (removed there, or from iCloud or a backup): nothing to update, but the
+            // library keeps the edits; the Add to Wallet button stays.
+            syncJob = scope.launch {
+                delay(delayMillis)
+                bannerJob?.join()
+                logoJob?.join()
+                saveLibraryOnly()
+            }
+            return
+        }
         _model.value = editing.copy(sync = SyncStatus.PENDING, syncError = null)
         syncJob = scope.launch {
             delay(delayMillis)
             bannerJob?.join() // sync the final crop
             logoJob?.join()
             sync()
+        }
+    }
+
+    /** Saves the edits to the library only, for a card the wallet can't be updated for. */
+    private suspend fun saveLibraryOnly() {
+        val editing = _model.value as? Model.Editing ?: return
+        if (!hasUnsavedEdits || !editing.form.isValid) return
+        val existing = editing.form.cardId?.let { library.get(it) } ?: return
+        val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, existing.walletId) }
+        hasUnsavedEdits = false
+        _model.update { model ->
+            if (model !is Model.Editing) return@update model
+            model.copy(
+                form = model.form.copy(
+                    photo = if (model.form.photo == editing.form.photo) saved.photo else model.form.photo,
+                    banner = if (model.form.banner == editing.form.banner) saved.banner else model.form.banner,
+                    logo = model.form.logo.copy(
+                        image = if (model.form.logo.image == editing.form.logo.image) saved.logo.image else model.form.logo.image,
+                    ),
+                ),
+            )
         }
     }
 
@@ -271,6 +307,7 @@ private class ReviewStore(
             },
             ifRight = {
                 val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, existing.walletId) }
+                hasUnsavedEdits = false
                 issuedForm = saved
                 _model.update { model ->
                     if (model !is Model.Editing) return@update model
@@ -293,6 +330,15 @@ private class ReviewStore(
     /** Leaves the screen; unsynced edits of a library card are still pushed to the wallet in the background. */
     fun close() {
         flushInBackground()
+        finish()
+    }
+
+    /** Set once the screen is gone (closed, popped, replaced), so later events can't close another screen. */
+    private var isFinished = false
+
+    private fun finish() {
+        if (isFinished) return
+        isFinished = true
         onFinished()
     }
 
@@ -310,7 +356,9 @@ private class ReviewStore(
                 withContext(NonCancellable) {
                     bannerJob?.join()
                     logoJob?.join()
-                    sync()
+                    if (editing.sync != SyncStatus.NOT_IN_WALLET) sync()
+                    // The wallet couldn't take them (not in it, offline, …): the library keeps the edits anyway.
+                    saveLibraryOnly() // only if edits are still unsaved
                     // The working copies were moved into the library by the sync, or are no longer needed.
                     val form = (_model.value as? Model.Editing)?.form ?: editing.form
                     form.photo?.let { deleteUnlessInLibrary(it) }
@@ -479,7 +527,7 @@ private class ReviewStore(
             withContext(NonCancellable) {
                 library.deleteCard(cardId, { dependencies.walletService.removeCard(it) }, imageStore::delete)
             }
-            onFinished()
+            finish()
         }
     }
 
@@ -553,6 +601,7 @@ private class ReviewStore(
     }
 
     override fun onDestroy() {
+        isFinished = true
         // A sync still running on close owns the images and the model (see [close]); leaving any other way flushes too.
         if (flushInBackground()) return
         scope.cancel()
