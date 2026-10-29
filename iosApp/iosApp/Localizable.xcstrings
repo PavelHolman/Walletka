@@ -1169,6 +1169,16 @@
         }
       }
     },
+    "Not in Apple Wallet on this device. Add it below." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta není v Apple Wallet na tomto zařízení. Přidejte ji níže."
+          }
+        }
+      }
+    },
     "Not in Wallet" : {
       "localizations" : {
         "cs" : {
@@ -1405,6 +1415,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zkusit znovu"
+          }
+        }
+      }
+    },
+    "Scan Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naskenovat kartu"
           }
         }
       }
@@ -1675,6 +1695,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zkuste ostřejší fotku, na které je celý QR kód nebo čárový kód."
+          }
+        }
+      }
+    },
+    "Type it in by hand" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opište ji ručně"
           }
         }
       }

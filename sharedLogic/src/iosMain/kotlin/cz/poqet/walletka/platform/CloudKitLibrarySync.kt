@@ -458,7 +458,10 @@ internal class CloudKitLibrarySync(
     }
 
     // Kotlin strings can't be NSLog's variadic arguments, so the message is the (escaped) format itself.
-    private fun log(message: String) = NSLog("[CloudSync] " + message.replace("%", "%%"))
+    private fun log(message: String) {
+        NSLog("[CloudSync] " + message.replace("%", "%%"))
+        println("[CloudSync] $message") // also on the console of a launch from Xcode / devicectl
+    }
 
     private companion object {
         const val ZONE = "Library"

@@ -53,6 +53,15 @@ struct HomeView: View {
             }
         }
         .animation(.default, value: isLoadingPhoto)
+        .onChange(of: QuickActionInbox.shared.pending, initial: true) { _, action in
+            // Only one Home handles it (the iPad shows two: the sidebar and the welcome screen).
+            guard let action, presentation != .welcome else { return }
+            QuickActionInbox.shared.pending = nil
+            switch action {
+            case .scanCard: isCameraPresented = true
+            case .newCard: component.onEnterManuallyClicked()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIPasteboard.changedNotification)) { _ in
             hasPasteboardImage = UIPasteboard.general.hasImages
         }
@@ -166,7 +175,7 @@ struct HomeView: View {
     private var addMenu: some View {
         Menu {
             if CameraCapture.isAvailable {
-                Button("Take Photo", systemImage: "camera") { isCameraPresented = true }
+                Button("Scan Card", systemImage: "camera.viewfinder") { isCameraPresented = true }
             }
             Button("Choose Photo", systemImage: "photo.on.rectangle") { isPhotoPickerPresented = true }
             Button("Paste Image", systemImage: "doc.on.clipboard") { pasteImage() }
@@ -240,7 +249,7 @@ struct HomeView: View {
                     Button {
                         isCameraPresented = true
                     } label: {
-                        Label("Take Photo", systemImage: "camera")
+                        Label("Scan Card", systemImage: "camera.viewfinder")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)

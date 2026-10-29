@@ -137,7 +137,7 @@
     <string name="sync_syncing">Synchronizuji s Google Wallet…</string>
     <string name="sync_failed">Synchronizace se nezdařila</string>
     <string name="sync_failed_detail">Synchronizace se nezdařila: %1$s</string>
-    <string name="sync_not_in_wallet">Karta už v Google Wallet není. Přidejte ji znovu.</string>
+    <string name="sync_not_in_wallet">Karta není v Google Wallet na tomto zařízení. Přidejte ji níže.</string>
     <string name="typed_code_no_code">Na fotce se nenašel žádný kód. Opište číslo vytištěné na kartě a vyberte typ kódu.</string>
     <string name="typed_code_manual">Opište číslo vytištěné na kartě a vyberte typ kódu.</string>
     <string name="typed_code_type">Typ kódu</string>

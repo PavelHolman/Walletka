@@ -11,7 +11,18 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         // CloudKit's sync engine fetches iCloud changes on its silent pushes once the app is registered for them.
         if CloudKitEntitlement.isPresent { application.registerForRemoteNotifications() }
+        QuickAction.install()
         return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
     }
 }
 
@@ -34,6 +45,17 @@ struct iOSApp: App {
                     openDebugScreen()
                 }
                 #endif
+        }
+        .commands {
+            // A hardware keyboard (iPad): ⌘N starts a card typed in by hand.
+            CommandGroup(replacing: .newItem) {
+                Button("New Card") {
+                    if case .home(let home) = root.children.value.first?.sealedType() {
+                        home.value.component.onEnterManuallyClicked()
+                    }
+                }
+                .keyboardShortcut("n")
+            }
         }
     }
 

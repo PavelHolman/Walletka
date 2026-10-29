@@ -591,7 +591,7 @@ private struct SyncStatusView: View {
                     .accessibilityHidden(true)
             case .NOT_IN_WALLET:
                 Image(systemName: "wallet.pass").foregroundStyle(.secondary).accessibilityHidden(true)
-                Text("Not in Wallet anymore. Add it again below.")
+                Text("Not in Apple Wallet on this device. Add it below.")
                     .multilineTextAlignment(.center)
             }
         }
