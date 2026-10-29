@@ -17,7 +17,7 @@ Generated from the [Kotlin Multiplatform wizard](https://kmp.jetbrains.com) (And
 | Android UI | Compose Multiplatform (`sharedUI`) + Material 3 |
 | iOS UI | SwiftUI (+ a UIKit share extension) |
 | DI | none needed: one composition root per platform |
-| Pass service | Kotlin/JS on Cloudflare Workers, GraphQL (graphql-js), R2 for banners |
+| Pass service | Kotlin/JS on Cloudflare Workers, GraphQL (graphql-js), Workers KV for banners |
 
 ## Modules
 
@@ -36,7 +36,7 @@ iosApp/        SwiftUI app + ShareExtension target
 serviceApi/    GraphQL schema + operations shared by the app and the service (the API contract)
 passService/   Cloudflare Worker (Kotlin/JS): Apple pass signing + banner hosting
   commonMain/    pass packaging, CMS/PKCS#7 signing (own DER encoder), zip writer, validation
-  jsMain/        Worker fetch handler, GraphQL resolvers, WebCrypto, R2
+  jsMain/        Worker fetch handler, GraphQL resolvers, WebCrypto, KV
   jvmTest/       signs with test certificates and verifies with `openssl cms -verify`
   worker/        wrangler.toml + entry module wrapping the compiled Kotlin
 ```
@@ -73,11 +73,12 @@ The platform interfaces are `internal`: each platform has a composition root
 - `signApplePass(files)` validates the pass files (allow-listed names, PNG check, size limits), stamps
   `passTypeIdentifier`/`teamIdentifier` from its own config into `pass.json`, writes `manifest.json`, signs it
   (detached CMS, SHA-256, signer + WWDR certificates) and returns the zipped `.pkpass`.
-- `uploadBanner(pngBase64)` stores a PNG in R2 under a content hash and returns its public URL,
+- `uploadBanner(pngBase64)` stores a PNG in Workers KV under a content hash and returns its public URL,
   `GET /banners/<id>.png` (immutable caching). Android uses it as the Google Wallet `heroImage`.
 
-Requests need `Authorization: Bearer <API_KEY>` when the `API_KEY` secret is set. Signing uses WebCrypto (native),
-so a request stays within the Workers free plan's CPU budget; R2's free tier covers 10 GB of banners.
+Requests need `Authorization: Bearer <API_KEY>`; until the `API_KEY` secret is set, every GraphQL request is refused. Signing uses WebCrypto (native),
+so a request stays within the Workers free plan's CPU budget; KV is part of the Free plan with hard limits (1 GB, 1,000 writes a day): past them uploads fail instead of
+being billed, so the service can't incur charges and needs no payment method.
 
 The app's operations come from the same `:serviceApi` module the Worker serves, and a JS test validates them
 against the schema with graphql-js, so client and server can't drift.
@@ -89,47 +90,36 @@ cd passService/worker && npm install && ./scripts/dev-vars.sh && npm run dev
 ```
 
 `dev-vars.sh` writes `.dev.vars` with throwaway test certificates (from `passService/src/jvmTest/resources/test-certs`)
-and `API_KEY=dev-key`; R2 is emulated locally. PassKit rejects passes signed with those certificates, so only a
+and `API_KEY=dev-key`; KV is emulated locally. PassKit rejects passes signed with those certificates, so only a
 real Pass Type ID certificate gets a pass into Apple Wallet.
 
 ### Deploy to Cloudflare (free plan)
 
-1. Log in and create the banner bucket:
+1. In the [Apple Developer portal](https://developer.apple.com/account/resources/identifiers/list/passTypeId),
+   register a Pass Type ID (`pass.cz.poqet.walletka`) and create its certificate from a CSR made with OpenSSL, so
+   the private key never needs exporting from Keychain:
    ```bash
-   cd passService/worker && npx wrangler login && npx wrangler r2 bucket create walletka-banners
+   mkdir -p passService/worker/.secrets && cd passService/worker/.secrets && openssl req -new -newkey rsa:2048 -noenc -keyout pass-key.pem -out pass.certSigningRequest -subj "/CN=Walletka Pass Type ID"
    ```
-2. In the [Apple Developer portal](https://developer.apple.com/account/resources/identifiers/list/passTypeId),
-   create a Pass Type ID (e.g. `pass.cz.poqet.walletka`) and its certificate, then export it from Keychain as
-   `Certificates.p12`. Convert it and Apple's WWDR G4 intermediate to PEM (add `-legacy` if OpenSSL reports an
-   unsupported algorithm):
+2. Upload `pass.certSigningRequest`, download `pass.cer`, and convert it and Apple's WWDR G4 intermediate to PEM
+   (in `.secrets/`, which git ignores):
    ```bash
-   openssl pkcs12 -in Certificates.p12 -clcerts -nokeys -out pass-cert.pem
-   ```
-   ```bash
-   openssl pkcs12 -in Certificates.p12 -nocerts -noenc -out pass-key.pem
+   openssl x509 -inform DER -in ~/Downloads/pass.cer -out pass-cert.pem
    ```
    ```bash
    curl -s https://www.apple.com/certificateauthority/AppleWWDRCAG4.cer | openssl x509 -inform DER -out wwdr.pem
    ```
-3. Set `PASS_TYPE_IDENTIFIER` and `TEAM_IDENTIFIER` in `wrangler.toml`. They must match the certificate's UID and
-   OU, or PassKit rejects the pass.
-4. Store the secrets, then delete the local PEM files:
    ```bash
-   npx wrangler secret put PASS_CERTIFICATE < pass-cert.pem
+   openssl rand -hex 24 > api-key.txt
    ```
+3. Set `PASS_TYPE_IDENTIFIER` and `TEAM_IDENTIFIER` in `wrangler.toml` to the certificate's UID and OU
+   (`openssl x509 -in pass-cert.pem -noout -subject`), or PassKit rejects the pass.
+4. Log in and deploy; the script creates the KV namespace, deploys, and stores the secrets:
    ```bash
-   npx wrangler secret put PASS_PRIVATE_KEY < pass-key.pem
+   cd passService/worker && npx wrangler login && ./scripts/deploy.sh
    ```
-   ```bash
-   npx wrangler secret put WWDR_CERTIFICATE < wwdr.pem
-   ```
-   ```bash
-   openssl rand -hex 24 | npx wrangler secret put API_KEY
-   ```
-5. Deploy; Wrangler prints the `https://walletka-pass-service.<account>.workers.dev` URL:
-   ```bash
-   npm run deploy
-   ```
+
+`./scripts/dev-vars.sh .secrets` runs `wrangler dev` with the real certificate instead of the test one.
 
 The API key ships inside the app, so it only keeps casual traffic out. For a public release, add App Attest /
 Play Integrity checks or Cloudflare rate limiting in front of `/graphql`.
@@ -158,6 +148,11 @@ Set in `iosApp/Configuration/Config.xcconfig`:
 ```
 TEAM_ID=ABCDE12345
 WALLETKA_SERVICE_URL=https:/$()/walletka-pass-service.<account>.workers.dev
+```
+
+and the key in `iosApp/Configuration/Secrets.xcconfig` (gitignored, included by `Config.xcconfig`):
+
+```
 WALLETKA_SERVICE_API_KEY=<API_KEY>
 ```
 

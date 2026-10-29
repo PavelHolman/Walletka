@@ -2,14 +2,15 @@ name = "walletka-pass-service"
 main = "src/index.mjs"
 compatibility_date = "2026-10-01"
 
-# Uploaded banners, publicly served by the Worker at /banners/<id>.png (R2 free tier: 10 GB, no egress fees).
-[[r2_buckets]]
+# Uploaded banners, publicly served by the Worker at /banners/<id>.png. Workers KV is part of the Free plan with
+# hard limits (1 GB, 1,000 writes/day), so it can't incur charges. scripts/deploy.sh fills in the id.
+[[kv_namespaces]]
 binding = "BANNERS"
-bucket_name = "walletka-banners"
+id = "631cd152ad8d453cb5b99fe9601ae20e"
 
 [vars]
 PASS_TYPE_IDENTIFIER = "pass.cz.poqet.walletka"
-TEAM_IDENTIFIER = ""
+TEAM_IDENTIFIER = "8744SN33B3"
 
 # Secrets (wrangler secret put <NAME>):
 #   PASS_CERTIFICATE  PEM of the Pass Type ID certificate

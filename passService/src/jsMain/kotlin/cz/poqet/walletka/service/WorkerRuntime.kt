@@ -3,7 +3,7 @@ package cz.poqet.walletka.service
 import kotlinx.coroutines.await
 import kotlin.js.Promise
 
-// Thin typed views of the Workers runtime (Fetch API, WebCrypto, R2); everything else stays `dynamic`.
+// Thin typed views of the Workers runtime (Fetch API, WebCrypto, KV); everything else stays `dynamic`.
 
 internal external class Response(body: dynamic = definedExternally, init: dynamic = definedExternally)
 
@@ -65,14 +65,13 @@ internal class WebPassCrypto(private val privateKeyPkcs8: ByteArray) : PassCrypt
         subtle.digest(algorithm, data).unsafeCast<Promise<ArrayBufferLike>>().await().toByteArray()
 }
 
-/** Banners in an R2 bucket bound as `BANNERS`. */
-internal class R2BannerStore(private val bucket: dynamic) : BannerStore {
+/**
+ * Banners in the Workers KV namespace bound as `BANNERS`. KV's free tier has hard limits (1 GB, 1,000 writes a day):
+ * past them writes fail instead of being billed.
+ */
+internal class KvBannerStore(private val namespace: dynamic) : BannerStore {
     override suspend fun put(key: String, png: ByteArray) {
-        bucket.put(
-            key,
-            png,
-            jsObject { httpMetadata = jsObject { contentType = "image/png"; cacheControl = IMMUTABLE } },
-        ).unsafeCast<Promise<dynamic>>().await()
+        namespace.put(key, png).unsafeCast<Promise<Unit>>().await()
     }
 
     companion object {

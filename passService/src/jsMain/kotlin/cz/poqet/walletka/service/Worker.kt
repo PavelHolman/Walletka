@@ -23,7 +23,7 @@ private fun serviceFor(env: WorkerEnv): PassService {
         wwdrCertificatePem = env.WWDR_CERTIFICATE.orEmpty(),
     )
     val crypto = WebPassCrypto(Pem.privateKeyPkcs8(env.PASS_PRIVATE_KEY.orEmpty()))
-    return PassService(config, crypto, R2BannerStore(env.BANNERS), now = { (Date.now() / 1000).toLong() })
+    return PassService(config, crypto, KvBannerStore(env.BANNERS), now = { (Date.now() / 1000).toLong() })
         .also { cached = env to it }
 }
 
@@ -53,23 +53,22 @@ fun fetch(request: dynamic, env: dynamic, ctx: dynamic): Promise<dynamic> = Glob
 
 private suspend fun serveBanner(env: WorkerEnv, path: String): dynamic {
     val key = PassService.bannerKeyForPath(path) ?: return Response("Not found", jsObject { status = 404 })
-    val obj = env.BANNERS.get(key).unsafeCast<Promise<dynamic>>().await()
+    val body = env.BANNERS.get(key, "stream").unsafeCast<Promise<dynamic>>().await()
         ?: return Response("Not found", jsObject { status = 404 })
     return Response(
-        obj.body,
+        body,
         jsObject {
             headers = jsObject {
                 this["content-type"] = "image/png"
-                this["cache-control"] = R2BannerStore.IMMUTABLE
-                this["etag"] = obj.httpEtag
+                this["cache-control"] = KvBannerStore.IMMUTABLE
             }
         },
     )
 }
 
-/** Requires `Authorization: Bearer <API_KEY>` when the `API_KEY` secret is set. */
+/** Requires `Authorization: Bearer <API_KEY>`; without a configured `API_KEY` every request is refused. */
 private fun isAuthorized(request: WorkerRequest, env: WorkerEnv): Boolean {
-    val expected = env.API_KEY?.takeIf { it.isNotEmpty() } ?: return true
+    val expected = env.API_KEY?.takeIf { it.isNotEmpty() } ?: return false
     val provided = (request.headers.get("authorization") as String?)?.removePrefix("Bearer ")?.trim().orEmpty()
     if (provided.length != expected.length) return false
     var diff = 0

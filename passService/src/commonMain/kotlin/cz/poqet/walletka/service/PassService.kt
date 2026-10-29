@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
 /** An error whose message is safe to return to clients. */
 class ServiceException(message: String) : Exception(message)
 
-/** Where uploaded banners live (R2 in the Worker). */
+/** Where uploaded banners live (Workers KV in the Worker). */
 interface BannerStore {
     suspend fun put(key: String, png: ByteArray)
 }
