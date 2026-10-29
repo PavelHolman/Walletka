@@ -17,6 +17,7 @@ import platform.CoreGraphics.CGImageGetWidth
 import platform.CoreGraphics.CGImageRef
 import platform.CoreGraphics.CGImageRelease
 import platform.CoreGraphics.CGPoint
+import platform.CoreGraphics.CGRectInset
 import platform.CoreImage.CIContext
 import platform.CoreImage.CIDetector
 import platform.CoreImage.CIDetectorAccuracy
@@ -103,7 +104,9 @@ internal class IosCardDetector(private val imageStore: ImageStore) : CardDetecto
             ),
         ) ?: return null
         val output = filter.outputImage ?: return null
-        val straightened = CIContext.contextWithOptions(null).createCGImage(output, fromRect = output.extent) ?: return null
+        // The edge pixels are blended with transparency, which turns into a light line in the JPEG (and the banner).
+        val inner = CGRectInset(output.extent, EDGE_TRIM, EDGE_TRIM)
+        val straightened = CIContext.contextWithOptions(null).createCGImage(output, fromRect = inner) ?: return null
         val result = UIImage(cGImage = straightened)
         CGImageRelease(straightened)
         // Large enough for the banner and logo crops, without keeping a 12 MP photo around.
@@ -127,5 +130,8 @@ internal class IosCardDetector(private val imageStore: ImageStore) : CardDetecto
          * uncut, it just keeps the background in its banner.
          */
         const val MIN_CARD_SIZE = 240
+
+        /** Pixels cut from each edge of the straightened card. */
+        const val EDGE_TRIM = 2.0
     }
 }
