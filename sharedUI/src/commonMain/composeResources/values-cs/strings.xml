@@ -60,9 +60,6 @@
     <string name="wallet_add">Přidat do Peněženky Google</string>
     <string name="wallet_adding">Přidávám do Peněženky Google…</string>
     <string name="submission_failed_add">Kartu se nepodařilo přidat</string>
-    <string name="added_updated">Aktualizováno v Peněžence Google</string>
-    <string name="added_saved">Uloženo do Peněženky Google</string>
-    <string name="added_ready">Karta „%1$s“ je připravená k načtení z Peněženky Google.</string>
     <string name="preview_name_placeholder">Název karty</string>
     <string name="preview_description">Náhled karty: %1$s, %2$s</string>
     <string name="preview_with_logo">s logem</string>

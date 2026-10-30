@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -20,7 +22,9 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -53,7 +57,6 @@ import cz.poqet.walletka.domain.WalletFailure
 import cz.poqet.walletka.ui.KeepScreenBright
 import cz.poqet.walletka.ui.formatLocalDate
 import cz.poqet.walletka.ui.resources.*
-import cz.poqet.walletka.ui.review.AddToWalletButton
 import cz.poqet.walletka.ui.review.ButtonProgress
 import cz.poqet.walletka.ui.review.CardPreview
 import cz.poqet.walletka.ui.review.CardPreviewSize
@@ -217,6 +220,25 @@ private fun Details(details: CardDetails, modifier: Modifier = Modifier) {
                 Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(value, style = MaterialTheme.typography.bodyLarge)
             }
+        }
+    }
+}
+
+/** The "Add to Google Wallet" button. */
+@Composable
+private fun AddToWalletButton(onClick: () -> Unit, enabled: Boolean, busy: Boolean) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+        shape = RoundedCornerShape(26.dp),
+    ) {
+        if (busy) {
+            ButtonProgress(stringResource(Res.string.wallet_adding), MaterialTheme.colorScheme.onPrimary)
+        } else {
+            Icon(Icons.Outlined.Wallet, null)
+            Spacer(Modifier.size(8.dp))
+            Text(stringResource(Res.string.wallet_add))
         }
     }
 }

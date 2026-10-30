@@ -60,9 +60,6 @@
     <string name="wallet_add">Add to Google Wallet</string>
     <string name="wallet_adding">Adding to Google Wallet…</string>
     <string name="submission_failed_add">Couldn’t add the card</string>
-    <string name="added_updated">Updated in Google Wallet</string>
-    <string name="added_saved">Saved to Google Wallet</string>
-    <string name="added_ready">“%1$s” is ready to scan from Google Wallet.</string>
     <string name="preview_name_placeholder">Card name</string>
     <string name="preview_description">Card preview: %1$s, %2$s</string>
     <string name="preview_with_logo">with logo</string>

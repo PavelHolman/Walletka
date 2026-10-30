@@ -20,7 +20,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -50,13 +49,8 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Wallet
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -66,10 +60,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -133,11 +125,8 @@ fun CardReviewContent(component: CardReviewComponent) {
         topBar = {
             TopAppBar(
                 title = {
-                    val editing = model as? Model.Editing
-                    // The success screen has its own headline.
-                    if (editing?.submission !is Submission.Added) {
-                        Text(stringResource(if (editing?.form?.isLibraryCard == true) Res.string.review_title_edit else Res.string.review_title_new))
-                    }
+                    val isLibraryCard = (model as? Model.Editing)?.form?.isLibraryCard == true
+                    Text(stringResource(if (isLibraryCard) Res.string.review_title_edit else Res.string.review_title_new))
                 },
                 navigationIcon = {
                     IconButton(onClick = component::onCloseClicked) {
@@ -152,12 +141,9 @@ fun CardReviewContent(component: CardReviewComponent) {
             when (val state = model) {
                 is Model.Loading -> Loading(state.stage, state.photo?.path)
                 is Model.Failed -> Failed(state.failure, onRetry = component::onRetryClicked, onClose = component::onCloseClicked)
-                is Model.Editing -> when (val submission = state.submission) {
-                    is Submission.Added -> CardAdded(state.form, submission.replacedExisting, onDone = component::onCloseClicked)
-                    else -> Column {
-                        state.duplicateOf?.let { DuplicateCardBanner(it, onOpen = component::onOpenDuplicateClicked) }
-                        Editing(state.form, submission, state.colorPreview, component, state.sync, state.syncError)
-                    }
+                is Model.Editing -> Column {
+                    state.duplicateOf?.let { DuplicateCardBanner(it, onOpen = component::onOpenDuplicateClicked) }
+                    Editing(state.form, state.submission, state.colorPreview, component, state.sync, state.syncError)
                 }
             }
         }
@@ -490,37 +476,23 @@ private fun Editing(
             if (form.isLibraryCard) {
                 if (sync != null) SyncStatusRow(sync, syncError, onRetry = component::onRetrySyncClicked)
             } else {
-                // Which of the two buttons shows the progress while the card is being saved or added.
-                var isAdding by remember { mutableStateOf(false) }
-                val enabled = form.isValid && !busy
+                // Saved to Walletka; the card's preview then offers the wallet.
                 Button(
                     onClick = {
                         focusManager.clearFocus()
-                        isAdding = false
                         component.onSaveClicked()
                     },
-                    enabled = enabled,
+                    enabled = form.isValid && !busy,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                     shape = RoundedCornerShape(26.dp),
                 ) {
-                    if (busy && !isAdding) {
+                    if (busy) {
                         ButtonProgress(stringResource(Res.string.review_saving), MaterialTheme.colorScheme.onPrimary)
                     } else {
                         Text(stringResource(Res.string.review_save))
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                AddToWalletButton(
-                    onClick = {
-                        focusManager.clearFocus()
-                        isAdding = true
-                        component.onAddToWalletClicked()
-                    },
-                    enabled = enabled,
-                    busy = busy && isAdding,
-                    tonal = true,
-                )
-                // Why the buttons are disabled; a code that can't be encoded is explained at the code.
+                // Why the button is disabled; a code that can't be encoded is explained at the code.
                 if (!busy && form.name.isBlank()) {
                     Text(
                         stringResource(Res.string.wallet_needs_name),
@@ -542,41 +514,6 @@ private fun Editing(
         }
     }
     }
-
-    when (submission) {
-        is Submission.Failed -> if (submission.failure != WalletFailure.CANCELLED) {
-            AlertDialog(
-                onDismissRequest = component::onSubmissionErrorDismissed,
-                icon = { Icon(Icons.Outlined.ErrorOutline, null) },
-                title = { Text(stringResource(Res.string.submission_failed_add)) },
-                text = { Text(submission.failure.message() + (submission.detail?.let { "\n\n$it" } ?: "")) },
-                confirmButton = { TextButton(onClick = component::onSubmissionErrorDismissed) { Text(stringResource(Res.string.action_ok)) } },
-            )
-        }
-
-        else -> Unit
-    }
-}
-
-/** The "Add to Google Wallet" button of the new-card form and the card preview; [tonal] when it is the second option. */
-@Composable
-internal fun AddToWalletButton(onClick: () -> Unit, enabled: Boolean, busy: Boolean, modifier: Modifier = Modifier, tonal: Boolean = false) {
-    val content: @Composable RowScope.() -> Unit = {
-        if (busy) {
-            ButtonProgress(stringResource(Res.string.wallet_adding), if (tonal) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary)
-        } else {
-            Icon(Icons.Outlined.Wallet, null)
-            Spacer(Modifier.size(8.dp))
-            Text(stringResource(Res.string.wallet_add))
-        }
-    }
-    val buttonModifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
-    val shape = RoundedCornerShape(26.dp)
-    if (tonal) {
-        FilledTonalButton(onClick = onClick, enabled = enabled, modifier = buttonModifier, shape = shape, content = content)
-    } else {
-        Button(onClick = onClick, enabled = enabled, modifier = buttonModifier, shape = shape, content = content)
-    }
 }
 
 /** A spinner in place of a button's label, announced as [description]. */
@@ -587,35 +524,6 @@ internal fun ButtonProgress(description: String, color: Color) {
         strokeWidth = 2.dp,
         color = color,
     )
-}
-
-/** Shown once Google Wallet reports the pass as saved. */
-@Composable
-private fun CardAdded(form: CardForm, replacedExisting: Boolean, onDone: () -> Unit) = BoxWithConstraints(Modifier.fillMaxSize()) {
-    // Centred on the screen; scrolls only when large text makes it taller than that.
-    Column(
-        Modifier.verticalScroll(rememberScrollState()).fillMaxWidth().heightIn(min = maxHeight).padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
-    ) {
-        Icon(Icons.Outlined.CheckCircle, null, Modifier.size(64.dp), tint = Color(0xFF2E7D32))
-        Text(
-            stringResource(if (replacedExisting) Res.string.added_updated else Res.string.added_saved),
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.semantics { heading(); liveRegion = LiveRegionMode.Polite },
-        )
-        Text(
-            stringResource(Res.string.added_ready, form.name),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        CardPreview(form)
-        Button(onClick = onDone, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(26.dp)) {
-            Text(stringResource(Res.string.action_done))
-        }
-    }
 }
 
 /** How big [CardPreview] draws the card: in the form, on its own, or to be scanned at a till. */

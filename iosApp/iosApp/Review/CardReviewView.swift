@@ -24,32 +24,22 @@ struct CardReviewView: View {
                     onClose: component.onCloseClicked
                 )
             case .editing(let editing):
-                if case .added(let added) = editing.value.submission.sealedType() {
-                    CardAddedView(
-                        form: editing.value.form,
-                        walletUrl: added.value.walletUrl,
-                        wasUpdate: added.value.replacedExisting,
-                        onDone: component.onCloseClicked
-                    )
-                } else {
-                    CardFormView(
-                        form: editing.value.form,
-                        submission: editing.value.submission,
-                        hasChanges: editing.value.hasChanges,
-                        sync: editing.value.sync,
-                        syncError: editing.value.syncError,
-                        colorPreview: editing.value.colorPreview,
-                        duplicate: editing.value.duplicateOf,
-                        component: component
-                    )
-                }
+                CardFormView(
+                    form: editing.value.form,
+                    submission: editing.value.submission,
+                    sync: editing.value.sync,
+                    syncError: editing.value.syncError,
+                    colorPreview: editing.value.colorPreview,
+                    duplicate: editing.value.duplicateOf,
+                    component: component
+                )
             }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // In the iPad split view a new card is the root of its column, without a back button.
-            if isSplitViewDetail && !isLibraryCard && !isAdded {
+            if isSplitViewDetail && !isLibraryCard {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", action: component.onCloseClicked)
                 }
@@ -66,18 +56,12 @@ struct CardReviewView: View {
         }
     }
 
-    private var isAdded: Bool {
-        if case .editing(let editing) = model.value.sealedType(), case .added = editing.value.submission.sealedType() { return true }
-        return false
-    }
-
     private var title: String {
-        if isAdded { return "" } // the success screen has its own headline
-        return isLibraryCard ? String(localized: "Edit Card") : String(localized: "New Card")
+        isLibraryCard ? String(localized: "Edit Card") : String(localized: "New Card")
     }
 }
 
-// MARK: - Loading / failure / success
+// MARK: - Loading / failure
 
 private struct LoadingView: View {
     let stage: LoadingStage
@@ -177,78 +161,11 @@ private struct FailedView: View {
     }
 }
 
-/// Shown once PassKit confirms the pass is in the library.
-private struct CardAddedView: View {
-    let form: CardForm
-    let walletUrl: String?
-    let wasUpdate: Bool
-    let onDone: () -> Void
-
-    @Environment(\.openURL) private var openURL
-    @State private var hasAppeared = false
-
-    var body: some View {
-        // Centred in the space above the buttons; scrolls only when large text makes it taller than that.
-        GeometryReader { geometry in
-            ScrollView {
-                VStack(spacing: 24) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.green)
-                        .symbolEffect(.bounce, value: true)
-                        .accessibilityHidden(true)
-                    VStack(spacing: 6) {
-                        Text(wasUpdate ? String(localized: "Updated in Apple Wallet") : String(localized: "Added to Apple Wallet"))
-                            .font(.title2.bold())
-                            .multilineTextAlignment(.center)
-                            .accessibilityAddTraits(.isHeader)
-                        Text("“\(form.name)” is ready to scan from Wallet.")
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    CardPreview(form: form)
-                }
-                .padding(24)
-                .frame(maxWidth: 460)
-                .frame(maxWidth: .infinity, minHeight: geometry.size.height)
-            }
-            .scrollBounceBehavior(.basedOnSize)
-        }
-        .onAppear { hasAppeared = true }
-        // The pass made it into Wallet.
-        .sensoryFeedback(.success, trigger: hasAppeared)
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 10) {
-                if let url = walletUrl.flatMap(URL.init(string:)) {
-                    Button {
-                        openURL(url)
-                    } label: {
-                        Label("Open in Wallet", systemImage: "wallet.pass").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                Button(action: onDone) {
-                    Text("Done").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-            .frame(maxWidth: 460)
-            .frame(maxWidth: .infinity)
-            .controlSize(.large)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .background(.bar)
-        }
-        .navigationBarBackButtonHidden()
-    }
-}
-
 // MARK: - Form
 
 private struct CardFormView: View {
     let form: CardForm
     let submission: any Submission
-    let hasChanges: Bool
     let sync: SyncStatus?
     let syncError: String?
     let colorPreview: CardColor?
@@ -326,18 +243,15 @@ private struct CardFormView: View {
             photoSection
             CardDetailsSection(form: form, component: component)
 
-            // A new card is saved to Walletka, and optionally added to Wallet right away; a library card's edits save
-            // by themselves.
+            // A new card is saved to Walletka (its preview then offers Wallet); a library card's edits save by
+            // themselves.
             if !form.isLibraryCard {
                 Section {
-                    VStack(spacing: 12) {
-                        saveButton
-                        walletButton
-                    }
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
+                    saveButton
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                 } footer: {
-                    // Why the buttons are disabled; a code that can't be encoded is explained at the code.
+                    // Why the button is disabled; a code that can't be encoded is explained at the code.
                     if form.name.trimmingCharacters(in: .whitespaces).isEmpty {
                         Text("Enter a name to save the card.").frame(maxWidth: .infinity)
                     } else if form.selectedCode.value.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -391,14 +305,6 @@ private struct CardFormView: View {
             }) {
                 editor
             }
-        }
-        .alert(form.isLibraryCard ? String(localized: "Couldn't Update the Card") : String(localized: "Couldn't Add the Card"), isPresented: Binding(
-            get: { failure != nil },
-            set: { if !$0 { component.onSubmissionErrorDismissed() } }
-        )) {
-            Button("OK") {}
-        } message: {
-            Text(failure.map(Self.message) ?? "")
         }
     }
 
@@ -594,39 +500,13 @@ private struct CardFormView: View {
 
     private var saveButton: some View {
         Button("Save Card", action: component.onSaveClicked)
-            .buttonStyle(WalletSizedButtonStyle())
+            .buttonStyle(FormActionButtonStyle())
             .disabled(!form.isValid || isBusy)
-    }
-
-    private var walletButton: some View {
-        AddToWalletButton(action: component.onAddToWalletClicked)
-            .frame(height: 50)
-            .accessibilityLabel(isBusy ? String(localized: "Adding to Apple Wallet…") : String(localized: "Add to Apple Wallet"))
-            .opacity(isBusy ? 0 : (form.isValid ? 1 : 0.4))
-            .overlay {
-                if isBusy {
-                    RoundedRectangle(cornerRadius: 12).fill(.black)
-                        .overlay { ProgressView().tint(.white) }
-                }
-            }
-            .disabled(!form.isValid || isBusy)
-    }
-
-    /// Failed submissions worth telling the user about (cancelling the sheet is not an error).
-    private var failure: (WalletFailure, String?)? {
-        if case .failed(let failed) = submission.sealedType(), failed.value.failure != .CANCELLED {
-            return (failed.value.failure, failed.value.detail)
-        }
-        return nil
-    }
-
-    private static func message(_ failure: (WalletFailure, String?)) -> String {
-        failure.0.message(detail: failure.1)
     }
 }
 
-/// A prominent button the size and shape of the system Add to Apple Wallet button, so the two stack neatly.
-private struct WalletSizedButtonStyle: ButtonStyle {
+/// The full-width prominent button that ends a form.
+private struct FormActionButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
