@@ -216,26 +216,29 @@ private struct CardFormView: View {
             }
 
             Section("Name") {
-                HStack {
-                    TextField("e.g. Coffee Club", text: Binding(get: { form.name }, set: { component.onNameChanged(name: $0) }))
-                        .textInputAutocapitalization(.words)
-                        // Typing a card in: Return moves on to its code.
-                        .submitLabel(needsTypedCode ? .next : .done)
-                        .onSubmit { if needsTypedCode { isCodeFocused = true } }
-                        .focused($isNameFocused)
-                    if isNameFocused && !form.name.isEmpty {
-                        Button {
-                            component.onNameChanged(name: "")
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.tertiary)
-                                .frame(minWidth: 44, minHeight: 44)
-                                .contentShape(Rectangle())
+                TextField("e.g. Coffee Club", text: Binding(get: { form.name }, set: { component.onNameChanged(name: $0) }))
+                    .textInputAutocapitalization(.words)
+                    // Typing a card in: Return moves on to its code.
+                    .submitLabel(needsTypedCode ? .next : .done)
+                    .onSubmit { if needsTypedCode { isCodeFocused = true } }
+                    .focused($isNameFocused)
+                    .padding(.trailing, 28)
+                    // An overlay, so its 44-point tap target doesn't make the row taller while it shows.
+                    .overlay(alignment: .trailing) {
+                        if isNameFocused && !form.name.isEmpty {
+                            Button {
+                                component.onNameChanged(name: "")
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.tertiary)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.trailing, -10)
+                            .accessibilityLabel(Text("Clear Name"))
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text("Clear Name"))
                     }
-                }
             }
 
             codeSection

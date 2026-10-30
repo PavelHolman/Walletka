@@ -57,7 +57,8 @@ struct CardPreview: View {
                         .interpolation(.none)
                         .resizable()
                         .scaledToFit()
-                        .frame(maxHeight: height)
+                        // To be scanned, a 2D code takes the card's whole width: dense codes need every point.
+                        .frame(maxHeight: size == .large && isTwoDimensional ? nil : height)
                     if !isTwoDimensional {
                         Text(form.selectedCode.value).font(.caption2.monospaced()).foregroundStyle(.black)
                     }
@@ -125,22 +126,38 @@ struct CardPreview: View {
     }
 }
 
-/// The system "Add to Apple Wallet" button.
-struct AddToWalletButton: UIViewRepresentable {
+/// The system "Add to Apple Wallet" button, 50 points tall and with the corners of the app's other buttons (PassKit's own
+/// are much tighter, with no setting for them).
+struct AddToWalletButton: View {
     let action: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
 
+    var body: some View {
+        PassKitAddButton(action: action)
+            .frame(height: 50)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            // Keeps the black button visible on a dark background; PassKit's outlined style would be cut at the corners.
+            .overlay {
+                if colorScheme == .dark {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                }
+            }
+    }
+}
+
+private struct PassKitAddButton: UIViewRepresentable {
+    let action: () -> Void
+
     func makeUIView(context: Context) -> PKAddPassButton {
-        // The outlined style keeps the black button visible on a dark background.
-        let button = PKAddPassButton(addPassButtonStyle: colorScheme == .dark ? .blackOutline : .black)
+        let button = PKAddPassButton(addPassButtonStyle: .black)
         button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
         return button
     }
 
     func updateUIView(_ uiView: PKAddPassButton, context: Context) {
         context.coordinator.action = action
-        uiView.addPassButtonStyle = colorScheme == .dark ? .blackOutline : .black
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(action: action) }

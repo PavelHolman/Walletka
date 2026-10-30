@@ -594,7 +594,10 @@ internal fun CardPreview(form: CardForm, size: CardPreviewSize = CardPreviewSize
                         // A linear code is one module row: stretch it to the bars' height.
                         contentScale = if (twoDimensional) ContentScale.Fit else ContentScale.FillBounds,
                         // A 2D code as big as fits up to its height (a wide PDF417 is narrowed to the card).
-                        modifier = if (twoDimensional) {
+                        modifier = if (twoDimensional && size == CardPreviewSize.LARGE) {
+                            // To be scanned, a 2D code takes the card's whole width: dense codes need every dp.
+                            Modifier.fillMaxWidth().aspectRatio(code.width.toFloat() / code.height)
+                        } else if (twoDimensional) {
                             Modifier.heightIn(max = codeHeight).aspectRatio(code.width.toFloat() / code.height)
                         } else {
                             Modifier.height(codeHeight).fillMaxWidth()

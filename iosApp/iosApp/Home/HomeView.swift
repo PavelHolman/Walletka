@@ -21,6 +21,7 @@ struct HomeView: View {
     @State private var isCameraPresented = false
     @State private var isPhotoPickerPresented = false
     @State private var cardPendingDeletion: CardSummary?
+    @Environment(\.cardTransition) private var cardTransition
     /// A card to open once the user agrees to drop the new card being edited (iPad); `edit` opens its editor.
     @State private var cardPendingOpen: (card: CardSummary, edit: Bool)?
     @State private var isImportingBackup = false
@@ -131,10 +132,11 @@ struct HomeView: View {
                     open(card)
                 } label: {
                     CardTile(card: card, isSelected: selectedCardId == card.id)
+                        .cardTransitionSource(id: card.id, in: cardTransition)
                 }
                 .buttonStyle(.plain)
                 // VoiceOver: the tile reads as one element (activating it shows the card); Edit and reordering are its
-                // actions (the swipe action already offers Delete).
+                // actions (the swipe actions offer Edit and Delete too).
                 .accessibilityAction(named: Text("Edit")) { open(card, edit: true) }
                 .accessibilityActions {
                     if model.value.canReorder && index > 0 {
@@ -145,9 +147,13 @@ struct HomeView: View {
                     }
                 }
                 .listRowSeparator(.hidden)
+                // The tile is the row; no row background showing around it while it is swiped.
+                .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .swipeActions {
                     Button("Delete", systemImage: "trash", role: .destructive) { cardPendingDeletion = card }
+                    Button("Edit", systemImage: "pencil") { open(card, edit: true) }
+                        .tint(.blue)
                 }
                 .contextMenu {
                     Button("Edit", systemImage: "pencil") { open(card, edit: true) }
@@ -566,6 +572,20 @@ private extension View {
             buttonStyle(.glass)
         } else {
             buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+        }
+    }
+}
+
+private extension View {
+    /// Where a card's preview zooms out of (iPhone; the iPad shows it next to the library instead).
+    @ViewBuilder
+    func cardTransitionSource(id: String, in namespace: Namespace.ID?) -> some View {
+        if let namespace {
+            matchedTransitionSource(id: id, in: namespace) { source in
+                source.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+        } else {
+            self
         }
     }
 }

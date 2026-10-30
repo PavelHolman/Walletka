@@ -21,13 +21,10 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,7 +66,6 @@ import org.jetbrains.compose.resources.stringResource
 fun CardPreviewContent(component: CardPreviewComponent) {
     val model by component.model.collectAsState()
     val showing = model as? PreviewModel.Showing
-    var isMenuOpen by remember { mutableStateOf(false) }
     var isConfirmingDelete by remember { mutableStateOf(false) }
     var isConfirmingRemove by remember { mutableStateOf(false) }
     KeepScreenBright()
@@ -88,17 +84,8 @@ fun CardPreviewContent(component: CardPreviewComponent) {
                         IconButton(onClick = component::onEditClicked) {
                             Icon(Icons.Outlined.Edit, contentDescription = stringResource(Res.string.action_edit))
                         }
-                        Box {
-                            IconButton(onClick = { isMenuOpen = true }) {
-                                Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(Res.string.action_more_options))
-                            }
-                            DropdownMenu(expanded = isMenuOpen, onDismissRequest = { isMenuOpen = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.action_delete_card), color = MaterialTheme.colorScheme.error) },
-                                    leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
-                                    onClick = { isMenuOpen = false; isConfirmingDelete = true },
-                                )
-                            }
+                        IconButton(onClick = { isConfirmingDelete = true }) {
+                            Icon(Icons.Outlined.Delete, contentDescription = stringResource(Res.string.action_delete_card), tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 },

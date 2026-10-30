@@ -60,15 +60,12 @@ private struct PreviewContent: View {
         .safeAreaInset(edge: .bottom) { walletBar }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit", action: component.onEditClicked)
+                Button("Edit", systemImage: "pencil", action: component.onEditClicked)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("Delete Card", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
-                } label: {
-                    Label("More", systemImage: "ellipsis")
-                }
-                // Attached here so on iPad the dialog points at the menu.
+                Button("Delete Card", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
+                    .tint(.red)
+                // Attached here so on iPad the dialog points at the button.
                 .confirmationDialog("Delete “\(form.name)”?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
                     Button("Delete Card", role: .destructive, action: component.onDeleteClicked)
                 } message: {
@@ -125,15 +122,14 @@ private struct PreviewContent: View {
                 }
                 .padding(.horizontal, 16)
                 .frame(minHeight: 50)
-                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12))
+                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
                 AddToWalletButton(action: component.onAddToWalletClicked)
-                    .frame(height: 50)
                     .accessibilityLabel(isBusy ? String(localized: "Adding to Apple Wallet…") : String(localized: "Add to Apple Wallet"))
                     .opacity(isBusy ? 0 : 1)
                     .overlay {
                         if isBusy {
-                            RoundedRectangle(cornerRadius: 12).fill(.black)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.black)
                                 .overlay { ProgressView().tint(.white) }
                         }
                     }

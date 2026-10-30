@@ -7,6 +7,7 @@ struct RootView: View {
     private let root: any RootComponent
     @State private var children: ObservedFlow<[any RootChild]>
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Namespace private var cardTransition
 
     init(root: any RootComponent) {
         self.root = root
@@ -29,9 +30,11 @@ struct RootView: View {
                 ChildView(child: first)
                     .navigationDestination(for: Route.self) { route in
                         ChildView(child: route.child)
+                            .cardZoomTransition(route.child, in: cardTransition)
                     }
             }
         }
+        .environment(\.cardTransition, cardTransition)
     }
 
     /// Everything above the bottom child is pushed. Popping natively (back button, swipe) pops in Kotlin.
@@ -155,4 +158,19 @@ private struct ChildView: View {
 extension EnvironmentValues {
     /// The view is the root of the split view's detail column, where there is no back button to leave it.
     @Entry var isSplitViewDetail = false
+
+    /// Ties a library card's tile to its preview, which zooms out of it; `nil` where the preview isn't pushed (iPad).
+    @Entry var cardTransition: Namespace.ID? = nil
+}
+
+private extension View {
+    /// A card's preview zooms out of its tile in the library, and back into it.
+    @ViewBuilder
+    func cardZoomTransition(_ child: any RootChild, in namespace: Namespace.ID) -> some View {
+        if case .preview(let preview) = child.sealedType() {
+            navigationTransition(.zoom(sourceID: preview.value.component.cardId, in: namespace))
+        } else {
+            self
+        }
+    }
 }
