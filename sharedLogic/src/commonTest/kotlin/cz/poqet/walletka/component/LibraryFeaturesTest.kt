@@ -182,11 +182,14 @@ class LibraryFeaturesTest {
     }
 
     @Test
-    fun walletStatusIsShownWhereThePlatformKnowsIt() {
+    fun walletStatusComesFromTheWalletOrWhatWalletkaDid() {
         val wallet = FakeWalletService()
         val root = root(services(wallet))
+        // A wallet that can't tell (Google Wallet): the card Walletka added counts as in it.
         root.addCard("A")
-        assertNull(root.home().model.value.cards.single().isInWallet)
+        assertEquals(true, root.home().model.value.cards.single().isInWallet)
+
+        // A wallet that can tell (Apple Wallet) has the last word.
 
         wallet.passesInWallet = emptySet()
         root.addCard("B")
@@ -226,7 +229,7 @@ class LibraryFeaturesTest {
         target.review().onAddToWalletClicked()
         assertEquals("B", wallet.added.single().name)
         target.review().onCloseClicked()
-        assertEquals(listOf(null, false), target.home().model.value.cards.map { it.isInWallet })
+        assertEquals(listOf(true, false), target.home().model.value.cards.map { it.isInWallet })
     }
 
     @Test

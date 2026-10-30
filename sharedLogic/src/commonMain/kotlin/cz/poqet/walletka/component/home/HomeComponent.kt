@@ -80,7 +80,10 @@ interface HomeComponent {
         val codeFormat: CodeFormat,
         val codeValue: String,
         val banner: StoredImage?,
-        /** Whether the pass is in this device's wallet; `null` when the app can't tell. */
+        /**
+         * Whether the pass is in this device's wallet: as the wallet reports it, or where it can't tell (Google Wallet)
+         * whether Walletka added it; `null` until known.
+         */
         val isInWallet: Boolean? = null,
     )
 }

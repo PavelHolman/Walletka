@@ -185,8 +185,8 @@ internal class DefaultHomeComponent(
         walletStatusJob?.cancel()
         walletStatusJob = scope.launch {
             val inWallet = state.value.cards.associate { card ->
-                // Restored cards that were never added here are known not to be in this wallet.
-                card.id to (walletService.isInWallet(card.walletId) ?: false.takeIf { !card.addedToWallet })
+                // Where the wallet can't tell (Google Wallet), whether Walletka added the pass, as the card's preview.
+                card.id to (walletService.isInWallet(card.walletId) ?: card.addedToWallet)
             }
             update { it.copy(inWallet = inWallet) }
         }

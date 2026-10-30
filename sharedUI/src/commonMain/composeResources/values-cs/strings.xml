@@ -25,7 +25,6 @@
     <string name="home_reorder_hint">Přetažením změníte pořadí</string>
     <string name="wallet_unavailable">Peněženka Google není v tomto zařízení k dispozici.</string>
     <string name="delete_card_title">Smazat kartu „%1$s“?</string>
-    <string name="not_in_wallet">Není v Peněžence Google</string>
     <string name="library_export">Exportovat knihovnu</string>
     <string name="library_import">Importovat knihovnu</string>
     <string name="library_imported">Knihovna importována: %1$s</string>
@@ -171,6 +170,7 @@
     <string name="action_show_card">Zobrazit kartu</string>
     <string name="review_save">Uložit kartu</string>
     <string name="review_saving">Ukládám kartu…</string>
+    <string name="in_wallet_badge">Peněženka</string>
     <string name="card_in_wallet">V Peněžence Google</string>
     <string name="card_remove_from_wallet">Odebrat z Peněženky Google</string>
     <string name="card_removing">Odebírám z Peněženky Google…</string>

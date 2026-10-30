@@ -25,7 +25,6 @@
     <string name="home_reorder_hint">Drag to reorder</string>
     <string name="wallet_unavailable">Google Wallet isn’t available on this device.</string>
     <string name="delete_card_title">Delete “%1$s”?</string>
-    <string name="not_in_wallet">Not in Google Wallet</string>
     <string name="library_export">Export library</string>
     <string name="library_import">Import library</string>
     <string name="library_imported">Library imported: %1$s</string>
@@ -165,6 +164,7 @@
     <string name="action_show_card">Show card</string>
     <string name="review_save">Save card</string>
     <string name="review_saving">Saving the card…</string>
+    <string name="in_wallet_badge">Wallet</string>
     <string name="card_in_wallet">In Google Wallet</string>
     <string name="card_remove_from_wallet">Remove from Google Wallet</string>
     <string name="card_removing">Removing from Google Wallet…</string>

@@ -135,6 +135,9 @@ struct HomeView: View {
                         .cardTransitionSource(id: card.id, in: cardTransition)
                 }
                 .buttonStyle(.plain)
+                // Lifted (touch and hold, dragging to reorder) as the card alone, not the row around it.
+                .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .contentShape(.dragPreview, RoundedRectangle(cornerRadius: 16, style: .continuous))
                 // VoiceOver: the tile reads as one element (activating it shows the card); Edit and reordering are its
                 // actions (the swipe actions offer Edit and Delete too).
                 .accessibilityAction(named: Text("Edit")) { open(card, edit: true) }
@@ -428,7 +431,7 @@ private struct CardTile: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: card.name))
         .accessibilityValue(Text(verbatim: accessibilityValue))
-        .accessibilityHint(Text("Opens the card editor"))
+        .accessibilityHint(Text("Shows the card, ready to scan"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 

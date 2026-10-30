@@ -5,6 +5,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -119,16 +127,20 @@ internal fun LibrarySearchField(query: String, onQueryChange: (String) -> Unit) 
     )
 }
 
-/** Marks a card known not to be in Google Wallet on this phone (cards restored from a backup). */
+/** Marks a card whose pass is in Google Wallet. Wallet is optional, so cards without a pass carry no mark. */
 @Composable
-internal fun NotInWalletBadge(color: Color) {
-    Text(
-        stringResource(Res.string.not_in_wallet),
-        style = MaterialTheme.typography.labelSmall,
-        color = color,
+internal fun InWalletBadge(color: Color) {
+    val description = stringResource(Res.string.card_in_wallet)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .padding(top = 4.dp)
-            .background(color.copy(alpha = 0.18f), RoundedCornerShape(50))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-    )
+            .background(color.copy(alpha = 0.2f), RoundedCornerShape(50))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .clearAndSetSemantics { contentDescription = description },
+    ) {
+        Icon(Icons.Outlined.Check, null, Modifier.size(12.dp), tint = color)
+        Spacer(Modifier.width(3.dp))
+        Text(stringResource(Res.string.in_wallet_badge), style = MaterialTheme.typography.labelSmall, color = color)
+    }
 }

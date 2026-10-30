@@ -203,27 +203,21 @@ private struct LibraryBackupModifier: ViewModifier {
     }
 }
 
-/// Whether a library card is in Apple Wallet on this iPhone.
+/// Marks a card whose pass is in Apple Wallet. Wallet is optional, so cards without a pass carry no mark.
 struct WalletStatusBadge: View {
     let isInWallet: Bool?
     let color: Color
 
     var body: some View {
-        switch isInWallet {
-        case true:
-            Image(systemName: "wallet.pass.fill")
-                .font(.caption)
-                .foregroundStyle(color.opacity(0.8))
-                .accessibilityLabel("In Wallet")
-        case false:
-            Text("Not in Wallet")
+        if isInWallet == true {
+            Label("Wallet", systemImage: "checkmark")
+                .labelStyle(.titleAndIcon)
                 .font(.caption2.weight(.semibold))
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 7)
                 .padding(.vertical, 2)
-                .background(color.opacity(0.18), in: Capsule())
+                .background(color.opacity(0.2), in: Capsule())
                 .foregroundStyle(color)
-        default:
-            EmptyView()
+                .accessibilityLabel(Text("In Apple Wallet"))
         }
     }
 }

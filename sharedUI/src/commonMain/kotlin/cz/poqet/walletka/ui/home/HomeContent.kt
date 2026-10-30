@@ -377,7 +377,7 @@ private fun CardTile(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (card.isInWallet == false) NotInWalletBadge(content)
+                if (card.isInWallet == true) InWalletBadge(content)
             }
             if (banner != null) {
                 Image(

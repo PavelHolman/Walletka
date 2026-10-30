@@ -1619,6 +1619,16 @@
         }
       }
     },
+    "Shows the card, ready to scan" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zobrazí kartu připravenou ke skenování"
+          }
+        }
+      }
+    },
     "Sign in to iCloud to sync" : {
       "localizations" : {
         "cs" : {
@@ -2025,6 +2035,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Použít barvu"
+          }
+        }
+      }
+    },
+    "Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peněženka"
           }
         }
       }
