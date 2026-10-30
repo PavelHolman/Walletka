@@ -179,7 +179,6 @@ private struct CardFormView: View {
     @State private var isPickingColorFromPhoto = false
     /// More swatches are scrolled off the trailing edge.
     @State private var hasMoreSwatches = false
-    @FocusState private var isNameFocused: Bool
     @FocusState private var isCodeFocused: Bool
 
     /// The card is typed in and its code is still missing.
@@ -221,24 +220,6 @@ private struct CardFormView: View {
                     // Typing a card in: Return moves on to its code.
                     .submitLabel(needsTypedCode ? .next : .done)
                     .onSubmit { if needsTypedCode { isCodeFocused = true } }
-                    .focused($isNameFocused)
-                    .padding(.trailing, 28)
-                    // An overlay, so its 44-point tap target doesn't make the row taller while it shows.
-                    .overlay(alignment: .trailing) {
-                        if isNameFocused && !form.name.isEmpty {
-                            Button {
-                                component.onNameChanged(name: "")
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.tertiary)
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.trailing, -10)
-                            .accessibilityLabel(Text("Clear Name"))
-                        }
-                    }
             }
 
             codeSection

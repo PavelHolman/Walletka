@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         // CloudKit's sync engine fetches iCloud changes on its silent pushes once the app is registered for them.
         if CloudKitEntitlement.isPresent { application.registerForRemoteNotifications() }
         QuickAction.install()
+        // The system clear button in single-line fields (SwiftUI has no modifier for it): it keeps the field focused.
+        UITextField.appearance().clearButtonMode = .whileEditing
         return true
     }
 

@@ -169,6 +169,8 @@ struct HomeView: View {
             .onMove(perform: model.value.canReorder ? moveCards : nil)
         }
         .listStyle(.plain)
+        // Cards filtered in and out by the search (not by reordering) move into place rather than snap.
+        .animation(.snappy, value: model.value.searchQuery)
         .overlay {
             if !model.value.isLoaded {
                 EmptyView()
@@ -218,7 +220,9 @@ struct HomeView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The card is removed from Walletka and from Apple Wallet.")
+            Text(cardPendingDeletion?.isInWallet == true
+                 ? String(localized: "The card is removed from Walletka and from Apple Wallet.")
+                 : String(localized: "The card is removed from Walletka."))
         }
     }
 
@@ -543,6 +547,8 @@ private extension View {
     func searchable(if condition: Bool, text: Binding<String>, prompt: LocalizedStringKey) -> some View {
         if condition {
             searchable(text: text, prompt: Text(prompt))
+                // The title stays while searching, so the list doesn't jump when the search opens or closes.
+                .searchPresentationToolbarBehavior(.avoidHidingContent)
         } else {
             self
         }
