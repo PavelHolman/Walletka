@@ -18,8 +18,11 @@ interface HomeComponent {
     /** Starts a card without a photo: name, code and colour are typed in / picked by hand. */
     fun onEnterManuallyClicked()
 
-    /** Opens a library card for editing. */
+    /** Shows a library card, to be scanned. */
     fun onCardClicked(cardId: String)
+
+    /** Opens a library card's editor (above its preview). */
+    fun onCardEditClicked(cardId: String)
 
     /** Deletes a library card (and its pass, where the wallet allows it). */
     fun onCardDeleteClicked(cardId: String)

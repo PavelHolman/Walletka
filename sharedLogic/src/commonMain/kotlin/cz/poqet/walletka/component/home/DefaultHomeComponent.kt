@@ -33,6 +33,7 @@ internal class DefaultHomeComponent(
     private val imageStore: ImageStore,
     private val onImagePicked: (source: String) -> Unit,
     private val onCardClicked: (cardId: String) -> Unit,
+    private val onCardEditClicked: (cardId: String) -> Unit = {},
     private val onEnterManually: () -> Unit,
     private val backup: LibraryBackup? = null,
     /** Where exported backups wait for the system UI to save or share them. */
@@ -91,6 +92,10 @@ internal class DefaultHomeComponent(
 
     override fun onCardClicked(cardId: String) {
         onCardClicked.invoke(cardId)
+    }
+
+    override fun onCardEditClicked(cardId: String) {
+        onCardEditClicked.invoke(cardId)
     }
 
     override fun onCardDeleteClicked(cardId: String) {

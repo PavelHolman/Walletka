@@ -677,6 +677,16 @@
         }
       }
     },
+    "Couldn't Remove the Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu se nepodařilo odebrat"
+          }
+        }
+      }
+    },
     "Couldn't Update the Card" : {
       "localizations" : {
         "cs" : {
@@ -888,12 +898,32 @@
         }
       }
     },
+    "Enter a name to save the card." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu uložíte, až vyplníte název."
+          }
+        }
+      }
+    },
     "Enter the card's code to add it." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kartu přidáte, až vyplníte její kód."
+          }
+        }
+      }
+    },
+    "Enter the card's code to save it." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartu uložíte, až vyplníte její kód."
           }
         }
       }
@@ -1459,6 +1489,56 @@
         }
       }
     },
+    "Remove" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrat"
+          }
+        }
+      }
+    },
+    "Remove from Apple Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrat z Peněženky Apple"
+          }
+        }
+      }
+    },
+    "Remove from Wallet" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrat z Peněženky"
+          }
+        }
+      }
+    },
+    "Remove it in the Wallet app instead." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odeberte ji místo toho v aplikaci Peněženka."
+          }
+        }
+      }
+    },
+    "Remove “%@” from Apple Wallet?" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrat „%@“ z Peněženky Apple?"
+          }
+        }
+      }
+    },
     "Removes the card from Walletka and Apple Wallet" : {
       "localizations" : {
         "cs" : {
@@ -1495,6 +1575,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zkusit znovu"
+          }
+        }
+      }
+    },
+    "Save Card" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uložit kartu"
           }
         }
       }
@@ -1709,12 +1799,42 @@
         }
       }
     },
+    "The card is removed from Walletka." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta bude odstraněna z Walletky."
+          }
+        }
+      }
+    },
+    "The card stays in Walletka, and you can add it again any time." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta zůstane ve Walletce a kdykoli ji můžete přidat znovu."
+          }
+        }
+      }
+    },
     "The card you're adding isn't in Wallet yet." : {
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Karta, kterou přidáváte, ještě není v Peněžence."
+          }
+        }
+      }
+    },
+    "The card you're adding isn't saved yet." : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karta, kterou přidáváte, ještě není uložená."
           }
         }
       }

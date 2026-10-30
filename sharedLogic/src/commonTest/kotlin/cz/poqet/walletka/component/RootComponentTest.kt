@@ -3,6 +3,7 @@ package cz.poqet.walletka.component
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.resume
+import cz.poqet.walletka.component.preview.CardPreviewComponent
 import cz.poqet.walletka.component.review.CardReviewComponent
 import cz.poqet.walletka.component.review.CardReviewComponent.Model
 import cz.poqet.walletka.component.review.CardReviewComponent.Submission
@@ -49,6 +50,8 @@ class RootComponentTest {
         DefaultRootComponent(DefaultComponentContext(lifecycle), services).also { lifecycle.resume() }
 
     private fun RootComponent.review() = assertIs<RootComponent.Child.Review>(children.value.last()).component
+
+    private fun RootComponent.preview() = children.value.filterIsInstance<RootComponent.Child.Preview>().single().component
 
     @Test
     fun sharedImageOpensReviewWithSuggestion() {
@@ -100,7 +103,7 @@ class RootComponentTest {
         val wallet = FakeWalletService()
         val dataDirectory = tempDirectory("data")
         val root = root(fakeServices(listOf(code), walletService = wallet, dataDirectory = dataDirectory))
-        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.first()).component
 
         home.onEnterManuallyClicked()
         val review = root.review()
@@ -132,12 +135,12 @@ class RootComponentTest {
         assertEquals(null, reopened.cards.value.single().form.photo)
 
         // Edited again later from the library, and deleted.
-        home.onCardClicked(summary.id)
+        home.onCardEditClicked(summary.id)
         val edit = assertIs<Model.Editing>(root.review().model.value)
         assertEquals(null, edit.form.photo)
         assertTrue(edit.form.isCodeTyped)
         assertEquals(false, edit.hasChanges)
-        root.review().onDeleteClicked()
+        root.preview().onDeleteClicked()
         assertEquals(emptyList(), home.model.value.cards)
     }
 
@@ -149,11 +152,11 @@ class RootComponentTest {
     }
 
     @Test
-    fun openingACardThatNoLongerExistsSaysSo() {
+    fun openingACardThatNoLongerExistsGoesBackToTheLibrary() {
         val root = root(fakeServices(listOf(code)))
-        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.first()).component
         home.onCardClicked("deleted-elsewhere")
-        assertEquals(Model.Failed(AnalysisFailure.CARD_NOT_FOUND), root.review().model.value)
+        assertIs<RootComponent.Child.Home>(root.children.value.single())
     }
 
     @Test
@@ -174,10 +177,11 @@ class RootComponentTest {
         assertEquals(null, card.banner)
 
         review.onCloseClicked()
-        assertIs<RootComponent.Child.Home>(root.children.value.single())
+        // Done: the new card is shown, ready to be scanned.
+        assertEquals("My Coffee", assertIs<CardPreviewComponent.PreviewModel.Showing>(root.preview().model.value).form.name)
         // The card is in the library now: its images were moved there, the cache copies dropped.
         assertEquals(listOf(store.path("photo.jpg"), store.path("banner0.png")), store.deleted.map { it.path })
-        val summary = assertIs<RootComponent.Child.Home>(root.children.value.single()).component.model.value.cards.single()
+        val summary = assertIs<RootComponent.Child.Home>(root.children.value.first()).component.model.value.cards.single()
         assertEquals("My Coffee", summary.name)
         assertEquals(null, summary.banner)
     }
@@ -252,8 +256,8 @@ class RootComponentTest {
         root.review().onAddToWalletClicked()
         root.review().onCloseClicked()
 
-        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
-        home.onCardClicked(home.model.value.cards.single().id)
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.first()).component
+        home.onCardEditClicked(home.model.value.cards.single().id)
         val edit = root.review()
         val form = assertIs<Model.Editing>(edit.model.value).form
         assertTrue(form.isLibraryCard)
@@ -270,7 +274,8 @@ class RootComponentTest {
         assertEquals("Renamed", home.model.value.cards.single().name)
         assertEquals(false, assertIs<Model.Editing>(edit.model.value).hasChanges)
 
-        edit.onDeleteClicked()
+        root.onBackClicked()
+        root.preview().onDeleteClicked()
         assertEquals(listOf(first.walletId), wallet.removed)
         assertEquals(emptyList(), home.model.value.cards)
         assertIs<RootComponent.Child.Home>(root.children.value.single())
@@ -297,7 +302,7 @@ class RootComponentTest {
         root.review().onAddToWalletClicked()
         root.review().onCloseClicked()
 
-        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.first()).component
         home.onCardDeleteClicked(home.model.value.cards.single().id)
 
         assertEquals(emptyList(), home.model.value.cards)
@@ -331,8 +336,8 @@ class RootComponentTest {
         testScheduler.advanceUntilIdle()
         root.review().onCloseClicked()
         testScheduler.advanceUntilIdle()
-        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
-        home.onCardClicked(home.model.value.cards.single().id)
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.first()).component
+        home.onCardEditClicked(home.model.value.cards.single().id)
         testScheduler.advanceUntilIdle()
         return root to home
     }
@@ -392,7 +397,7 @@ class RootComponentTest {
         testScheduler.advanceUntilIdle()
 
         // The pass is still being signed when the card is opened again.
-        home.onCardClicked(home.model.value.cards.single().id)
+        home.onCardEditClicked(home.model.value.cards.single().id)
         testScheduler.advanceUntilIdle()
         assertEquals("Renamed", assertIs<Model.Editing>(root.review().model.value).form.name)
 

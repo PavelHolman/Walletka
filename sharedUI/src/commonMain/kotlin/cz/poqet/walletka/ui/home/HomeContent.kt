@@ -120,6 +120,7 @@ fun HomeContent(component: HomeComponent) {
             actions,
             onPaste = { paste() },
             onCardClick = component::onCardClicked,
+            onCardEdit = component::onCardEditClicked,
             onCardDelete = component::onCardDeleteClicked,
             snackbar = snackbar,
             onEnterManually = component::onEnterManuallyClicked,
@@ -211,6 +212,7 @@ private fun CardLibrary(
     actions: ImageSourceActions,
     onPaste: () -> Unit,
     onCardClick: (String) -> Unit,
+    onCardEdit: (String) -> Unit,
     onCardDelete: (String) -> Unit,
     snackbar: SnackbarHostState,
     onEnterManually: () -> Unit,
@@ -291,6 +293,7 @@ private fun CardLibrary(
                 CardTile(
                     card,
                     onClick = { onCardClick(card.id) },
+                    onEdit = { onCardEdit(card.id) },
                     onDelete = { pendingDeletion = card },
                     onMoveUp = if (canMove && onMove != null && index > 0) ({ onMove(index, index - 1) }) else null,
                     onMoveDown = if (canMove && onMove != null && index in 0 until cards.lastIndex) ({ onMove(index, index + 1) }) else null,
@@ -322,6 +325,7 @@ private fun CardLibrary(
 private fun CardTile(
     card: HomeComponent.CardSummary,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     onMoveUp: (() -> Unit)? = null,
@@ -332,6 +336,7 @@ private fun CardTile(
     val content = card.color.contentColor.toColor()
     val banner = rememberStoredImage(card.banner?.path, maxSize = 600)
     var isMenuOpen by remember { mutableStateOf(false) }
+    val showLabel = stringResource(Res.string.action_show_card)
     val editLabel = stringResource(Res.string.action_edit)
     val deleteLabel = stringResource(Res.string.action_delete)
     val moveUpLabel = stringResource(Res.string.action_move_up)
@@ -345,7 +350,7 @@ private fun CardTile(
                 .background(card.color.toColor())
                 .combinedClickable(
                     onClick = onClick,
-                    onClickLabel = editLabel,
+                    onClickLabel = showLabel,
                     onLongClick = { isMenuOpen = true },
                     onLongClickLabel = stringResource(Res.string.action_more_actions),
                 )
@@ -353,7 +358,7 @@ private fun CardTile(
                 // and the drag handle.
                 .semantics(mergeDescendants = true) {
                     customActions = buildList {
-                        add(CustomAccessibilityAction(editLabel) { onClick(); true })
+                        add(CustomAccessibilityAction(editLabel) { onEdit(); true })
                         add(CustomAccessibilityAction(deleteLabel) { onDelete(); true })
                         onMoveUp?.let { add(CustomAccessibilityAction(moveUpLabel) { it(); true }) }
                         onMoveDown?.let { add(CustomAccessibilityAction(moveDownLabel) { it(); true }) }
@@ -396,7 +401,7 @@ private fun CardTile(
         }
         // Long-press for more actions, as elsewhere on Android.
         DropdownMenu(expanded = isMenuOpen, onDismissRequest = { isMenuOpen = false }) {
-            DropdownMenuItem(text = { Text(editLabel) }, leadingIcon = { Icon(Icons.Outlined.Edit, null) }, onClick = { isMenuOpen = false; onClick() })
+            DropdownMenuItem(text = { Text(editLabel) }, leadingIcon = { Icon(Icons.Outlined.Edit, null) }, onClick = { isMenuOpen = false; onEdit() })
             DropdownMenuItem(
                 text = { Text(deleteLabel, color = MaterialTheme.colorScheme.error) },
                 leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },

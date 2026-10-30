@@ -83,12 +83,10 @@ internal class AppleWalletService(
         ensure(config.isServiceConfigured) { WalletError(WalletFailure.NOT_CONFIGURED, "Pass service URL missing") }
         ensure(isAvailable()) { WalletError(WalletFailure.UNAVAILABLE) }
         val pass = signedPass(card).bind()
-        // A library card edited later keeps its serial number, so its pass can be replaced without any UI.
+        // A library card edited later keeps its serial number, so its pass can be replaced without any UI. Where Wallet
+        // won't (it knows the pass but no longer holds it), the add sheet still can.
         val library = PKPassLibrary()
-        if (library.containsPass(pass)) {
-            ensure(withContext(Dispatchers.Main) { library.replacePassWithPass(pass) }) {
-                WalletError(WalletFailure.FAILED, "Apple Wallet did not accept the updated pass")
-            }
+        if (library.containsPass(pass) && withContext(Dispatchers.Main) { library.replacePassWithPass(pass) }) {
             return@either AddedCard(walletUrl = pass.passURL?.absoluteString, replacedExisting = true)
         }
         ensure(present(pass)) { WalletError(WalletFailure.CANCELLED) }

@@ -6,10 +6,12 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.navigate
 import com.arkivanov.decompose.router.stack.pop
+import com.arkivanov.decompose.router.stack.pushNew
 import com.arkivanov.decompose.router.stack.popTo
 import com.arkivanov.decompose.router.stack.replaceCurrent
 import com.arkivanov.decompose.value.Value
 import cz.poqet.walletka.component.home.DefaultHomeComponent
+import cz.poqet.walletka.component.preview.DefaultCardPreviewComponent
 import cz.poqet.walletka.component.review.DefaultCardReviewComponent
 import cz.poqet.walletka.component.root.RootComponent.Child
 import cz.poqet.walletka.component.toStateFlow
@@ -76,6 +78,7 @@ internal class DefaultRootComponent(
                 // Replaces whatever is open above Home: on a phone Home is on top anyway; in an iPad split view the
                 // library stays visible next to the open card.
                 onCardClicked = { cardId -> navigation.navigate { listOf(Config.Home, Config.Card(cardId)) } },
+                onCardEditClicked = { cardId -> navigation.navigate { listOf(Config.Home, Config.Card(cardId), Config.Edit(cardId)) } },
                 onEnterManually = ::onEnterManually,
                 backup = backup,
                 exportDirectory = "${services.dataDirectory}/exports",
@@ -86,17 +89,35 @@ internal class DefaultRootComponent(
 
         is Config.Review -> review(componentContext, ReviewSource.Photo(config.source))
 
-        is Config.Card -> review(componentContext, ReviewSource.LibraryCard(config.cardId))
+        is Config.Card -> Child.Preview(
+            DefaultCardPreviewComponent(
+                componentContext = componentContext,
+                cardId = config.cardId,
+                library = library,
+                walletService = services.walletService,
+                imageStore = services.imageStore,
+                onEdit = { navigation.pushNew(Config.Edit(config.cardId)) },
+                onFinished = { navigation.popTo(index = 0) },
+            ),
+        )
+
+        // Back to the card's preview underneath.
+        is Config.Edit -> review(componentContext, ReviewSource.LibraryCard(config.cardId), onFinished = { navigation.pop() })
 
         is Config.Manual -> review(componentContext, ReviewSource.Manual)
     }
 
-    private fun review(componentContext: ComponentContext, source: ReviewSource) = Child.Review(
+    private fun review(
+        componentContext: ComponentContext,
+        source: ReviewSource,
+        onFinished: () -> Unit = { navigation.popTo(index = 0) },
+    ) = Child.Review(
         DefaultCardReviewComponent(
             componentContext = componentContext,
             source = source,
             dependencies = reviewDependencies,
-            onFinished = { navigation.popTo(index = 0) },
+            onFinished = onFinished,
+            // A new card, once saved, continues to its preview, as does a duplicate the user opens instead.
             onOpenCard = { cardId -> navigation.replaceCurrent(Config.Card(cardId)) },
         ),
     )
@@ -128,8 +149,13 @@ internal class DefaultRootComponent(
         @Serializable
         data class Review(val source: String, val id: String) : Config
 
+        /** A library card's preview. */
         @Serializable
         data class Card(val cardId: String) : Config
+
+        /** A library card's editor, above its preview. */
+        @Serializable
+        data class Edit(val cardId: String) : Config
 
         /** A new card typed in by hand; [id] keeps each one a fresh component. */
         @Serializable

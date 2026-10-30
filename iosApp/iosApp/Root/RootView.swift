@@ -48,17 +48,21 @@ struct RootView: View {
 
     // MARK: - iPad
 
-    /// The library is the sidebar; the card on top of the stack (or a welcome screen) is the detail.
+    /// The library is the sidebar; the rest of the stack (a card and its editor, or a new card) is the detail, or a
+    /// welcome screen when nothing is open.
     private var splitView: some View {
         NavigationSplitView {
             if case .home(let home) = children.value.first?.sealedType() {
-                SplitSidebar(home: home.value.component, open: openReview)
+                SplitSidebar(home: home.value.component, detail: children.value.dropFirst().first)
             }
         } detail: {
-            NavigationStack {
-                if let open = children.value.dropFirst().last {
-                    ChildView(child: open)
+            NavigationStack(path: detailPath) {
+                if let detail = children.value.dropFirst().first {
+                    ChildView(child: detail)
                         .environment(\.isSplitViewDetail, true)
+                        .navigationDestination(for: Route.self) { route in
+                            ChildView(child: route.child)
+                        }
                 } else if case .home(let home) = children.value.first?.sealedType() {
                     HomeView(component: home.value.component, presentation: .welcome)
                 }
@@ -67,10 +71,16 @@ struct RootView: View {
         .navigationSplitViewStyle(.balanced)
     }
 
-    /// The card open in the detail column, if any.
-    private var openReview: (any CardReviewComponent)? {
-        if case .review(let review) = children.value.dropFirst().last?.sealedType() { return review.value.component }
-        return nil
+    /// What is pushed in the detail column (a card's editor above the card); popping it pops in Kotlin.
+    private var detailPath: Binding<[Route]> {
+        Binding(
+            get: { children.value.dropFirst(2).map(Route.init) },
+            set: { newPath in
+                if newPath.count < children.value.count - 2 {
+                    root.onBackClicked(toIndex: Int32(newPath.count + 1))
+                }
+            }
+        )
     }
 
     /// Kotlin objects are bridged as cached `NSObject` wrappers, so object identity is stable.
@@ -87,19 +97,26 @@ struct RootView: View {
 /// yet from being replaced by tapping another one. One `HomeView` throughout, so scrolling and search survive.
 private struct SplitSidebar: View {
     let home: any HomeComponent
-    let open: (any CardReviewComponent)?
+    /// The child at the root of the detail column: a card's preview, or a new card's review.
+    let detail: (any RootChild)?
 
-    /// The open card's model, which changes after the child stack does (loading, saving).
+    /// The new card's model, which changes after the child stack does (loading, saving).
     @State private var model: ObservedFlow<any ReviewModel>?
 
     var body: some View {
         HomeView(component: home, presentation: .sidebar(selectedCardId: selectedCardId, hasUnsavedNewCard: hasUnsavedNewCard))
-            .onChange(of: open.map { ObjectIdentifier($0) }, initial: true) {
-                model = open.map { ObservedFlow($0.model) }
+            .onChange(of: review.map { ObjectIdentifier($0) }, initial: true) {
+                model = review.map { ObservedFlow($0.model) }
             }
     }
 
+    private var review: (any CardReviewComponent)? {
+        if case .review(let review) = detail?.sealedType() { return review.value.component }
+        return nil
+    }
+
     private var selectedCardId: String? {
+        if case .preview(let preview) = detail?.sealedType() { return preview.value.component.cardId }
         if case .editing(let editing) = model?.value.sealedType() { return editing.value.form.cardId }
         return nil
     }
@@ -128,6 +145,9 @@ private struct ChildView: View {
         case .review(let review):
             CardReviewView(component: review.value.component)
                 .id(ObjectIdentifier(review.value))
+        case .preview(let preview):
+            CardPreviewScreen(component: preview.value.component)
+                .id(ObjectIdentifier(preview.value))
         }
     }
 }

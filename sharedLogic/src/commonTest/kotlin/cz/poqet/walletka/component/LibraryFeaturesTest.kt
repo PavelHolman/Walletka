@@ -105,7 +105,7 @@ class LibraryFeaturesTest {
     }
 
     @Test
-    fun openingTheDuplicateReplacesTheReviewWithItsEditor() {
+    fun openingTheDuplicateReplacesTheReviewWithItsPreview() {
         val root = root(services())
         root.addCard("CODE-1")
         root.onImageReceived("again.jpg")
@@ -113,9 +113,8 @@ class LibraryFeaturesTest {
         root.review().onOpenDuplicateClicked()
 
         assertEquals(2, root.children.value.size)
-        val editing = assertIs<Model.Editing>(root.review().model.value)
-        assertTrue(editing.form.isLibraryCard)
-        assertNull(editing.duplicateOf)
+        val preview = assertIs<RootComponent.Child.Preview>(root.children.value.last()).component
+        assertEquals(root.home().model.value.cards.single().id, preview.cardId)
     }
 
     @Test
@@ -134,7 +133,7 @@ class LibraryFeaturesTest {
         val home = root.home()
         assertEquals(listOf("B", "A"), home.model.value.cards.map { it.name })
 
-        home.onCardClicked(home.model.value.cards[1].id)
+        home.onCardEditClicked(home.model.value.cards[1].id)
         root.review().onNameChanged("A2")
         root.review().onAddToWalletClicked()
         root.review().onCloseClicked()
@@ -220,7 +219,7 @@ class LibraryFeaturesTest {
         assertEquals(listOf(false, false), cards.map { it.isInWallet })
 
         // Imported cards open as not in the wallet, ready to be added.
-        target.home().onCardClicked(cards[0].id)
+        target.home().onCardEditClicked(cards[0].id)
         val editing = assertIs<Model.Editing>(target.review().model.value)
         assertEquals(SyncStatus.NOT_IN_WALLET, editing.sync)
         assertEquals(true, editing.hasChanges)

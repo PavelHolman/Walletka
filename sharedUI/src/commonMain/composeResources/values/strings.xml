@@ -35,8 +35,6 @@
     <string name="search_clear">Clear search</string>
     <string name="review_title_edit">Edit card</string>
     <string name="review_title_new">New card</string>
-    <string name="review_delete_card">Delete card</string>
-    <string name="review_delete_message">The card is removed from Walletka. Its Google Wallet pass is marked as expired; remove it there too if you don’t want to see it.</string>
     <string name="loading_importing">Reading the image…</string>
     <string name="loading_analyzing">Looking for codes…</string>
     <string name="failure_image_unreadable">This doesn’t look like an image Walletka can read.</string>
@@ -59,11 +57,8 @@
     <string name="banner_explanation">A strip from your photo, shown as the card’s header image.</string>
     <string name="banner_adjust">Adjust banner</string>
     <string name="banner_hint">Drag and pinch the photo. The bright strip becomes the banner.</string>
-    <string name="wallet_save">Save to Google Wallet</string>
     <string name="wallet_add">Add to Google Wallet</string>
     <string name="wallet_adding">Adding to Google Wallet…</string>
-    <string name="wallet_edit_to_save">Edit the card to save it to Google Wallet again.</string>
-    <string name="submission_failed_save">Couldn’t save the card</string>
     <string name="submission_failed_add">Couldn’t add the card</string>
     <string name="added_updated">Updated in Google Wallet</string>
     <string name="added_saved">Saved to Google Wallet</string>
@@ -137,7 +132,6 @@
     <string name="sync_syncing">Syncing with Google Wallet…</string>
     <string name="sync_failed">Couldn’t sync</string>
     <string name="sync_failed_detail">Couldn’t sync: %1$s</string>
-    <string name="sync_not_in_wallet">Not in Google Wallet on this device. Add it below.</string>
     <string name="typed_code_no_code">No code found in the photo. Type the number printed on the card and pick the code type.</string>
     <string name="typed_code_manual">Type the number printed on the card and pick the code type.</string>
     <string name="typed_code_type">Code type</string>
@@ -167,6 +161,18 @@
     <string name="backup_exported">Library exported</string>
     <string name="backup_export_write_failed">The backup couldn’t be saved there. Try another place.</string>
     <string name="backup_import_unreadable">The file couldn’t be opened.</string>
-    <string name="wallet_needs_name">Enter a name to add the card.</string>
-    <string name="wallet_needs_code">Enter the card’s code to add it.</string>
+    <string name="wallet_needs_name">Enter a name to save the card.</string>
+    <string name="wallet_needs_code">Enter the card’s code to save it.</string>
+    <string name="action_delete_card">Delete card</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_show_card">Show card</string>
+    <string name="review_save">Save card</string>
+    <string name="review_saving">Saving the card…</string>
+    <string name="card_in_wallet">In Google Wallet</string>
+    <string name="card_remove_from_wallet">Remove from Google Wallet</string>
+    <string name="card_removing">Removing from Google Wallet…</string>
+    <string name="card_remove_title">Remove from Google Wallet?</string>
+    <string name="card_remove_message">The card stays in Walletka. Its Google Wallet pass is marked as expired; remove it there too if you don’t want to see it.</string>
+    <string name="card_remove_unsupported_title">Remove it in Google Wallet</string>
+    <string name="card_remove_unsupported_message">Walletka can’t remove passes from Google Wallet on this device. Open Google Wallet and remove the card there.</string>
 </resources>

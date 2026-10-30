@@ -24,3 +24,7 @@ expect fun rememberCodeImage(format: cz.poqet.walletka.domain.CodeFormat, value:
 
 /** A calendar day ([epochDay] since 1970-01-01) as the user's locale writes dates, e.g. "31. 5. 2027". */
 expect fun formatLocalDate(epochDay: Long): String
+
+/** Turns the screen to full brightness while in the composition (for a code being scanned), then back. */
+@Composable
+expect fun KeepScreenBright()

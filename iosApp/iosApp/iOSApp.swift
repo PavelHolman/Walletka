@@ -92,7 +92,7 @@ struct iOSApp: App {
     }
 
     #if DEBUG
-    /// `-WalletkaDebugScreen card|manual`: opens a screen at launch, for screenshots on simulators.
+    /// `-WalletkaDebugScreen card|edit|manual`: opens a screen at launch, for screenshots on simulators.
     /// `.task` runs again whenever the view reappears (e.g. after the Add to Wallet sheet); the screen opens once.
     @MainActor private static var hasOpenedDebugScreen = false
 
@@ -104,6 +104,7 @@ struct iOSApp: App {
         let component = home.value.component
         switch screen {
         case "card": component.model.value.cards.first.map { component.onCardClicked(cardId: $0.id) }
+        case "edit": component.model.value.cards.first.map { component.onCardEditClicked(cardId: $0.id) }
         case "manual": component.onEnterManuallyClicked()
         default: break
         }

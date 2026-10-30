@@ -16,6 +16,7 @@ import com.google.zxing.MultiFormatWriter
 import com.google.zxing.EncodeHintType
 import com.google.zxing.BarcodeFormat
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import android.graphics.ImageDecoder
+import android.view.WindowManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -141,6 +143,16 @@ private fun codeBitmap(format: CodeFormat, value: String): android.graphics.Bitm
         if (matrix[i % matrix.width, i / matrix.width]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
     }
     return android.graphics.Bitmap.createBitmap(pixels, matrix.width, matrix.height, android.graphics.Bitmap.Config.ARGB_8888)
+}
+
+@Composable
+actual fun KeepScreenBright() {
+    val window = LocalContext.current.findActivity()?.window ?: return
+    DisposableEffect(window) {
+        val previous = window.attributes.screenBrightness
+        window.attributes = window.attributes.apply { screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL }
+        onDispose { window.attributes = window.attributes.apply { screenBrightness = previous } }
+    }
 }
 
 actual fun formatLocalDate(epochDay: Long): String =

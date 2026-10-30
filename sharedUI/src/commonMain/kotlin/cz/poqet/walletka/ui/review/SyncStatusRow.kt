@@ -59,8 +59,8 @@ internal fun SyncStatusRow(status: SyncStatus, error: String?, onRetry: () -> Un
                 )
                 TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_retry)) }
             }
-            // The add button is shown instead (the pass has to be saved again).
-            SyncStatus.NOT_IN_WALLET -> Text(stringResource(Res.string.sync_not_in_wallet), color = color, style = MaterialTheme.typography.bodyMedium)
+            // Nothing to keep up with; the card's preview offers adding it to the wallet.
+            SyncStatus.NOT_IN_WALLET -> Unit
         }
     }
 }

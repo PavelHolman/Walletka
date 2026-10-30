@@ -21,7 +21,8 @@ struct HomeView: View {
     @State private var isCameraPresented = false
     @State private var isPhotoPickerPresented = false
     @State private var cardPendingDeletion: CardSummary?
-    @State private var cardPendingOpen: CardSummary?
+    /// A card to open once the user agrees to drop the new card being edited (iPad); `edit` opens its editor.
+    @State private var cardPendingOpen: (card: CardSummary, edit: Bool)?
     @State private var isImportingBackup = false
     /// A picked photo is being read from the library; that can take a moment for large or iCloud photos.
     @State private var isLoadingPhoto = false
@@ -132,9 +133,9 @@ struct HomeView: View {
                     CardTile(card: card, isSelected: selectedCardId == card.id)
                 }
                 .buttonStyle(.plain)
-                // VoiceOver: the tile reads as one element; Edit and reordering are its actions (the swipe action
-                // already offers Delete).
-                .accessibilityAction(named: Text("Edit")) { open(card) }
+                // VoiceOver: the tile reads as one element (activating it shows the card); Edit and reordering are its
+                // actions (the swipe action already offers Delete).
+                .accessibilityAction(named: Text("Edit")) { open(card, edit: true) }
                 .accessibilityActions {
                     if model.value.canReorder && index > 0 {
                         Button("Move Up") { component.onCardMoved(fromIndex: Int32(index), toIndex: Int32(index - 1)) }
@@ -149,7 +150,7 @@ struct HomeView: View {
                     Button("Delete", systemImage: "trash", role: .destructive) { cardPendingDeletion = card }
                 }
                 .contextMenu {
-                    Button("Edit", systemImage: "pencil") { open(card) }
+                    Button("Edit", systemImage: "pencil") { open(card, edit: true) }
                     Button("Delete", systemImage: "trash", role: .destructive) { cardPendingDeletion = card }
                 } preview: {
                     // The pass with its code, ready to be scanned.
@@ -192,11 +193,11 @@ struct HomeView: View {
             isPresented: Binding(get: { cardPendingOpen != nil }, set: { if !$0 { cardPendingOpen = nil } })
         ) {
             Button("Discard", role: .destructive) {
-                if let card = cardPendingOpen { component.onCardClicked(cardId: card.id) }
+                if let pending = cardPendingOpen { show(pending.card, edit: pending.edit) }
             }
             Button("Keep Editing", role: .cancel) {}
         } message: {
-            Text("The card you're adding isn't in Wallet yet.")
+            Text("The card you're adding isn't saved yet.")
         }
         // A centred alert: a swipe action has no stable button to anchor a dialog to.
         .alert(
@@ -238,10 +239,19 @@ struct HomeView: View {
         return nil
     }
 
-    /// Opens [card]; on iPad first asks before a new card being edited next to the library is thrown away.
-    private func open(_ card: CardSummary) {
+    /// Shows [card] (or its editor); on iPad first asks before a new card being edited next to the library is thrown
+    /// away.
+    private func open(_ card: CardSummary, edit: Bool = false) {
         if case .sidebar(_, true) = presentation {
-            cardPendingOpen = card
+            cardPendingOpen = (card, edit)
+        } else {
+            show(card, edit: edit)
+        }
+    }
+
+    private func show(_ card: CardSummary, edit: Bool) {
+        if edit {
+            component.onCardEditClicked(cardId: card.id)
         } else {
             component.onCardClicked(cardId: card.id)
         }

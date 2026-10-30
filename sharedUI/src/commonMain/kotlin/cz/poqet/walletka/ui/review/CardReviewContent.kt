@@ -48,7 +48,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -56,7 +55,8 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -128,21 +128,6 @@ import androidx.compose.ui.semantics.semantics
 @Composable
 fun CardReviewContent(component: CardReviewComponent) {
     val model by component.model.collectAsState()
-    var isConfirmingDelete by remember { mutableStateOf(false) }
-    (model as? Model.Editing)?.form?.takeIf { isConfirmingDelete }?.let { form ->
-        AlertDialog(
-            onDismissRequest = { isConfirmingDelete = false },
-            title = { Text(stringResource(Res.string.delete_card_title, form.name)) },
-            text = { Text(stringResource(Res.string.review_delete_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = { isConfirmingDelete = false; component.onDeleteClicked() },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text(stringResource(Res.string.action_delete)) }
-            },
-            dismissButton = { TextButton(onClick = { isConfirmingDelete = false }) { Text(stringResource(Res.string.action_cancel)) } },
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -159,14 +144,6 @@ fun CardReviewContent(component: CardReviewComponent) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 },
-                actions = {
-                    val editing = model as? Model.Editing
-                    if (editing?.form?.isLibraryCard == true && editing.submission !is Submission.Added) {
-                        IconButton(onClick = { isConfirmingDelete = true }) {
-                            Icon(Icons.Outlined.Delete, contentDescription = stringResource(Res.string.review_delete_card), tint = MaterialTheme.colorScheme.error)
-                        }
-                    }
-                },
             )
         },
     ) { padding ->
@@ -179,7 +156,7 @@ fun CardReviewContent(component: CardReviewComponent) {
                     is Submission.Added -> CardAdded(state.form, submission.replacedExisting, onDone = component::onCloseClicked)
                     else -> Column {
                         state.duplicateOf?.let { DuplicateCardBanner(it, onOpen = component::onOpenDuplicateClicked) }
-                        Editing(state.form, submission, state.hasChanges, state.colorPreview, component, state.sync, state.syncError)
+                        Editing(state.form, submission, state.colorPreview, component, state.sync, state.syncError)
                     }
                 }
             }
@@ -274,7 +251,6 @@ private fun Failed(failure: AnalysisFailure, onRetry: () -> Unit, onClose: () ->
 private fun Editing(
     form: CardForm,
     submission: Submission,
-    hasChanges: Boolean,
     colorPreview: CardColor?,
     component: CardReviewComponent,
     sync: SyncStatus? = null,
@@ -329,7 +305,7 @@ private fun Editing(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        CardPreview(form, compact = true)
+        CardPreview(form, CardPreviewSize.COMPACT)
 
         // Typing a card in: the keyboard's action key moves on from the name to the missing code.
         val needsTypedCode = form.isCodeTyped && form.selectedCode.value.isEmpty()
@@ -504,46 +480,53 @@ private fun Editing(
         Spacer(Modifier.height(8.dp))
     }
 
-    // The primary action stays reachable at the bottom of the screen.
-    Surface(tonalElevation = 3.dp) {
+    // Library cards save by themselves; the bar shows how the wallet is keeping up, where it is updated silently.
+    val showsSync = sync != null && sync != SyncStatus.NOT_IN_WALLET
+    if (!form.isLibraryCard || showsSync) Surface(tonalElevation = 3.dp) {
         Column(
             Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Library cards sync by themselves where the wallet allows it, unless the pass is gone.
-            if (form.isLibraryCard && sync != null && sync != SyncStatus.NOT_IN_WALLET) {
-                SyncStatusRow(sync, syncError, onRetry = component::onRetrySyncClicked)
+            if (form.isLibraryCard) {
+                if (sync != null) SyncStatusRow(sync, syncError, onRetry = component::onRetrySyncClicked)
             } else {
-                if (sync == SyncStatus.NOT_IN_WALLET) SyncStatusRow(sync, syncError, onRetry = component::onRetrySyncClicked)
+                // Which of the two buttons shows the progress while the card is being saved or added.
+                var isAdding by remember { mutableStateOf(false) }
+                val enabled = form.isValid && !busy
                 Button(
                     onClick = {
                         focusManager.clearFocus()
-                        component.onAddToWalletClicked()
+                        isAdding = false
+                        component.onSaveClicked()
                     },
-                    enabled = form.isValid && !busy && hasChanges,
+                    enabled = enabled,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                     shape = RoundedCornerShape(26.dp),
                 ) {
-                    if (busy) {
-                        val adding = stringResource(Res.string.wallet_adding)
-                        CircularProgressIndicator(
-                            Modifier.size(20.dp).semantics { contentDescription = adding },
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
+                    if (busy && !isAdding) {
+                        ButtonProgress(stringResource(Res.string.review_saving), MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Icon(Icons.Outlined.Wallet, null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(stringResource(if (form.isLibraryCard) Res.string.wallet_save else Res.string.wallet_add))
+                        Text(stringResource(Res.string.review_save))
                     }
                 }
-                // Why the button is disabled; a code that can't be encoded is explained at the code.
+                Spacer(Modifier.height(8.dp))
+                AddToWalletButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        isAdding = true
+                        component.onAddToWalletClicked()
+                    },
+                    enabled = enabled,
+                    busy = busy && isAdding,
+                    tonal = true,
+                )
+                // Why the buttons are disabled; a code that can't be encoded is explained at the code.
                 if (!busy && form.name.isBlank()) {
                     Text(
                         stringResource(Res.string.wallet_needs_name),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         textAlign = TextAlign.Center,
                     )
                 } else if (!busy && form.selectedCode.value.isBlank()) {
@@ -551,16 +534,8 @@ private fun Editing(
                         stringResource(Res.string.wallet_needs_code),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         textAlign = TextAlign.Center,
-                    )
-                }
-                if (form.isLibraryCard && !hasChanges && sync == null) {
-                    Text(
-                        stringResource(Res.string.wallet_edit_to_save),
-                        modifier = Modifier.padding(top = 8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -573,7 +548,7 @@ private fun Editing(
             AlertDialog(
                 onDismissRequest = component::onSubmissionErrorDismissed,
                 icon = { Icon(Icons.Outlined.ErrorOutline, null) },
-                title = { Text(stringResource(if (form.isLibraryCard) Res.string.submission_failed_save else Res.string.submission_failed_add)) },
+                title = { Text(stringResource(Res.string.submission_failed_add)) },
                 text = { Text(submission.failure.message() + (submission.detail?.let { "\n\n$it" } ?: "")) },
                 confirmButton = { TextButton(onClick = component::onSubmissionErrorDismissed) { Text(stringResource(Res.string.action_ok)) } },
             )
@@ -581,6 +556,37 @@ private fun Editing(
 
         else -> Unit
     }
+}
+
+/** The "Add to Google Wallet" button of the new-card form and the card preview; [tonal] when it is the second option. */
+@Composable
+internal fun AddToWalletButton(onClick: () -> Unit, enabled: Boolean, busy: Boolean, modifier: Modifier = Modifier, tonal: Boolean = false) {
+    val content: @Composable RowScope.() -> Unit = {
+        if (busy) {
+            ButtonProgress(stringResource(Res.string.wallet_adding), if (tonal) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary)
+        } else {
+            Icon(Icons.Outlined.Wallet, null)
+            Spacer(Modifier.size(8.dp))
+            Text(stringResource(Res.string.wallet_add))
+        }
+    }
+    val buttonModifier = modifier.fillMaxWidth().heightIn(min = 52.dp)
+    val shape = RoundedCornerShape(26.dp)
+    if (tonal) {
+        FilledTonalButton(onClick = onClick, enabled = enabled, modifier = buttonModifier, shape = shape, content = content)
+    } else {
+        Button(onClick = onClick, enabled = enabled, modifier = buttonModifier, shape = shape, content = content)
+    }
+}
+
+/** A spinner in place of a button's label, announced as [description]. */
+@Composable
+internal fun ButtonProgress(description: String, color: Color) {
+    CircularProgressIndicator(
+        Modifier.size(20.dp).semantics { contentDescription = description },
+        strokeWidth = 2.dp,
+        color = color,
+    )
 }
 
 /** Shown once Google Wallet reports the pass as saved. */
@@ -612,8 +618,12 @@ private fun CardAdded(form: CardForm, replacedExisting: Boolean, onDone: () -> U
     }
 }
 
+/** How big [CardPreview] draws the card: in the form, on its own, or to be scanned at a till. */
+internal enum class CardPreviewSize { COMPACT, REGULAR, LARGE }
+
 @Composable
-private fun CardPreview(form: CardForm, compact: Boolean = false) {
+internal fun CardPreview(form: CardForm, size: CardPreviewSize = CardPreviewSize.REGULAR, modifier: Modifier = Modifier) {
+    val compact = size == CardPreviewSize.COMPACT
     val background = form.selectedColor.toColor()
     val content = form.selectedColor.contentColor.toColor()
     val banner = rememberStoredImage(form.banner?.path?.takeIf { form.isBannerEnabled })
@@ -625,7 +635,7 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
         stringResource(Res.string.preview_with_banner).takeIf { banner != null },
     ).joinToString()
     Column(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(background)
@@ -663,7 +673,11 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 val code = rememberCodeImage(form.walletCodeFormat, form.selectedCode.value)
                 val twoDimensional = form.walletCodeFormat.isTwoDimensional
-                val codeHeight = if (twoDimensional) (if (compact) 96.dp else 140.dp) else (if (compact) 52.dp else 70.dp)
+                val codeHeight = when (size) {
+                    CardPreviewSize.COMPACT -> if (twoDimensional) 96.dp else 52.dp
+                    CardPreviewSize.REGULAR -> if (twoDimensional) 140.dp else 70.dp
+                    CardPreviewSize.LARGE -> if (twoDimensional) 240.dp else 120.dp
+                }
                 if (code != null) {
                     Image(
                         code,
@@ -671,13 +685,17 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
                         filterQuality = FilterQuality.None,
                         // A linear code is one module row: stretch it to the bars' height.
                         contentScale = if (twoDimensional) ContentScale.Fit else ContentScale.FillBounds,
-                        modifier = Modifier.height(codeHeight)
-                            .then(if (twoDimensional) Modifier.aspectRatio(code.width.toFloat() / code.height) else Modifier.fillMaxWidth()),
+                        // A 2D code as big as fits up to its height (a wide PDF417 is narrowed to the card).
+                        modifier = if (twoDimensional) {
+                            Modifier.heightIn(max = codeHeight).aspectRatio(code.width.toFloat() / code.height)
+                        } else {
+                            Modifier.height(codeHeight).fillMaxWidth()
+                        },
                     )
                 } else {
                     // Where the code goes, as big as the code will be, so the card doesn't grow while it's typed in.
                     Box(
-                        Modifier.height(codeHeight).then(if (twoDimensional) Modifier.aspectRatio(1f) else Modifier.fillMaxWidth()),
+                        if (twoDimensional) Modifier.heightIn(max = codeHeight).aspectRatio(1f) else Modifier.height(codeHeight).fillMaxWidth(),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(form.walletCodeFormat.localizedName(), color = Color.Gray, style = MaterialTheme.typography.labelMedium)
@@ -687,7 +705,8 @@ private fun CardPreview(form: CardForm, compact: Boolean = false) {
                     Text(
                         form.selectedCode.value,
                         color = Color.Black,
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        style = (if (size == CardPreviewSize.LARGE) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall)
+                            .copy(fontFamily = FontFamily.Monospace),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -706,7 +725,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun WalletFailure.message(): String = stringResource(
+internal fun WalletFailure.message(): String = stringResource(
     when (this) {
         WalletFailure.UNAVAILABLE -> Res.string.wallet_failure_unavailable
         WalletFailure.NOT_CONFIGURED -> Res.string.wallet_failure_not_configured

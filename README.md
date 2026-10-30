@@ -63,7 +63,12 @@ The platform interfaces are `internal`: each platform has a composition root
    time budget. If that finds nothing either, the form opens with an empty code to type in and a format picker;
    the photo still provides banner and colours. `Failed` is left for images that can't be read.
 3. The user edits name / code / colour / banner, optionally a logo cut from the photo and pass details (card number,
-   member name, expiry, notes; Apple `backFields`, Google `textModulesData`), and taps *Add to Wallet* → `WalletService`.
+   member name, expiry, notes; Apple `backFields`, Google `textModulesData`), and taps *Save Card* (library only) or
+   *Add to Wallet* (library and `WalletService`). Either way the card's preview replaces the form.
+4. Tapping a library card opens its **preview** (`CardPreview`): the card with a large code, shown at full screen
+   brightness (restored when it closes or the app leaves the foreground) so it can be scanned without Wallet. Its pass
+   is added to or removed from the wallet there at any time; *Edit* pushes the editor above it (edits save by
+   themselves, and update the pass when it's in the wallet), the overflow menu deletes the card.
 
 Typed codes are checked against their symbology (`CodeFormat.issueWith`: digits only, length, the EAN/UPC
 check digit, the characters Code 39/93 and Codabar can hold); the form explains the problem and the wallet button
@@ -74,8 +79,8 @@ typed code, the default colour palette plus a custom colour, and no banner.
 
 ### iOS app
 
-- iPhone: a navigation stack. iPad (regular width): a split view with the library as the sidebar and the open card
-  (or a welcome screen) as the detail; the stack's top child is the detail.
+- iPhone: a navigation stack. iPad (regular width): a split view with the library as the sidebar and the rest of the
+  stack (a card's preview with its editor pushed above, or a new card) as the detail, or a welcome screen.
 - Home Screen quick actions (touch and hold the icon): *Scan Card*, *New Card*. ⌘N starts a card typed in by hand.
 - Touching and holding a library card previews the pass with a large, scannable code.
 - The … menu shows the iCloud sync status, including why it failed, and offers *Sync Now*; pulling the library
@@ -176,7 +181,8 @@ real Pass Type ID certificate gets a pass into Apple Wallet.
 ### Google Wallet setup
 
 Optional. Without it `capabilities.googleWallet` is `false` and Android keeps saving passes on the device (unsigned
-JSON, issuer ID/e-mail from `local.properties`); edits of library cards then need a manual *Save to Google Wallet*.
+JSON, issuer ID/e-mail from `local.properties`); edits of library cards are then kept in Walletka only, and removing
+a pass from the preview asks the user to remove it in Google Wallet.
 With it, Android library cards sync like Apple ones: edits update the saved pass in place and deleting a card
 expires its pass (the Google Wallet API can't delete passes).
 

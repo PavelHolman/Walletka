@@ -72,7 +72,7 @@ internal class DefaultCardReviewComponent(
     source: ReviewSource,
     dependencies: ReviewDependencies,
     private val onFinished: () -> Unit,
-    /** Replaces this review with the editor of the library card with the given id. */
+    /** Replaces this review with the preview of the library card with the given id. */
     private val onOpenCard: (cardId: String) -> Unit = {},
 ) : CardReviewComponent, ComponentContext by componentContext {
 
@@ -83,6 +83,7 @@ internal class DefaultCardReviewComponent(
             savedForm = stateKeeper.consume(key = STATE_KEY, strategy = SavedCardForm.serializer())?.toForm(),
             dependencies = dependencies,
             onFinished = onFinished,
+            onOpenCard = onOpenCard,
         )
     }
 
@@ -124,6 +125,8 @@ internal class DefaultCardReviewComponent(
 
     override fun onDetailsChanged(details: CardDetails) = store.updateForm { copy(details = details) }
 
+    override fun onSaveClicked() = store.save()
+
     override fun onAddToWalletClicked() = store.addToWallet()
 
     override fun onRetryClicked() = store.load()
@@ -133,8 +136,6 @@ internal class DefaultCardReviewComponent(
     override fun onRetrySyncClicked() = store.syncNow()
 
     override fun onCloseClicked() = store.close()
-
-    override fun onDeleteClicked() = store.delete()
 
     override fun onOpenDuplicateClicked() {
         (model.value as? Model.Editing)?.duplicateOf?.let { onOpenCard(it.cardId) }
@@ -150,6 +151,7 @@ private class ReviewStore(
     savedForm: CardForm?,
     private val dependencies: ReviewDependencies,
     private val onFinished: () -> Unit,
+    private val onOpenCard: (cardId: String) -> Unit,
 ) : InstanceKeeper.Instance {
 
     private val imageStore get() = dependencies.imageStore
@@ -240,10 +242,24 @@ private class ReviewStore(
         scheduleSync()
     }
 
-    /** Debounces edits of a library card into one silent wallet update. */
+    /**
+     * Debounces edits of a library card into one silent wallet update, or into a library save where the pass can't be
+     * updated (not in the wallet, or a wallet that takes no silent updates).
+     */
     private fun scheduleSync(delayMillis: Long = SYNC_DEBOUNCE) {
         val editing = _model.value as? Model.Editing ?: return
-        if (!autoSyncs(editing.form)) return
+        if (!editing.form.isLibraryCard) return
+        if (!autoSyncs(editing.form)) {
+            syncJob?.cancel()
+            if (!editing.form.isValid) return
+            syncJob = scope.launch {
+                delay(delayMillis)
+                bannerJob?.join()
+                logoJob?.join()
+                saveLibraryOnly()
+            }
+            return
+        }
         syncJob?.cancel()
         if (!editing.hasChanges) {
             _model.value = editing.copy(sync = if (editing.sync == SyncStatus.NOT_IN_WALLET) SyncStatus.NOT_IN_WALLET else SyncStatus.SYNCED, syncError = null)
@@ -254,8 +270,8 @@ private class ReviewStore(
             return
         }
         if (editing.sync == SyncStatus.NOT_IN_WALLET) {
-            // Not in this device's wallet (removed there, or from iCloud or a backup): nothing to update, but the
-            // library keeps the edits; the Add to Wallet button stays.
+            // Not in this device's wallet (never added, removed there, or from iCloud or a backup): nothing to update,
+            // but the library keeps the edits.
             syncJob = scope.launch {
                 delay(delayMillis)
                 bannerJob?.join()
@@ -278,7 +294,8 @@ private class ReviewStore(
         val editing = _model.value as? Model.Editing ?: return
         if (!hasUnsavedEdits || !editing.form.isValid) return
         val existing = editing.form.cardId?.let { library.get(it) } ?: return
-        val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, existing.walletId) }
+        val inWallet = existing.addedToWallet && editing.sync != SyncStatus.NOT_IN_WALLET
+        val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, existing.walletId, inWallet) }
         hasUnsavedEdits = false
         _model.update { model ->
             if (model !is Model.Editing) return@update model
@@ -306,7 +323,7 @@ private class ReviewStore(
                 _model.update { (it as? Model.Editing)?.copy(sync = status, syncError = error.detail) ?: it }
             },
             ifRight = {
-                val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, existing.walletId) }
+                val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, existing.walletId, addedToWallet = true) }
                 hasUnsavedEdits = false
                 issuedForm = saved
                 _model.update { model ->
@@ -327,10 +344,14 @@ private class ReviewStore(
         )
     }
 
-    /** Leaves the screen; unsynced edits of a library card are still pushed to the wallet in the background. */
+    /**
+     * Leaves the screen; unsynced edits of a library card are still pushed to the wallet in the background. A new card
+     * that made it into the library (added to the wallet) continues to its preview.
+     */
     fun close() {
         flushInBackground()
-        finish()
+        val newCardId = (_model.value as? Model.Editing)?.form?.cardId?.takeIf { source !is ReviewSource.LibraryCard }
+        if (newCardId != null) finishWithCard(newCardId) else finish()
     }
 
     /** Set once the screen is gone (closed, popped, replaced), so later events can't close another screen. */
@@ -342,6 +363,13 @@ private class ReviewStore(
         onFinished()
     }
 
+    /** Replaces this screen with the preview of the library card [cardId]. */
+    private fun finishWithCard(cardId: String) {
+        if (isFinished) return
+        isFinished = true
+        onOpenCard(cardId)
+    }
+
     /**
      * Pushes unsynced edits of a library card to the wallet after the screen is gone, whichever way it was left
      * (back button, swipe, another card picked in the iPad sidebar). Returns whether a flush was started.
@@ -349,7 +377,8 @@ private class ReviewStore(
     private fun flushInBackground(): Boolean {
         if (isFlushingOnClose) return true
         val editing = _model.value as? Model.Editing
-        if (editing != null && autoSyncs(editing.form) && editing.hasChanges && editing.form.isValid) {
+        val hasEdits = editing != null && (hasUnsavedEdits || autoSyncs(editing.form) && editing.hasChanges)
+        if (editing != null && editing.form.isLibraryCard && hasEdits && editing.form.isValid) {
             isFlushingOnClose = true
             syncJob?.cancel()
             CoroutineScope(Dispatchers.Main + SupervisorJob()).launch {
@@ -359,7 +388,7 @@ private class ReviewStore(
                     // The library first: it's quick, and the card may be opened again while the pass is signed.
                     // It keeps the edits even if the wallet then can't take them (not in it, offline, …).
                     saveLibraryOnly()
-                    if (editing.sync != SyncStatus.NOT_IN_WALLET) sync()
+                    if (autoSyncs(editing.form) && editing.sync != SyncStatus.NOT_IN_WALLET) sync()
                     // The working copies were moved into the library by the sync, or are no longer needed.
                     val form = (_model.value as? Model.Editing)?.form ?: editing.form
                     form.photo?.let { deleteUnlessInLibrary(it) }
@@ -464,6 +493,28 @@ private class ReviewStore(
         }
     }
 
+    /** Puts a new card into the library without adding it to the wallet, then shows it. */
+    fun save() {
+        val editing = _model.value as? Model.Editing ?: return
+        if (!editing.form.isValid || editing.form.isLibraryCard || editing.submission == Submission.InProgress) return
+        if (bannerJob?.isActive == true || logoJob?.isActive == true) {
+            scope.launch {
+                bannerJob?.join()
+                logoJob?.join()
+                save()
+            }
+            return
+        }
+        _model.value = editing.copy(submission = Submission.InProgress)
+        job = scope.launch {
+            val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing = null, walletId = newId(), addedToWallet = false) }
+            hasUnsavedEdits = false
+            // Nothing for the wallet to catch up on: the card isn't in it.
+            _model.update { (it as? Model.Editing)?.copy(form = saved, submission = Submission.Idle, hasChanges = false) ?: it }
+            saved.cardId?.let(::finishWithCard)
+        }
+    }
+
     fun addToWallet() {
         val editing = _model.value as? Model.Editing ?: return
         if (!editing.form.isValid || editing.submission == Submission.InProgress) return
@@ -484,7 +535,7 @@ private class ReviewStore(
                 // Dismissing the system sheet just returns to the form.
                 ifLeft = { if (it.failure == WalletFailure.CANCELLED) Submission.Idle else Submission.Failed(it.failure, it.detail) },
                 ifRight = { added ->
-                    val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, walletId) }
+                    val saved = withContext(NonCancellable) { saveToLibrary(editing.form, existing, walletId, addedToWallet = true) }
                     issuedForm = saved
                     _model.update { model ->
                         (model as? Model.Editing)?.copy(form = saved, hasChanges = false, sync = SyncStatus.SYNCED.takeIf { autoSyncs(saved) }) ?: model
@@ -497,7 +548,7 @@ private class ReviewStore(
     }
 
     /** Persists the card with its images copied into the library; returns the form pointing at those copies. */
-    private suspend fun saveToLibrary(form: CardForm, existing: StoredCard?, walletId: String): CardForm {
+    private suspend fun saveToLibrary(form: CardForm, existing: StoredCard?, walletId: String, addedToWallet: Boolean): CardForm {
         val photo = form.photo?.let { library.keepImage(it) }
         val banner = form.banner?.let { library.keepImage(it) }
         val logo = form.logo.image?.let { library.keepImage(it) }
@@ -510,6 +561,7 @@ private class ReviewStore(
                 createdAt = existing?.createdAt ?: now,
                 updatedAt = now,
                 form = SavedCardForm.of(saved),
+                addedToWallet = addedToWallet,
             ),
         )
         // The cache working copies are no longer needed, nor is a library banner replaced by a new crop.
@@ -519,17 +571,6 @@ private class ReviewStore(
         if (logo != form.logo.image) form.logo.image?.let { imageStore.delete(it) }
         existing?.form?.logo?.image?.takeIf { it != logo?.path }?.let { imageStore.delete(StoredImage(it)) }
         return saved
-    }
-
-    fun delete() {
-        val cardId = (_model.value as? Model.Editing)?.form?.cardId ?: return
-        syncJob?.cancel()
-        scope.launch {
-            withContext(NonCancellable) {
-                library.deleteCard(cardId, { dependencies.walletService.removeCard(it) }, imageStore::delete)
-            }
-            finish()
-        }
     }
 
     fun dismissSubmissionError() {
@@ -559,16 +600,6 @@ private class ReviewStore(
             CardLogo(image = null, isEnabled = false, region = LogoRegion.pick(viewport, codes, lines))
         },
         details = CardDetails.Empty,
-    )
-
-    private fun CardForm.toDraft(walletId: String) = CardDraft(
-        walletId = walletId,
-        name = name.trim(),
-        code = selectedCode.copy(value = selectedCode.value.trim()),
-        backgroundColor = selectedColor,
-        banner = banner.takeIf { isBannerEnabled },
-        logo = logo.activeImage,
-        details = details.trimmed(),
     )
 
     /** Whether [form] differs from the issued card in anything that ends up in the pass. */

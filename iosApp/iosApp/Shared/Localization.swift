@@ -62,3 +62,18 @@ extension CardColor {
         "\(accessibilityName), \(accessibilityHex)"
     }
 }
+
+extension WalletFailure {
+    /// What went wrong, for an alert; [detail] (the wallet's own words) follows when there is one.
+    func message(detail: String?) -> String {
+        let text = switch self {
+        case .UNAVAILABLE: String(localized: "Apple Wallet isn't available on this device.")
+        case .NOT_CONFIGURED: String(localized: "Walletka can't create wallet passes right now. Try again later.")
+        case .CANCELLED: String(localized: "Cancelled.")
+        case .UNSUPPORTED_CODE: String(localized: "This code type can't be stored in Apple Wallet.")
+        case .FAILED: String(localized: "Apple Wallet rejected the card.")
+        case .NOT_IN_WALLET: String(localized: "The card is no longer in Apple Wallet.")
+        }
+        return [text, detail].compactMap { $0 }.joined(separator: "\n\n")
+    }
+}

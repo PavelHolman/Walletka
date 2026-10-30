@@ -260,7 +260,6 @@ private struct CardFormView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @ScaledMetric private var swatchSize: CGFloat = 38
     @State private var isPickingColorFromPhoto = false
-    @State private var isConfirmingDelete = false
     /// More swatches are scrolled off the trailing edge.
     @State private var hasMoreSwatches = false
     @FocusState private var isNameFocused: Bool
@@ -284,7 +283,7 @@ private struct CardFormView: View {
                 }
             }
             Section {
-                CardPreview(form: form, compact: true)
+                CardPreview(form: form, size: .compact)
                     // Wallet passes have a fixed width; a stretched preview on iPad would look nothing like one. In
                     // landscape on iPhone it stays small enough to leave room for the form.
                     .frame(maxWidth: verticalSizeClass == .compact ? 220 : 420)
@@ -292,7 +291,8 @@ private struct CardFormView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             } footer: {
-                if let sync {
+                // Only cards in Wallet sync; the others just keep their edits in Walletka.
+                if let sync, sync != .NOT_IN_WALLET {
                     SyncStatusView(status: sync, error: syncError, onRetry: component.onRetrySyncClicked)
                         .frame(maxWidth: .infinity)
                 }
@@ -326,17 +326,22 @@ private struct CardFormView: View {
             photoSection
             CardDetailsSection(form: form, component: component)
 
-            if showsWalletButton {
+            // A new card is saved to Walletka, and optionally added to Wallet right away; a library card's edits save
+            // by themselves.
+            if !form.isLibraryCard {
                 Section {
-                    walletButton
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                    VStack(spacing: 12) {
+                        saveButton
+                        walletButton
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
                 } footer: {
-                    // Why the button is disabled; a code that can't be encoded is explained at the code.
+                    // Why the buttons are disabled; a code that can't be encoded is explained at the code.
                     if form.name.trimmingCharacters(in: .whitespaces).isEmpty {
-                        Text("Enter a name to add the card.").frame(maxWidth: .infinity)
+                        Text("Enter a name to save the card.").frame(maxWidth: .infinity)
                     } else if form.selectedCode.value.trimmingCharacters(in: .whitespaces).isEmpty {
-                        Text("Enter the card's code to add it.").frame(maxWidth: .infinity)
+                        Text("Enter the card's code to save it.").frame(maxWidth: .infinity)
                     }
                 }
             }
@@ -347,17 +352,10 @@ private struct CardFormView: View {
         .scrollDismissesKeyboard(.immediately)
         .dismissesKeyboardOnTapOutside()
         .toolbar {
+            // Edits are saved as they are made; Done just goes back to the card.
             if form.isLibraryCard {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Delete Card", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
-                        .tint(.red)
-                        .accessibilityHint(Text("Removes the card from Walletka and Apple Wallet"))
-                        // Attached to the button so the dialog points at it.
-                        .confirmationDialog("Delete “\(form.name)”?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
-                            Button("Delete from Walletka and Wallet", role: .destructive, action: component.onDeleteClicked)
-                        } message: {
-                            Text("The card is removed from Walletka and from Apple Wallet.")
-                        }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: component.onCloseClicked)
                 }
             }
         }
@@ -594,9 +592,10 @@ private struct CardFormView: View {
         }
     }
 
-    /// New cards are added with the system button; library cards sync by themselves unless the pass is gone.
-    private var showsWalletButton: Bool {
-        !form.isLibraryCard || sync == nil || sync == .NOT_IN_WALLET
+    private var saveButton: some View {
+        Button("Save Card", action: component.onSaveClicked)
+            .buttonStyle(WalletSizedButtonStyle())
+            .disabled(!form.isValid || isBusy)
     }
 
     private var walletButton: some View {
@@ -622,15 +621,22 @@ private struct CardFormView: View {
     }
 
     private static func message(_ failure: (WalletFailure, String?)) -> String {
-        let text = switch failure.0 {
-        case .UNAVAILABLE: String(localized: "Apple Wallet isn't available on this device.")
-        case .NOT_CONFIGURED: String(localized: "Walletka can't create wallet passes right now. Try again later.")
-        case .CANCELLED: String(localized: "Cancelled.")
-        case .UNSUPPORTED_CODE: String(localized: "This code type can't be stored in Apple Wallet.")
-        case .FAILED: String(localized: "Apple Wallet rejected the card.")
-        case .NOT_IN_WALLET: String(localized: "The card is no longer in Apple Wallet.")
-        }
-        return [text, failure.1].compactMap { $0 }.joined(separator: "\n\n")
+        failure.0.message(detail: failure.1)
+    }
+}
+
+/// A prominent button the size and shape of the system Add to Apple Wallet button, so the two stack neatly.
+private struct WalletSizedButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.headline)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
+            .contentShape(Rectangle())
     }
 }
 
@@ -673,8 +679,7 @@ private struct SyncStatusView: View {
                     .accessibilityHidden(true)
             case .NOT_IN_WALLET:
                 Image(systemName: "wallet.pass").foregroundStyle(.secondary).accessibilityHidden(true)
-                Text("Not in Apple Wallet on this device. Add it below.")
-                    .multilineTextAlignment(.center)
+                Text("Not in Apple Wallet")
             }
         }
         .font(.footnote)
@@ -703,141 +708,5 @@ private struct BannerThumbnail: View {
         // As wide as the logo's thumbnail (CardLogoRows), so both rows' titles line up.
         .frame(width: 92, height: 30)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-    }
-}
-
-// MARK: - Card preview
-
-/// The card roughly as Wallet shows it. `compact` shrinks the code so the editor stays in view.
-private struct CardPreview: View {
-    let form: CardForm
-    var compact = false
-
-    var body: some View {
-        let background = form.selectedColor.swiftUIColor
-        let content = form.selectedColor.contentColor.swiftUIColor
-        VStack(spacing: 0) {
-            HStack {
-                // Like Wallet: a logo replaces the name in the header.
-                if let logo = form.logo.activeImage?.path {
-                    PassLogoView(path: logo)
-                } else {
-                    Group {
-                        if form.name.isEmpty { Text("Card Name") } else { Text(verbatim: form.name) }
-                    }
-                    .font(.headline)
-                    .lineLimit(1)
-                }
-                Spacer()
-            }
-            .foregroundStyle(content)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-
-            if form.isBannerEnabled, let path = form.banner?.path, let banner = UIImage(contentsOfFile: path) {
-                Color.clear
-                    .aspectRatio(375.0 / 123.0, contentMode: .fit)
-                    .overlay {
-                        Image(uiImage: banner)
-                            .resizable()
-                            .scaledToFill()
-                    }
-                    .clipped()
-            }
-
-            let isTwoDimensional = form.walletCodeFormat.isTwoDimensional
-            let height: CGFloat = isTwoDimensional ? (compact ? 96 : 140) : (compact ? 52 : 70)
-            if let code = CodeImage.make(format: form.walletCodeFormat, value: form.selectedCode.value) {
-                VStack(spacing: 4) {
-                    Image(uiImage: code)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: height)
-                    if !isTwoDimensional {
-                        Text(form.selectedCode.value).font(.caption2.monospaced()).foregroundStyle(.black)
-                    }
-                }
-                .padding(10)
-                .background(.white, in: RoundedRectangle(cornerRadius: 8))
-                .padding(compact ? 14 : 20)
-            } else {
-                // No code typed yet: show where the code goes, laid out like the code itself, so the card doesn't
-                // grow (and push the field being typed in under the keyboard) once there is one.
-                VStack(spacing: 4) {
-                    Color.clear.frame(width: isTwoDimensional ? height : 160, height: height)
-                    if !isTwoDimensional {
-                        Text(verbatim: " ").font(.caption2.monospaced())
-                    }
-                }
-                .padding(10)
-                .overlay {
-                    Image(systemName: isTwoDimensional ? "qrcode" : "barcode")
-                        .font(.system(size: isTwoDimensional ? 44 : 36, weight: .light))
-                        .foregroundStyle(content.opacity(0.5))
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(content.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                )
-                .accessibilityHidden(true)
-                .padding(compact ? 14 : 20)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .background(background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        // It pictures the pass, whose text Wallet doesn't scale; VoiceOver reads it as a whole anyway.
-        .dynamicTypeSize(...DynamicTypeSize.xLarge)
-        // One shadow for the card as a whole, not one under each code, text and image on it.
-        .compositingGroup()
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
-        .padding(.vertical, 8)
-        .animation(.default, value: form.selectedColor.hex)
-        .animation(.default, value: form.isBannerEnabled)
-        .animation(.default, value: form.logo.activeImage?.path)
-        // One element: what the card looks like, not its parts.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Card preview"))
-        .accessibilityValue(Text(verbatim: accessibilityValue))
-        .accessibilityAddTraits(.isImage)
-    }
-
-    /// Name, code type and value, colour, and which of banner and logo the card shows.
-    private var accessibilityValue: String {
-        var parts = [form.name.isEmpty ? String(localized: "No name") : form.name]
-        parts.append(String(localized: "\(form.walletCodeFormat.localizedName): \(form.selectedCode.value)"))
-        parts.append(form.selectedColor.accessibilityName)
-        if form.logo.activeImage != nil { parts.append(String(localized: "with logo")) }
-        if form.isBannerEnabled && form.banner != nil { parts.append(String(localized: "with banner")) }
-        return parts.joined(separator: ", ")
-    }
-}
-
-/// The system "Add to Apple Wallet" button.
-private struct AddToWalletButton: UIViewRepresentable {
-    let action: () -> Void
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    func makeUIView(context: Context) -> PKAddPassButton {
-        // The outlined style keeps the black button visible on a dark background.
-        let button = PKAddPassButton(addPassButtonStyle: colorScheme == .dark ? .blackOutline : .black)
-        button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
-        return button
-    }
-
-    func updateUIView(_ uiView: PKAddPassButton, context: Context) {
-        context.coordinator.action = action
-        uiView.addPassButtonStyle = colorScheme == .dark ? .blackOutline : .black
-    }
-
-    func makeCoordinator() -> Coordinator { Coordinator(action: action) }
-
-    final class Coordinator: NSObject {
-        var action: () -> Void
-
-        init(action: @escaping () -> Void) { self.action = action }
-
-        @objc func tapped() { action() }
     }
 }

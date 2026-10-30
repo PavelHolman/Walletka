@@ -65,6 +65,10 @@ interface CardReviewComponent {
     /** Edits the optional pass details (number, member name, expiry, notes). */
     fun onDetailsChanged(details: CardDetails)
 
+    /** Puts a new card into the library without adding it to the wallet; see [CardForm.isLibraryCard]. */
+    fun onSaveClicked()
+
+    /** Adds the card to the wallet (and a new card to the library). */
     fun onAddToWalletClicked()
 
     /** Retries a failed automatic sync of a library card (see [Model.Editing.sync]). */
@@ -78,10 +82,7 @@ interface CardReviewComponent {
 
     fun onCloseClicked()
 
-    /** Deletes a library card (and its pass, where the wallet allows it); see [CardForm.isLibraryCard]. */
-    fun onDeleteClicked()
-
-    /** Leaves this new card for the library card it duplicates ([Model.Editing.duplicateOf]), opening its editor. */
+    /** Leaves this new card for the library card it duplicates ([Model.Editing.duplicateOf]), opening its preview. */
     fun onOpenDuplicateClicked()
 
     sealed interface Model {
@@ -150,7 +151,7 @@ interface CardReviewComponent {
         /** Width / height of [photo], for laying out the banner editor. */
         val photoAspectRatio: Float,
         val walletPlatform: WalletPlatform,
-        /** Set once the card is in the library, i.e. it has been added to the wallet. */
+        /** Set once the card is in the library (saved, or added to the wallet). */
         val cardId: String?,
         /**
          * The code was typed in rather than detected (no photo, or none found in it): [codes] holds that one code

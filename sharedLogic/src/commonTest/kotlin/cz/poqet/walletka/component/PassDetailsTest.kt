@@ -192,7 +192,7 @@ class PassDetailsTest {
         val wallet = FakeWalletService()
         val dataDirectory = tempDirectory("data")
         val root = root(fakeServices(listOf(code), walletService = wallet, dataDirectory = dataDirectory))
-        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.first()).component
         home.onEnterManuallyClicked()
         val review = root.review()
         assertFalse(review.form.hasPhoto)
@@ -234,8 +234,8 @@ class PassDetailsTest {
         testScheduler.advanceUntilIdle()
         root.review().onCloseClicked()
         testScheduler.advanceUntilIdle()
-        val home = assertIs<RootComponent.Child.Home>(root.children.value.single()).component
-        home.onCardClicked(home.model.value.cards.single().id)
+        val home = assertIs<RootComponent.Child.Home>(root.children.value.first()).component
+        home.onCardEditClicked(home.model.value.cards.single().id)
         testScheduler.advanceUntilIdle()
         return root
     }

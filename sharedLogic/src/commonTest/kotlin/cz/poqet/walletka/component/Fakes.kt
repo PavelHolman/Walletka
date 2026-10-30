@@ -86,7 +86,11 @@ internal class FakeWalletService(var result: Either<WalletError, AddedCard> = Ad
         return AddedCard(replacedExisting = true).right()
     }
 
+    /** Whether the wallet lets Walletka remove passes (Google Wallet without the pass service doesn't). */
+    var canRemove = true
+
     override suspend fun removeCard(walletId: String): Boolean {
+        if (!canRemove) return false
         removed += walletId
         return true
     }
