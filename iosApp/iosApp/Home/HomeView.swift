@@ -169,6 +169,10 @@ struct HomeView: View {
             .onMove(perform: model.value.canReorder ? moveCards : nil)
         }
         .listStyle(.plain)
+        // The keyboard covers the cards rather than shrinking the list: shrinking it re-expands the title bar while
+        // searching, and the list jumped back when the search closed. Scrolling puts the keyboard away instead.
+        .ignoresSafeArea(.keyboard)
+        .scrollDismissesKeyboard(.immediately)
         // Cards filtered in and out by the search (not by reordering) move into place rather than snap.
         .animation(.snappy, value: model.value.searchQuery)
         .overlay {
