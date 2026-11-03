@@ -530,7 +530,12 @@ internal fun ButtonProgress(description: String, color: Color) {
 internal enum class CardPreviewSize { COMPACT, REGULAR, LARGE }
 
 @Composable
-internal fun CardPreview(form: CardForm, size: CardPreviewSize = CardPreviewSize.REGULAR, modifier: Modifier = Modifier) {
+internal fun CardPreview(
+    form: CardForm,
+    size: CardPreviewSize = CardPreviewSize.REGULAR,
+    modifier: Modifier = Modifier,
+    showName: Boolean = true,
+) {
     val compact = size == CardPreviewSize.COMPACT
     val background = form.selectedColor.toColor()
     val content = form.selectedColor.contentColor.toColor()
@@ -552,15 +557,17 @@ internal fun CardPreview(form: CardForm, size: CardPreviewSize = CardPreviewSize
     ) {
         Row(Modifier.padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             CardLogoImage(form, size = 32.dp)
-            Text(
-                name,
-                modifier = Modifier.padding(start = if (form.logo.isEnabled) 10.dp else 4.dp, end = 20.dp, top = if (compact) 14.dp else 20.dp, bottom = if (compact) 14.dp else 20.dp),
-                color = content,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (showName) {
+                Text(
+                    name,
+                    modifier = Modifier.padding(start = if (form.logo.isEnabled) 10.dp else 4.dp, end = 20.dp, top = if (compact) 14.dp else 20.dp, bottom = if (compact) 14.dp else 20.dp),
+                    color = content,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         if (banner != null) {
             Image(

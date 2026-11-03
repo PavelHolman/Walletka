@@ -45,7 +45,7 @@ private struct PreviewContent: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(spacing: 20) {
-                    CardPreview(form: form, size: .large)
+                    CardPreview(form: form, size: .large, showName: false)
                     if !form.details.isEmpty {
                         DetailsList(details: form.details)
                     }
@@ -57,6 +57,7 @@ private struct PreviewContent: View {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
+        .navigationTitle(form.name)
         .safeAreaInset(edge: .bottom) { walletBar }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

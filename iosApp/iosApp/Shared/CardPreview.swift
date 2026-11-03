@@ -16,6 +16,7 @@ enum CardPreviewSize {
 struct CardPreview: View {
     let form: CardForm
     var size = CardPreviewSize.regular
+    var showName = true
 
     var body: some View {
         let background = form.selectedColor.swiftUIColor
@@ -25,7 +26,7 @@ struct CardPreview: View {
                 // Like Wallet: a logo replaces the name in the header.
                 if let logo = form.logo.activeImage?.path {
                     PassLogoView(path: logo)
-                } else {
+                } else if showName {
                     Group {
                         if form.name.isEmpty { Text("Card Name") } else { Text(verbatim: form.name) }
                     }

@@ -73,7 +73,7 @@ fun CardPreviewContent(component: CardPreviewComponent) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {},
+                title = { if (showing != null) Text(showing.form.name) },
                 navigationIcon = {
                     IconButton(onClick = component::onCloseClicked) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(Res.string.action_back))
@@ -157,7 +157,7 @@ private fun Showing(model: PreviewModel.Showing, onAdd: () -> Unit, onRemove: ()
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            CardPreview(model.form, CardPreviewSize.LARGE, Modifier.widthIn(max = 480.dp))
+            CardPreview(model.form, CardPreviewSize.LARGE, Modifier.widthIn(max = 480.dp), showName = false)
             Details(model.form.details, Modifier.widthIn(max = 480.dp))
         }
 
